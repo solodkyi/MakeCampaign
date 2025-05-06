@@ -46,18 +46,28 @@ struct AppFeature: Reducer {
         
         Reduce { state, action in
             switch action {
-            case .path:
-                return .none
+            case let .path(.element(id: id, action: .details(.delegate(action)))):
+                switch action {
+                case let .campaignUpdated(campaign):
+                    state.campaignsList.campaigns[id: campaign.id] = campaign
+                    return .none
+                case let .campaignDeleted(campaignId):
+                    state.campaignsList.campaigns.remove(id: campaignId)
+                    state.path.pop(from: id)
+                    return .none
+                }
+            case .path: return .none
             case let .campaignsList(action):
                 switch action {
                 case .campaignSelected(let campaignId):
-                    guard let campaign = state.campaignsList.campaigns.first(where: { $0.id == campaignId }) else {
+                    guard let campaign = state.campaignsList.campaigns[id: campaignId] else {
                         return .none
                     }
-                    state.path.append(.details(.init(campaign: campaign, isEditing: true)))
+                    state.path.append(.details(.init(campaign: campaign,  isEditing: true)))
                 default: break
                 }
                 return .none
+                
             }
         }
         .forEach(\.path, action: \.path) {
@@ -106,6 +116,7 @@ struct MakeCampaignApp: App {
         WindowGroup {
             AppView(store: .init(initialState: AppFeature.State(campaignsList: .init(campaigns: [.mock1, .mock2])), reducer: {
                 AppFeature()
+                    ._printChanges()
             }))
         }
     }

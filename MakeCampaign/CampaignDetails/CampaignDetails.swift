@@ -33,7 +33,6 @@ struct CampaignDetailsFeature: Reducer {
         @BindingState var campaign: Campaign
  
         var alert: Alert?
-        var selectedTemplate: Template.ID?
         var isEditing: Bool = false
         
         @PresentationState var templateSelection: TemplateSelectionFeature.State?
@@ -46,8 +45,15 @@ struct CampaignDetailsFeature: Reducer {
         case onAlertDisplayed(State.Alert)
         case onTemplateButtonTapped
         case templateSelection(PresentationAction<TemplateSelectionFeature.Action>)
+        case onCampaignDeleteButtonTapped(Campaign.ID)
         
         case binding(BindingAction<State>)
+        case delegate(Delegate)
+        
+        enum Delegate {
+            case campaignUpdated(Campaign)
+            case campaignDeleted(Campaign.ID)
+        }
     }
     
     var body: some ReducerOf<Self> {
@@ -67,7 +73,7 @@ struct CampaignDetailsFeature: Reducer {
                 if let imageURL = state.campaign.imageURL {
                     state.templateSelection = TemplateSelectionFeature.State(
                         photoURL: imageURL,
-                        selectedTemplateID: state.selectedTemplate
+                        selectedTemplateID: state.campaign.template
                     )
                 } else {
                     state.alert = .error(.noPhotoSelected)
@@ -75,15 +81,18 @@ struct CampaignDetailsFeature: Reducer {
                 return .none
                 
             case let .templateSelection(.presented(.delegate(.templateSelected(templateID)))):
-                state.selectedTemplate = templateID
                 state.campaign.template = templateID
                 return .none
                 
             case .templateSelection:
                 return .none
                 
-            case .binding(_): return .none
-            
+            case .binding:
+                return .send(.delegate(.campaignUpdated(state.campaign)))
+                
+            case .delegate: return .none
+            case .onCampaignDeleteButtonTapped:
+                return .send(.delegate(.campaignDeleted(state.campaign.id)))
             case .onImageTapped:
                 return .none
                 
@@ -113,6 +122,7 @@ struct CampaignDetailsFormView: View {
                                 .focused(self.$focus, equals: .name)
                             TextField("Ціль збору (не обов'язково)", text: viewStore.$campaign.formattedTarget)
                                 .focused(self.$focus, equals: .target)
+                                .keyboardType(.decimalPad)
                         } header: {
                             Text("Ім'я та ціль")
                         }
@@ -155,6 +165,13 @@ struct CampaignDetailsFormView: View {
                             }
                         } header: {
                             Text("Фото збору")
+                        }
+                        if viewStore.state.isEditing {
+                            Button(role: .destructive) {
+                                viewStore.send(.onCampaignDeleteButtonTapped(viewStore.state.campaign.id))
+                            } label: {
+                                Text("Видалити")
+                            }
                         }
                     }
             }

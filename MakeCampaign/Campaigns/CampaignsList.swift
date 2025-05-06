@@ -34,7 +34,7 @@ struct CampaignsFeature: Reducer {
                 state.addCampaign = .init(campaign: .init(id: self.uuid()))
                 return .none
             case let .campaignSelected(campaignId):
-                guard let campaign = state.campaigns.first(where: { $0.id == campaignId }) else { return .none }
+                guard let campaign = state.campaigns[id: campaignId] else { return .none }
                 
                 state.openCampaign = .init(campaign: campaign)
                 return .none
