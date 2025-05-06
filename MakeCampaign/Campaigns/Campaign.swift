@@ -8,11 +8,12 @@
 import Foundation
 import ComposableArchitecture
 
-struct Campaign: Equatable, Identifiable {
+struct Campaign: Codable, Equatable, Identifiable {
     let id: UUID
     var imageURL: URL?
     var template: Template.ID?
     var purpose: String = ""
+    var jarLink: URL?
     var target: Double?
     var collected: Double?
     
@@ -31,10 +32,14 @@ struct Campaign: Equatable, Identifiable {
         } set {
             return target = newValue.asCurrencyDouble
         }
-        
     }
-}
-
-struct Template: Equatable, Identifiable {
-    let id: UUID
+    
+    var jarURLString: String {
+        get {
+            guard let jarLink else { return "" }
+            return jarLink.absoluteString
+        } set {
+            return jarLink = URL(string: newValue)
+        }
+    }
 }

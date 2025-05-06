@@ -7,6 +7,7 @@
 import SwiftUI
 import ComposableArchitecture
 
+@Reducer
 struct CampaignDetailsFeature: Reducer {
     struct State: Equatable {
         
@@ -25,21 +26,26 @@ struct CampaignDetailsFeature: Reducer {
         enum Field {
             case name
             case target
+            case link
         }
         
         @BindingState var focus: Field? = .name
         @BindingState var campaign: Campaign
-        
+ 
         var alert: Alert?
+        var selectedTemplate: Template.ID?
+        var isEditing: Bool = false
+        
+        @PresentationState var templateSelection: TemplateSelectionFeature.State?
     }
     
     enum Action: BindableAction {
-        case onSaveButtonTapped
         case onPhotoSelected(URL?)
         case onImageTapped
         case onPhotoPermissionDenied
-        case onTemplateSelected(Template.ID)
         case onAlertDisplayed(State.Alert)
+        case onTemplateButtonTapped
+        case templateSelection(PresentationAction<TemplateSelectionFeature.Action>)
         
         case binding(BindingAction<State>)
     }
@@ -53,37 +59,43 @@ struct CampaignDetailsFeature: Reducer {
                     state.campaign.imageURL = photoURL
                 }
                 return .none
+                
             case .onPhotoPermissionDenied:
                 state.alert = .error(.noPhotoLibraryPermission)
                 return .none
-            case .onTemplateSelected(let id):
-                state.campaign.template = id
-                return .none
-            case .onSaveButtonTapped:
-                if state.campaign.purpose.isEmpty {
-                    state.alert = .error(.noNameSpecified)
-                    return .none
-                }
-                
-                if state.campaign.imageURL == nil {
+            case .onTemplateButtonTapped:
+                if let imageURL = state.campaign.imageURL {
+                    state.templateSelection = TemplateSelectionFeature.State(
+                        photoURL: imageURL,
+                        selectedTemplateID: state.selectedTemplate
+                    )
+                } else {
                     state.alert = .error(.noPhotoSelected)
-                    return .none
                 }
-                
-                if state.campaign.template == nil {
-                    state.alert = .error(.noTemplateSelected)
-                }
-                // TODO: Persist in DB & save to photo library
                 return .none
+                
+            case let .templateSelection(.presented(.delegate(.templateSelected(templateID)))):
+                state.selectedTemplate = templateID
+                state.campaign.template = templateID
+                return .none
+                
+            case .templateSelection:
+                return .none
+                
             case .binding(_): return .none
+            
             case .onImageTapped:
                 return .none
+                
             case let .onAlertDisplayed(alert):
                 if state.alert == alert {
                     state.alert = nil
                 }
                 return .none
             }
+        }
+        .ifLet(\.$templateSelection, action: \.templateSelection) {
+            TemplateSelectionFeature()
         }
     }
 }
@@ -94,7 +106,6 @@ struct CampaignDetailsFormView: View {
     
     var body: some View {
         WithViewStore(self.store, observe: { $0 }) { viewStore in
-            NavigationStack {
                 VStack {
                     Form {
                         Section {
@@ -105,6 +116,17 @@ struct CampaignDetailsFormView: View {
                         } header: {
                             Text("Ім'я та ціль")
                         }
+                        if viewStore.state.isEditing {
+                            Section {
+                                TextField(
+                                    "Банка збору (не обов'язково)",
+                                    text: viewStore.$campaign.jarURLString)
+                                    .focused(self.$focus, equals: .link)
+                            } header: {
+                                Text("Посилання на монобанку")
+                            }
+                        }
+                        
                         Section {
                             Button {
                                 viewStore.send(.onPhotoSelected(nil))
@@ -122,31 +144,19 @@ struct CampaignDetailsFormView: View {
                                     .scaledToFit()
                                     .frame(height: 200)
                                     .cornerRadius(12)
-                            }
-                            Button {
-                                viewStore.send(.onTemplateSelected(UUID()))
-                            } label: {
-                                HStack {
-                                    Image(systemName: "paintpalette.fill")
-                                    Text("Обрати шаблон")
+                                Button {
+                                    viewStore.send(.onTemplateButtonTapped)
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "paintpalette.fill")
+                                        Text("Обрати шаблон")
+                                    }
                                 }
                             }
                         } header: {
                             Text("Фото збору")
                         }
                     }
-                    Button("Зберегти") {
-                        viewStore.send(.onSaveButtonTapped)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.accentColor)
-                    .foregroundColor(Color.white)
-                    .cornerRadius(10)
-                    .padding([.horizontal, .bottom])
-                }
-                
-                .navigationTitle("Новий збір")
             }
             .bind(viewStore.$focus, to: self.$focus)
         }
@@ -155,7 +165,7 @@ struct CampaignDetailsFormView: View {
 
 #Preview {
     NavigationStack {
-        CampaignDetailsFormView(store: Store(initialState: CampaignDetailsFeature.State(campaign: .mock2), reducer: {
+        CampaignDetailsFormView(store: Store(initialState: CampaignDetailsFeature.State(campaign: .mock2, isEditing: true), reducer: {
             CampaignDetailsFeature()
                 ._printChanges()
         }))
