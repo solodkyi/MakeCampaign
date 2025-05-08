@@ -8,7 +8,6 @@
 import SwiftUI
 import ComposableArchitecture
 
-@Reducer
 struct AppFeature: Reducer {
     struct State {
         var path = StackState<Path.State>()
@@ -20,19 +19,23 @@ struct AppFeature: Reducer {
         case campaignsList(CampaignsFeature.Action)
     }
     
-    @Reducer
     struct Path: Reducer {
         enum State {
             case details(CampaignDetailsFeature.State)
+            case templateSelection(TemplateSelectionFeature.State)
         }
         
         enum Action {
             case details(CampaignDetailsFeature.Action)
+            case templateSelection(TemplateSelectionFeature.Action)
         }
         
         var body: some ReducerOf<Self> {
-            Scope(state: \.details, action: \.details, child: {
+            Scope(state: /State.details, action: /Action.details, child: {
                 CampaignDetailsFeature()
+            })
+            Scope(state: /State.templateSelection, action: /Action.templateSelection, child: {
+                TemplateSelectionFeature()
             })
         }
     }
@@ -40,26 +43,25 @@ struct AppFeature: Reducer {
     var body: some ReducerOf<Self> {
         Scope(
             state: \.campaignsList,
-            action: \.campaignsList) {
+            action: /Action.campaignsList) {
                 CampaignsFeature()
             }
         
         Reduce { state, action in
             switch action {
-            case let .path(.element(id: id, action: .details(.delegate(action)))):
+            case let .path(.element(id: _, action: .details(.delegate(action)))):
                 switch action {
                 case let .campaignUpdated(campaign):
                     state.campaignsList.campaigns[id: campaign.id] = campaign
                     return .none
-                case let .campaignDeleted(campaignId):
+                case let .deleteCampaign(campaignId):
                     state.campaignsList.campaigns.remove(id: campaignId)
-                    state.path.pop(from: id)
                     return .none
                 }
             case .path: return .none
             case let .campaignsList(action):
                 switch action {
-                case .campaignSelected(let campaignId):
+                case let .campaignSelected(campaignId):
                     guard let campaign = state.campaignsList.campaigns[id: campaignId] else {
                         return .none
                     }
@@ -70,7 +72,7 @@ struct AppFeature: Reducer {
                 
             }
         }
-        .forEach(\.path, action: \.path) {
+        .forEach(\.path, action: /Action.path) {
             Path()
         }
     }
@@ -81,12 +83,12 @@ struct AppView: View {
     
     var body: some View {
         NavigationStackStore(
-            self.store.scope(state: \.path, action: \.path)
+            self.store.scope(state: \.path, action: { .path($0) })
         ) {
             CampaignsView(
                 store: self.store.scope(
                     state: \.campaignsList,
-                    action: \.campaignsList
+                    action: { .campaignsList($0) }
                 )
             )
             .navigationTitle("Збори")
@@ -97,6 +99,12 @@ struct AppView: View {
                     /AppFeature.Path.State.details,
                      action: AppFeature.Path.Action.details) { store in
                     CampaignDetailsFormView(store: store)
+                }
+            case .templateSelection:
+                CaseLet(
+                    /AppFeature.Path.State.templateSelection,
+                     action: AppFeature.Path.Action.templateSelection) { store in
+                    TemplateSelectionView(store: store)
                 }
             }
         }
