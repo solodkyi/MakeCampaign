@@ -3,7 +3,7 @@ import ComposableArchitecture
 
 struct TemplateSelectionFeature: Reducer {
     struct State: Equatable {
-        let photoURL: URL
+        let campaign: Campaign
         var selectedTemplateID: Template.ID?
         var templates: IdentifiedArrayOf<Template> = Template.mockTemplates
         
@@ -11,21 +11,23 @@ struct TemplateSelectionFeature: Reducer {
             selectedTemplateID.flatMap { id in templates[id: id] }
         }
         
-        init(photoURL: URL, templates: IdentifiedArrayOf<Template> = Template.mockTemplates, selectedTemplateID: Template.ID? = nil) {
-            self.photoURL = photoURL
+        init(campaign: Campaign, templates: IdentifiedArrayOf<Template> =    Template.mockTemplates, selectedTemplateID: Template.ID? = nil) {
+            self.campaign = campaign
             self.templates = templates
             self.selectedTemplateID = selectedTemplateID
         }
     }
     
+    @Dependency(\.dismiss) var dismiss
+    
     enum Action: Equatable {
         case onAppear
-        case templateSelected(Template.ID)
-        case delegate(DelegateAction)
+        case templateSelected(Template)
+        case delegate(Delegate)
         case doneButtonTapped
         
-        enum DelegateAction: Equatable {
-            case templateSelected(Template.ID)
+        enum Delegate: Equatable {
+            case templateApplied(Template, forCampaign: Campaign.ID)
         }
     }
     
@@ -35,16 +37,18 @@ struct TemplateSelectionFeature: Reducer {
             case .onAppear:
                 return .none
                 
-            case let .templateSelected(templateID):
-                state.selectedTemplateID = templateID
+            case let .templateSelected(template):
+                state.selectedTemplateID = template.id
                 return .none
-                
             case .doneButtonTapped:
-                if let templateID = state.selectedTemplateID {
-                    return .send(.delegate(.templateSelected(templateID)))
+                if let templateID = state.selectedTemplateID,
+                   let template = state.templates[id: templateID] {
+                    return .run { [state] send in
+                        await send(.delegate(.templateApplied(template, forCampaign: state.campaign.id)))
+                        await self.dismiss()
+                    }
                 }
                 return .none
-                
             case .delegate:
                 return .none
             }
@@ -58,23 +62,21 @@ struct TemplateSelectionView: View {
     var body: some View {
         WithViewStore(self.store, observe: { $0 }) { viewStore in
             VStack(spacing: 0) {
-                // Preview area
                 ZStack {
-                    if let uiImage = UIImage(contentsOfFile: viewStore.photoURL.path) {
+                    if let imageUrl = viewStore.campaign.imageURL,
+                       let uiImage = UIImage(contentsOfFile: imageUrl.path) {
                         if let selectedTemplate = viewStore.selectedTemplate {
-                            // Show image with template preview applied
                             TemplatePreviewView(
                                 image: uiImage,
                                 template: selectedTemplate
                             )
                         } else {
-                            // Show just the image
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .scaledToFit()
                         }
                     } else {
-                        Text("Unable to load image")
+                        Text("Неможливо завантажити зображення")
                             .foregroundColor(.secondary)
                     }
                 }
@@ -83,8 +85,8 @@ struct TemplateSelectionView: View {
                 .background(Color(.systemGroupedBackground))
                 
                 Divider()
+                Spacer()
                 
-                // Template selection area
                 VStack(spacing: 12) {
                     Text("Оберіть шаблон")
                         .font(.headline)
@@ -100,7 +102,7 @@ struct TemplateSelectionView: View {
                                     isSelected: viewStore.selectedTemplateID == template.id
                                 )
                                 .onTapGesture {
-                                    viewStore.send(.templateSelected(template.id))
+                                    viewStore.send(.templateSelected(template))
                                 }
                             }
                         }
@@ -138,84 +140,9 @@ struct TemplatePreviewView: View {
     let template: Template
     
     var body: some View {
-        ZStack {
-            // Base image
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
-            
-            // Apply template layout
-            Group {
-                switch template.layout {
-                case .bottom:
-                    VStack {
-                        Spacer()
-                        TemplateTextArea(template: template)
-                    }
-                case .overlay:
-                    TemplateTextArea(template: template)
-                case .side:
-                    HStack {
-                        Spacer()
-                        TemplateTextArea(template: template)
-                            .frame(width: 120)
-                    }
-                case .minimal:
-                    VStack {
-                        Spacer()
-                        HStack {
-                            TemplateTextArea(template: template, isMinimal: true)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 8)
-                    }
-                case .banner:
-                    VStack {
-                        TemplateTextArea(template: template, isBanner: true)
-                            .frame(height: 40)
-                        Spacer()
-                    }
-                }
-            }
-        }
-        .cornerRadius(getCornerRadius())
-    }
-    
-    private func getCornerRadius() -> CGFloat {
-        switch template.cornerStyle {
-        case .none:
-            return 0
-        case .rounded(let radius):
-            return radius
-        }
-    }
-}
-
-struct TemplateTextArea: View {
-    let template: Template
-    var isMinimal: Bool = false
-    var isBanner: Bool = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Назва збору")
-                .font(template.font)
-                .foregroundColor(template.textColor)
-            
-            if !isMinimal {
-                Text("Ціль: 100,000 грн")
-                    .font(.caption)
-                    .foregroundColor(template.textColor.opacity(0.8))
-                
-                ProgressView(value: 0.65)
-                    .progressViewStyle(LinearProgressViewStyle(tint: template.textColor))
-                    .padding(.top, 2)
-            }
-        }
-        .padding(isMinimal ? 8 : 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(template.backgroundColor)
     }
 }
 
@@ -224,37 +151,7 @@ struct TemplateItemView: View {
     let isSelected: Bool
     
     var body: some View {
-        VStack {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(template.backgroundColor)
-                    .frame(width: 100, height: 100)
-                
-                VStack(spacing: 4) {
-                    Text("Text")
-                        .font(.caption)
-                        .foregroundColor(template.textColor)
-                    
-                    if template.layout != .minimal {
-                        ProgressView(value: 0.5)
-                            .progressViewStyle(LinearProgressViewStyle(tint: template.textColor))
-                            .frame(width: 60)
-                    }
-                }
-                .padding(8)
-                .frame(width: 100, height: 100)
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 3)
-            )
-            
-            Text(template.name)
-                .font(.caption)
-                .foregroundColor(.primary)
-                .frame(width: 100)
-                .lineLimit(1)
-        }
+        Text(template.name)
     }
 }
 
@@ -263,7 +160,7 @@ struct TemplateItemView: View {
         TemplateSelectionView(
             store: Store(
                 initialState: TemplateSelectionFeature.State(
-                    photoURL: URL(string: "file:///tmp/mock")!
+                    campaign: .mock1
                 ),
                 reducer: {
                     TemplateSelectionFeature()

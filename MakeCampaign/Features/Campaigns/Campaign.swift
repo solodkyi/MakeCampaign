@@ -11,7 +11,7 @@ import ComposableArchitecture
 struct Campaign: Codable, Equatable, Identifiable {
     let id: UUID
     var imageURL: URL?
-    var template: Template.ID?
+    var template: Template?
     var purpose: String = ""
     var jarLink: URL?
     var target: Double?

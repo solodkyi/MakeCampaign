@@ -87,16 +87,11 @@ struct CampaignDetailsFeature: Reducer {
             case .onPhotoPermissionDenied:
                 return .none
             case .onTemplateButtonTapped:
-                if let imageURL = state.campaign.imageURL {
-                    state.destination = .templateSelection(TemplateSelectionFeature.State(
-                        photoURL: imageURL,
-                        selectedTemplateID: state.campaign.template
-                    ))
-                } else {
-                    
-                }
-                return .none
+                state.destination = .templateSelection(TemplateSelectionFeature.State(
+                    campaign: state.campaign
+                ))
                 
+                return .none
             case .binding:
                 return .send(.delegate(.campaignUpdated(state.campaign)))
                 
@@ -170,9 +165,15 @@ struct CampaignDetailsFormView: View {
                                 .cornerRadius(12)
                             
                             NavigationLink(
-                                state: AppFeature.Path.State.templateSelection(TemplateSelectionFeature.State(photoURL: imageURL))
+                                state: AppFeature.Path.State.templateSelection(TemplateSelectionFeature.State(campaign: viewStore.campaign))
                             ) {
-                                Label("Обрати шаблон", systemImage: "paintpalette.fill")
+                                let labelText: String = {
+                                    guard let template = viewStore.campaign.template else {
+                                        return "Обрати шаблон"
+                                    }
+                                    return template.name
+                                }()
+                                Label(labelText, systemImage: "paintpalette.fill")
                                     .foregroundColor(.accentColor)
                             }
                         }

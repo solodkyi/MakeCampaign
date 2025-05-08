@@ -10,10 +10,12 @@ import Foundation
 public extension NumberFormatter {
     static var defaultCurrencyFormatter: NumberFormatter {
         let formatter = NumberFormatter()
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        formatter.groupingSeparator = "."
+        formatter.usesGroupingSeparator = true
+        formatter.groupingSeparator = ","
         formatter.decimalSeparator = "."
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        formatter.numberStyle = .decimal
         return formatter
     }
 }
@@ -21,7 +23,12 @@ public extension NumberFormatter {
 public extension Double {
     var currencyFormatted: String {
         let formatter = NumberFormatter.defaultCurrencyFormatter
-        
+        // Show decimals only if needed
+        if self.truncatingRemainder(dividingBy: 1) == 0 {
+            formatter.maximumFractionDigits = 0
+        } else {
+            formatter.maximumFractionDigits = 2
+        }
         return formatter.string(from: NSNumber(value: self)) ?? "\(self)"
     }
 }

@@ -58,6 +58,14 @@ struct AppFeature: Reducer {
                     state.campaignsList.campaigns.remove(id: campaignId)
                     return .none
                 }
+            case let .path(.element(id, action: .templateSelection(.delegate(action)))):
+                switch action {
+                case let .templateApplied(template, campaignId):
+                    guard let detailsId = state.path.ids.dropLast().last else { return .none }
+                    state.path[id: detailsId, case: /Path.State.details]?.campaign.template = template
+                    state.campaignsList.campaigns[id: campaignId]?.template = template
+                    return .none
+                }
             case .path: return .none
             case let .campaignsList(action):
                 switch action {
