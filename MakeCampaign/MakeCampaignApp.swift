@@ -23,11 +23,13 @@ struct AppFeature: Reducer {
         enum State {
             case details(CampaignDetailsFeature.State)
             case templateSelection(TemplateSelectionFeature.State)
+            case photoSelection(PhotoLibraryFeature.State)
         }
         
         enum Action {
             case details(CampaignDetailsFeature.Action)
             case templateSelection(TemplateSelectionFeature.Action)
+            case photoSelection(PhotoLibraryFeature.Action)
         }
         
         var body: some ReducerOf<Self> {
@@ -36,6 +38,9 @@ struct AppFeature: Reducer {
             })
             Scope(state: /State.templateSelection, action: /Action.templateSelection, child: {
                 TemplateSelectionFeature()
+            })
+            Scope(state: /State.photoSelection, action: /Action.photoSelection, child: {
+              PhotoLibraryFeature()
             })
         }
     }
@@ -64,6 +69,13 @@ struct AppFeature: Reducer {
                     guard let detailsId = state.path.ids.dropLast().last else { return .none }
                     state.path[id: detailsId, case: /Path.State.details]?.campaign.template = template
                     state.campaignsList.campaigns[id: campaignId]?.template = template
+                    return .none
+                }
+            case let .path(.element(id: id, action: .photoSelection(.delegate(action)))):
+                switch action {
+                case let .didSelectImage(data):
+                    guard let detailsId = state.path.ids.dropLast().last else { return .none }
+                    state.path[id: detailsId, case: /Path.State.details]?.campaign.imageData = data
                     return .none
                 }
             case .path: return .none
@@ -113,6 +125,13 @@ struct AppView: View {
                     /AppFeature.Path.State.templateSelection,
                      action: AppFeature.Path.Action.templateSelection) { store in
                     TemplateSelectionView(store: store)
+                }
+            case .photoSelection:
+                CaseLet(
+                    /AppFeature.Path.State.photoSelection,
+                    action: AppFeature.Path.Action.photoSelection
+                ) { store in
+                    PhotoLibraryView(store: store)
                 }
             }
         }

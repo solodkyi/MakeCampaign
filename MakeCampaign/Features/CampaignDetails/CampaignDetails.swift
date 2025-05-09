@@ -30,8 +30,9 @@ struct CampaignDetailsFeature: Reducer {
     }
     
     enum Action: BindableAction {
-        case onPhotoSelected(URL?)
+        case onAddPhotoButtonTapped
         case onImageTapped
+        case onPhotoPermissionGranted
         case onPhotoPermissionDenied
         case onTemplateButtonTapped
         case onCampaignDeleteButtonTapped(Campaign.ID)
@@ -46,18 +47,24 @@ struct CampaignDetailsFeature: Reducer {
     }
     
     @Dependency(\.dismiss) var dismiss
+    @Dependency(\.photoLibrary) var photoLibrary
+    @Dependency(\.openSettings) var openSettings
     
     struct Destination: Reducer {
         enum State: Equatable {
             case alert(AlertState<Action.Alert>)
             case templateSelection(TemplateSelectionFeature.State)
+            case photoSelection(PhotoLibraryFeature.State)
         }
         enum Action: Equatable {
             case alert(Alert)
             case templateSelection(TemplateSelectionFeature.Action)
+            case photoSelection(PhotoLibraryFeature.Action)
             
             enum Alert {
+                case noAccessToPhotoLibrary
                 case confirmDeleteCampaign
+                case openAppSettings
                 case photoWasSavedInLibrary
             }
         }
@@ -65,6 +72,9 @@ struct CampaignDetailsFeature: Reducer {
         var body: some ReducerOf<Self> {
             Scope(state: /State.templateSelection, action: /Action.templateSelection) {
                 TemplateSelectionFeature()
+            }
+            Scope(state: /State.photoSelection, action: /Action.photoSelection) {
+                PhotoLibraryFeature()
             }
         }
     }
@@ -78,13 +88,50 @@ struct CampaignDetailsFeature: Reducer {
                     await send(.delegate(.deleteCampaign(id)))
                     await self.dismiss()
                 }
-            case .destination: return .none
-            case let .onPhotoSelected(photoURL):
-                if let photoURL = photoURL {
-                    state.campaign.imageURL = photoURL
+            case .destination(.presented(.alert(.openAppSettings))):
+                return .run { send in
+                    await openSettings()
                 }
+            case .destination: return .none
+            case .onAddPhotoButtonTapped:
+                return .run { send in
+                    let status = photoLibrary.authorizationStatus(.readWrite)
+                    switch status {
+                    case .authorized, .limited:
+                        await send(.onPhotoPermissionGranted)
+                    case .notDetermined:
+                       let authorizationStatus = await photoLibrary.requestAuthorization()
+                        switch authorizationStatus {
+                        case .authorized, .limited:
+                            await send(.onPhotoPermissionGranted)
+                        case .denied, .restricted:
+                            await send(.onPhotoPermissionDenied)
+                        case .notDetermined: break
+                        @unknown default:
+                            XCTFail("PhotoLibraryClient resulted with unknown status: \(authorizationStatus)")
+                        }
+                    case .restricted, .denied:
+                        await send(.onPhotoPermissionDenied)
+                    @unknown default:
+                        XCTFail("PhotoLibraryClient resulted with unknown status: \(status)")
+                    }
+                }
+            case .onPhotoPermissionGranted:
+                state.destination = .photoSelection(.init())
                 return .none
             case .onPhotoPermissionDenied:
+                state.destination = .alert(
+                    .init(
+                        title: TextState("Помилка"),
+                        message: TextState("Доступ до фото заборонений на рівні системи. Надайте доступ в налаштуваннях"),
+                        buttons: [
+                            ButtonState(role: .destructive, label: {
+                                TextState("Закрити")
+                            }),
+                            ButtonState(action: .send(.openAppSettings), label: {
+                                TextState("Налаштування")
+                            })
+                        ]))
                 return .none
             case .onTemplateButtonTapped:
                 state.destination = .templateSelection(TemplateSelectionFeature.State(
@@ -117,7 +164,6 @@ struct CampaignDetailsFeature: Reducer {
     }
 }
 
-
 struct CampaignDetailsFormView: View {
     let store: StoreOf<CampaignDetailsFeature>
     @FocusState var focus: CampaignDetailsFeature.State.Field?
@@ -147,17 +193,13 @@ struct CampaignDetailsFormView: View {
                     }
                     
                     Section {
-                        Button {
-                            viewStore.send(.onPhotoSelected(nil))
-                        } label: {
-                            HStack {
-                                Image(systemName: "photo")
-                                Text("Обрати фото з бібліотеки")
-                            }
+                        NavigationLink(state: AppFeature.Path.State.photoSelection(PhotoLibraryFeature.State())) {
+                            Label("Обрати фото з бібліотеки", systemImage: "photo")
+                                .foregroundColor(.accentColor)
                         }
                         
-                        if let imageURL = viewStore.campaign.imageURL,
-                           let uiImage = UIImage(contentsOfFile: imageURL.path) {
+                        if let imageData = viewStore.campaign.imageData,
+                           let uiImage = UIImage(data: imageData) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .scaledToFit()

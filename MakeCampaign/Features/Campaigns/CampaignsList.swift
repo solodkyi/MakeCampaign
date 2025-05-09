@@ -126,9 +126,8 @@ struct CampaignCardView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let image = campaign.imageURL,
-               let data = try? Data(contentsOf: image),
-               let uiImage = UIImage(data: data) {
+            if let imageData = campaign.imageData,
+               let uiImage = UIImage(data: imageData) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)

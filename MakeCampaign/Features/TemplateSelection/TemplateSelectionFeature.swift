@@ -63,8 +63,8 @@ struct TemplateSelectionView: View {
         WithViewStore(self.store, observe: { $0 }) { viewStore in
             VStack(spacing: 0) {
                 ZStack {
-                    if let imageUrl = viewStore.campaign.imageURL,
-                       let uiImage = UIImage(contentsOfFile: imageUrl.path) {
+                    if let imageData = viewStore.campaign.imageData,
+                       let uiImage = UIImage(data: imageData) {
                         if let selectedTemplate = viewStore.selectedTemplate {
                             TemplatePreviewView(
                                 image: uiImage,

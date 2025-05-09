@@ -33,9 +33,22 @@
 		13E237172DC3DAC500571CE6 /* MakeCampaignUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MakeCampaignUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		13B729882DCE52E600E6E5C1 /* Exceptions for "MakeCampaign" folder in "MakeCampaign" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 13E236FE2DC3DAC400571CE6 /* MakeCampaign */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		13E237012DC3DAC400571CE6 /* MakeCampaign */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				13B729882DCE52E600E6E5C1 /* Exceptions for "MakeCampaign" folder in "MakeCampaign" target */,
+			);
 			path = MakeCampaign;
 			sourceTree = "<group>";
 		};
@@ -402,8 +415,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MakeCampaign/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "РобиЗбір!";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Необхідно для вибору фото збору";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -441,8 +456,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MakeCampaign/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "РобиЗбір!";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Необхідно для вибору фото збору";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
