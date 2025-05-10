@@ -226,6 +226,7 @@ struct CampaignDetailsFormView: View {
                         })
                         .transition(.opacity)
                         .animation(.easeInOut(duration: 0.2), value: viewStore.isPresentingImageOverlay)
+                        .navigationBarBackButtonHidden()
                     }
                 }
             }

@@ -131,7 +131,7 @@ struct CampaignCardView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(height: 140)
+                    .frame(width: 170, height: 140)
                     .clipped()
                     .cornerRadius(12, corners: [.topLeft, .topRight])
             }

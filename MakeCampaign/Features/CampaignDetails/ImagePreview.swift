@@ -12,25 +12,21 @@ struct ImagePreviewView: View {
     let onCancel: () -> Void
     
     var body: some View {
-            ZStack(alignment: .topTrailing) {
-                Color.black.ignoresSafeArea()
-                
-                if let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .edgesIgnoringSafeArea(.all)
-                }
-                
-                Button(action: onCancel) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(.white)
-                        .padding()
-                }
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+            
+            if let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .edgesIgnoringSafeArea(.all)
             }
-            .statusBar(hidden: true)
+        }
+        .onTapGesture {
+            onCancel()
+        }
+        .statusBar(hidden: true)
     }
 }
 
