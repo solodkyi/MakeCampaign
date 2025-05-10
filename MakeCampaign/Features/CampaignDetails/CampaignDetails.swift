@@ -28,6 +28,7 @@ struct CampaignDetailsFeature: Reducer {
         @PresentationState var destination: Destination.State?
         
         var isEditing: Bool = false
+        var isPresentingImageOverlay: Bool = false
         var selectedImageData: Data?
         var selectedItem: PhotosPickerItem?
     }
@@ -38,6 +39,7 @@ struct CampaignDetailsFeature: Reducer {
         case onCampaignDeleteButtonTapped(Campaign.ID)
         case destination(PresentationAction<Destination.Action>)
         case setSelectedItem(PhotosPickerItem?)
+        case imagePreviewCloseButtonTappped
         
         case binding(BindingAction<State>)
         case delegate(Delegate)
@@ -57,6 +59,7 @@ struct CampaignDetailsFeature: Reducer {
             case alert(AlertState<Action.Alert>)
             case templateSelection(TemplateSelectionFeature.State)
         }
+        
         enum Action: Equatable {
             case alert(Alert)
             case templateSelection(TemplateSelectionFeature.Action)
@@ -98,7 +101,6 @@ struct CampaignDetailsFeature: Reducer {
             case .binding:
                 return .send(.delegate(.campaignUpdated(state.campaign)))
                 
-            case .delegate: return .none
             case .onCampaignDeleteButtonTapped:
                 state.destination = .alert(
                     AlertState {
@@ -111,6 +113,10 @@ struct CampaignDetailsFeature: Reducer {
                 )
                 return .none
             case .onImageTapped:
+                state.isPresentingImageOverlay.toggle()
+                return .none
+            case .imagePreviewCloseButtonTappped:
+                state.isPresentingImageOverlay.toggle()
                 return .none
             case let .setSelectedItem(item):
                 state.selectedItem = item
@@ -125,6 +131,7 @@ struct CampaignDetailsFeature: Reducer {
             case let .delegate(.didSelectImage(data, _)):
                 state.selectedImageData = data
                 return .none
+            case .delegate: return .none
             }
         }
         .ifLet(\.$destination, action: /CampaignDetailsFeature.Action.destination) {
@@ -139,71 +146,86 @@ struct CampaignDetailsFormView: View {
     
     var body: some View {
         WithViewStore(self.store, observe: { $0 }) { viewStore in
-            VStack {
-                Form {
-                    Section {
-                        TextField("Назва збору", text: viewStore.$campaign.purpose)
-                            .focused(self.$focus, equals: .name)
-                        TextField("Ціль збору (не обов'язково)", text: viewStore.$campaign.formattedTarget)
-                            .focused(self.$focus, equals: .target)
-                            .keyboardType(.decimalPad)
-                    } header: {
-                        Text("Ім'я та ціль")
-                    }
-                    if viewStore.state.isEditing {
+            ZStack {
+                VStack {
+                    Form {
                         Section {
-                            TextField(
-                                "Банка збору (не обов'язково)",
-                                text: viewStore.$campaign.jarURLString)
-                            .focused(self.$focus, equals: .link)
+                            TextField("Назва збору", text: viewStore.$campaign.purpose)
+                                .focused($focus, equals: .name)
+                            TextField("Ціль збору (не обов'язково)", text: viewStore.$campaign.formattedTarget)
+                                .focused($focus, equals: .target)
+                                .keyboardType(.decimalPad)
                         } header: {
-                            Text("Посилання на монобанку")
+                            Text("Ім'я та ціль")
                         }
-                    }
-                    
-                    Section {
-                        PhotosPicker(
-                            selection: viewStore.binding(
-                                get: { _ in viewStore.selectedItem },
-                                send: { .setSelectedItem($0) }
-                            ),
-                            matching: .images,
-                            photoLibrary: .shared()
-                        ) {
-                            Label("Обрати фото з бібліотеки", systemImage: "photo")
-                                .foregroundColor(.accentColor)
-                        }
-                        
-                        if let imageData = viewStore.campaign.imageData,
-                           let uiImage = UIImage(data: imageData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 200)
-                                .cornerRadius(12)
-                            
-                            NavigationLink(
-                                state: AppFeature.Path.State.templateSelection(TemplateSelectionFeature.State(campaign: viewStore.campaign))
-                            ) {
-                                let labelText: String = {
-                                    guard let template = viewStore.campaign.template else {
-                                        return "Обрати шаблон"
-                                    }
-                                    return template.name
-                                }()
-                                Label(labelText, systemImage: "paintpalette.fill")
-                                    .foregroundColor(.accentColor)
+                        if viewStore.state.isEditing {
+                            Section {
+                                TextField(
+                                    "Банка збору (не обов'язково)",
+                                    text: viewStore.$campaign.jarURLString)
+                                .focused($focus, equals: .link)
+                            } header: {
+                                Text("Посилання на монобанку")
                             }
                         }
-                    } header: {
-                        Text("Фото збору")
-                    }
-                    if viewStore.state.isEditing {
-                        Button(role: .destructive) {
-                            viewStore.send(.onCampaignDeleteButtonTapped(viewStore.state.campaign.id))
-                        } label: {
-                            Text("Видалити")
+                        
+                        Section {
+                            PhotosPicker(
+                                selection: viewStore.binding(
+                                    get: { _ in viewStore.selectedItem },
+                                    send: { .setSelectedItem($0) }
+                                ),
+                                matching: .images,
+                                photoLibrary: .shared()
+                            ) {
+                                Label("Обрати фото з бібліотеки", systemImage: "photo")
+                                    .foregroundColor(.accentColor)
+                            }
+                            
+                            if let imageData = viewStore.campaign.imageData,
+                               let uiImage = UIImage(data: imageData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 200)
+                                    .cornerRadius(12)
+                                    .onTapGesture {
+                                        viewStore.send(.onImageTapped)
+                                    }
+                                
+                                NavigationLink(
+                                    state: AppFeature.Path.State.templateSelection(TemplateSelectionFeature.State(campaign: viewStore.campaign))
+                                ) {
+                                    let labelText: String = {
+                                        guard let template = viewStore.campaign.template else {
+                                            return "Обрати шаблон"
+                                        }
+                                        return template.name
+                                    }()
+                                    Label(labelText, systemImage: "paintpalette.fill")
+                                        .foregroundColor(.accentColor)
+                                }
+                            }
+                        } header: {
+                            Text("Фото збору")
                         }
+                        if viewStore.state.isEditing {
+                            Button(role: .destructive) {
+                                viewStore.send(.onCampaignDeleteButtonTapped(viewStore.state.campaign.id))
+                            } label: {
+                                Text("Видалити")
+                            }
+                        }
+                    }
+                }
+                if viewStore.isPresentingImageOverlay {
+                    if let imageData = viewStore.campaign.imageData {
+                        ImagePreviewView(
+                            imageData: imageData, onCancel: {
+                                viewStore.send(.imagePreviewCloseButtonTappped)
+                        })
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.2), value: viewStore.isPresentingImageOverlay)
                     }
                 }
             }
