@@ -6,6 +6,7 @@
 //
 import SwiftUI
 import ComposableArchitecture
+import PhotosUI
 
 struct CampaignDetailsFeature: Reducer {
     struct State: Equatable {
@@ -27,42 +28,40 @@ struct CampaignDetailsFeature: Reducer {
         @PresentationState var destination: Destination.State?
         
         var isEditing: Bool = false
+        var selectedImageData: Data?
+        var selectedItem: PhotosPickerItem?
     }
     
     enum Action: BindableAction {
-        case onAddPhotoButtonTapped
         case onImageTapped
-        case onPhotoPermissionGranted
-        case onPhotoPermissionDenied
         case onTemplateButtonTapped
         case onCampaignDeleteButtonTapped(Campaign.ID)
         case destination(PresentationAction<Destination.Action>)
+        case setSelectedItem(PhotosPickerItem?)
+        
         case binding(BindingAction<State>)
         case delegate(Delegate)
-        
+
         enum Delegate {
             case campaignUpdated(Campaign)
             case deleteCampaign(Campaign.ID)
+            case didSelectImage(data: Data?, campaignId: Campaign.ID)
         }
     }
     
     @Dependency(\.dismiss) var dismiss
-    @Dependency(\.photoLibrary) var photoLibrary
     @Dependency(\.openSettings) var openSettings
     
     struct Destination: Reducer {
         enum State: Equatable {
             case alert(AlertState<Action.Alert>)
             case templateSelection(TemplateSelectionFeature.State)
-            case photoSelection(PhotoLibraryFeature.State)
         }
         enum Action: Equatable {
             case alert(Alert)
             case templateSelection(TemplateSelectionFeature.Action)
-            case photoSelection(PhotoLibraryFeature.Action)
             
             enum Alert {
-                case noAccessToPhotoLibrary
                 case confirmDeleteCampaign
                 case openAppSettings
                 case photoWasSavedInLibrary
@@ -72,9 +71,6 @@ struct CampaignDetailsFeature: Reducer {
         var body: some ReducerOf<Self> {
             Scope(state: /State.templateSelection, action: /Action.templateSelection) {
                 TemplateSelectionFeature()
-            }
-            Scope(state: /State.photoSelection, action: /Action.photoSelection) {
-                PhotoLibraryFeature()
             }
         }
     }
@@ -93,46 +89,6 @@ struct CampaignDetailsFeature: Reducer {
                     await openSettings()
                 }
             case .destination: return .none
-            case .onAddPhotoButtonTapped:
-                return .run { send in
-                    let status = photoLibrary.authorizationStatus(.readWrite)
-                    switch status {
-                    case .authorized, .limited:
-                        await send(.onPhotoPermissionGranted)
-                    case .notDetermined:
-                       let authorizationStatus = await photoLibrary.requestAuthorization()
-                        switch authorizationStatus {
-                        case .authorized, .limited:
-                            await send(.onPhotoPermissionGranted)
-                        case .denied, .restricted:
-                            await send(.onPhotoPermissionDenied)
-                        case .notDetermined: break
-                        @unknown default:
-                            XCTFail("PhotoLibraryClient resulted with unknown status: \(authorizationStatus)")
-                        }
-                    case .restricted, .denied:
-                        await send(.onPhotoPermissionDenied)
-                    @unknown default:
-                        XCTFail("PhotoLibraryClient resulted with unknown status: \(status)")
-                    }
-                }
-            case .onPhotoPermissionGranted:
-                state.destination = .photoSelection(.init())
-                return .none
-            case .onPhotoPermissionDenied:
-                state.destination = .alert(
-                    .init(
-                        title: TextState("Помилка"),
-                        message: TextState("Доступ до фото заборонений на рівні системи. Надайте доступ в налаштуваннях"),
-                        buttons: [
-                            ButtonState(role: .destructive, label: {
-                                TextState("Закрити")
-                            }),
-                            ButtonState(action: .send(.openAppSettings), label: {
-                                TextState("Налаштування")
-                            })
-                        ]))
-                return .none
             case .onTemplateButtonTapped:
                 state.destination = .templateSelection(TemplateSelectionFeature.State(
                     campaign: state.campaign
@@ -155,6 +111,19 @@ struct CampaignDetailsFeature: Reducer {
                 )
                 return .none
             case .onImageTapped:
+                return .none
+            case let .setSelectedItem(item):
+                state.selectedItem = item
+                
+                return .run { [state] send in
+                    if let item = item {
+                        let data = try? await item.loadTransferable(type: Data.self)
+                        
+                        await send(.delegate(.didSelectImage(data: data, campaignId: state.campaign.id)))
+                    }
+                }
+            case let .delegate(.didSelectImage(data, _)):
+                state.selectedImageData = data
                 return .none
             }
         }
@@ -193,7 +162,14 @@ struct CampaignDetailsFormView: View {
                     }
                     
                     Section {
-                        NavigationLink(state: AppFeature.Path.State.photoSelection(PhotoLibraryFeature.State())) {
+                        PhotosPicker(
+                            selection: viewStore.binding(
+                                get: { _ in viewStore.selectedItem },
+                                send: { .setSelectedItem($0) }
+                            ),
+                            matching: .images,
+                            photoLibrary: .shared()
+                        ) {
                             Label("Обрати фото з бібліотеки", systemImage: "photo")
                                 .foregroundColor(.accentColor)
                         }
