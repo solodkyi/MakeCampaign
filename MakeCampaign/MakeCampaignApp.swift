@@ -61,6 +61,11 @@ struct AppFeature: Reducer {
                     state.campaignsList.campaigns[id: campaignId]?.imageData = data
                     state.path[id: id, case: /Path.State.details]?.campaign.imageData = data
                     return .none
+                case let .saveCampaign(campaign):
+                    state.campaignsList.campaigns[id: campaign.id] = campaign
+                    state.path[id: id, case: /Path.State.details]?.campaign = campaign
+                    
+                    return .none
                 }
             case let .path(.element(id, action: .templateSelection(.delegate(action)))):
                 switch action {

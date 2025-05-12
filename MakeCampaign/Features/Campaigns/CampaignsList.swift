@@ -20,7 +20,6 @@ struct CampaignsFeature: Reducer {
         case createCampaignButtonTapped
         case campaignSelected(Campaign.ID)
         case cancelNewCampaignButtonTapped
-        case saveNewCampaignButtonTapped
         case addCampaign(PresentationAction<CampaignDetailsFeature.Action>)
         case openCampaign(PresentationAction<CampaignDetailsFeature.Action>)
     }
@@ -36,16 +35,25 @@ struct CampaignsFeature: Reducer {
             case let .campaignSelected(campaignId):
                 guard let campaign = state.campaigns[id: campaignId] else { return .none }
                 
-                state.openCampaign = .init(campaign: campaign)
+                state.openCampaign = .init(campaign: campaign, isEditing: true)
+                return .none
+            case let .addCampaign(.presented(.delegate(.saveCampaign(campaign)))):
+                state.campaigns.append(campaign)
+                state.addCampaign = nil
+                return .none
+            case let .openCampaign(.presented(.delegate(.saveCampaign(campaign)))):
+                if let index = state.campaigns.firstIndex(where: { $0.id == campaign.id }) {
+                    state.campaigns[index] = campaign
+                }
+                state.openCampaign = nil
+                return .none
+            case let .openCampaign(.presented(.delegate(.deleteCampaign(id)))):
+                state.campaigns.remove(id: id)
+                state.openCampaign = nil
                 return .none
             case .addCampaign, .openCampaign:
                 return .none
             case .cancelNewCampaignButtonTapped:
-                state.addCampaign = nil
-                return .none
-            case .saveNewCampaignButtonTapped:
-                guard let campaign = state.addCampaign?.campaign else { return .none }
-                state.campaigns.append(campaign)
                 state.addCampaign = nil
                 return .none
             }
@@ -106,11 +114,6 @@ struct CampaignsView: View {
                                 ToolbarItem(placement: .cancellationAction) {
                                     Button("Закрити") {
                                         viewStore.send(.cancelNewCampaignButtonTapped)
-                                    }
-                                }
-                                ToolbarItem {
-                                    Button("Зберегти") {
-                                        viewStore.send(.saveNewCampaignButtonTapped)
                                     }
                                 }
                             }
