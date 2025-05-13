@@ -88,6 +88,7 @@ struct CampaignDetailsFeature: Reducer {
         case onTemplateButtonTapped
         case onCampaignDeleteButtonTapped(Campaign.ID)
         case onSaveButtonTapped
+        case onSelectImageDataConverted(Data)
         case destination(PresentationAction<Destination.Action>)
         case setSelectedItem(PhotosPickerItem?)
         case imagePreviewCloseButtonTappped
@@ -157,17 +158,7 @@ struct CampaignDetailsFeature: Reducer {
                 return .none
                 
             case .onSaveButtonTapped:
-                // Validate the form before saving
-                return .concatenate(
-                    .send(.validateForm),
-                    .run { send in
-                        // Wait for validation to complete
-                        try await Task.sleep(nanoseconds: 100_000_000) // 100ms delay
-                        
-                        // Check if form is valid by sending a new action
-                        await send(.validate(nil))
-                    }
-                )
+                return .send(.validateForm)
                 
             case .binding(\.$focus):
                 let previousFocus = state.previousFocus
@@ -181,21 +172,13 @@ struct CampaignDetailsFeature: Reducer {
                 return .none
                 
             case .binding:
-                // Handle all other binding changes
-                if state.campaign.purpose != "" {
-                    // Only validate purpose if it's not empty (to avoid immediate errors)
-                    return .concatenate(
-                        .send(.delegate(.campaignUpdated(state.campaign))),
-                        .send(.validate(.name))
-                            .debounce(id: "validate_name", for: 0.3, scheduler: mainQueue)
-                    )
+                if !state.campaign.purpose.isEmpty {
+                    return .send(.validate(.name))
                 }
                 
-                // For all other binding changes, just update the campaign
-                return .send(.delegate(.campaignUpdated(state.campaign)))
+                return .none
                 
-            case let .focusChanged(from, to):
-                // Validate the field that lost focus
+            case let .focusChanged(from, _):
                 if let from = from {
                     return .send(.validate(from))
                 }
@@ -203,14 +186,11 @@ struct CampaignDetailsFeature: Reducer {
                 
             case let .validate(field):
                 if let field = field {
-                    // Clear previous errors for this field
                     state.fieldErrors.clear(field)
                     
-                    // Validate the field
                     let errors = validationClient.validateField(field, state)
                     state.fieldErrors.set(field, errors: errors)
                     
-                    // Also validate image if we're validating the name field
                     if field == .name {
                         let imageErrors = validationClient.validateImage(state.campaign.imageData)
                         if !imageErrors.isEmpty {
@@ -218,40 +198,35 @@ struct CampaignDetailsFeature: Reducer {
                         }
                     }
                 } else {
-                    // Validate all fields if no specific field provided
                     return .send(.validateForm)
                 }
                 
-                // Update form validity
                 state.isFormValid = state.fieldErrors.isEmpty
+                
                 return .none
                 
             case .validateForm:
-                // Clear all errors
                 state.fieldErrors = State.FieldErrors()
                 
-                // Validate name field
                 let nameErrors = validationClient.validateName(state.campaign.purpose)
                 state.fieldErrors.name = nameErrors
                 
-                // Validate image
                 let imageErrors = validationClient.validateImage(state.campaign.imageData)
                 state.fieldErrors.name.append(contentsOf: imageErrors)
                 
-                // Validate target field
                 let targetErrors = validationClient.validateTarget(state.campaign.formattedTarget)
                 state.fieldErrors.target = targetErrors
                 
-                // Validate link field
                 let linkErrors = validationClient.validateLink(state.campaign.jarURLString)
                 state.fieldErrors.link = linkErrors
                 
-                // Update form validity
                 state.isFormValid = state.fieldErrors.isEmpty
                 
-                // If this was triggered by the save button, check if we should save or show error
                 if state.fieldErrors.isEmpty {
-                    return .send(.delegate(.saveCampaign(state.campaign)))
+                    return .concatenate(
+                        .send(.delegate(.saveCampaign(state.campaign))),
+                        .run { _ in await dismiss() }
+                    )
                 }
                 
                 return .none
@@ -276,19 +251,19 @@ struct CampaignDetailsFeature: Reducer {
             case let .setSelectedItem(item):
                 state.selectedImage = .item(item)
                 
-                return .run { [state] send in
+                return .run { send in
                     if let item = item {
-                        let data = try? await item.loadTransferable(type: Data.self)
+                        guard let data = try? await item.loadTransferable(type: Data.self) else { return }
                         
-                        await send(.delegate(.didSelectImage(data: data, campaignId: state.campaign.id)))
+                        await send(.onSelectImageDataConverted(data))
                     }
                 }
-            case let .delegate(.didSelectImage(data, _)):
+            case let .onSelectImageDataConverted(data):
                 state.selectedImage = .data(data)
-                // Clear image validation error if an image was selected
-                if data != nil {
-                    return .send(.validate(.name))
-                }
+                state.campaign.imageData = data
+                
+                return .send(.delegate(.didSelectImage(data: data, campaignId: state.campaign.id)))
+            case .delegate(.didSelectImage):
                 return .none
             case .delegate: return .none
             }
