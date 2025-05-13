@@ -14,6 +14,17 @@ struct CampaignsFeature: Reducer {
         var campaigns: IdentifiedArrayOf<Campaign> = []
         @PresentationState var addCampaign: CampaignDetailsFeature.State?
         @PresentationState var openCampaign: CampaignDetailsFeature.State?
+        
+        init(addCampaign: CampaignDetailsFeature.State? = nil, openCampaign: CampaignDetailsFeature.State? = nil) {
+            do {
+                @Dependency(\.dataManager.load) var loadData
+                self.campaigns = try JSONDecoder().decode(IdentifiedArrayOf<Campaign>.self, from: loadData(.campaigns))
+            } catch {
+                self.campaigns = []
+            }
+            self.addCampaign = addCampaign
+            self.openCampaign = openCampaign
+        }
     }
     
     enum Action {
@@ -187,8 +198,7 @@ struct RoundedCorner: Shape {
     CampaignsView(
         store: Store(
             initialState:
-                CampaignsFeature.State(
-                    campaigns: Campaign.mocks)
+                CampaignsFeature.State()
         ) {
         CampaignsFeature()
                 ._printChanges()

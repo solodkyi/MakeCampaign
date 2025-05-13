@@ -40,6 +40,9 @@ struct AppFeature: Reducer {
         }
     }
     
+    @Dependency(\.continuousClock) var clock
+    @Dependency(\.dataManager.save) var saveData
+    
     var body: some ReducerOf<Self> {
         Scope(
             state: \.campaignsList,
@@ -92,6 +95,16 @@ struct AppFeature: Reducer {
         .forEach(\.path, action: /Action.path) {
             Path()
         }
+        Reduce { state, _ in
+            .run { [campaigns = state.campaignsList.campaigns] _ in
+                enum CancelID { case saveDebounce }
+                
+                try await withTaskCancellation(id: CancelID.saveDebounce, cancelInFlight: true) {
+                    try await self.clock.sleep(for: .seconds(1))
+                    try self.saveData(JSONEncoder().encode(campaigns), .campaigns)
+                }
+            }
+        }
     }
 }
 
@@ -128,18 +141,24 @@ struct AppView: View {
     }
 }
 
+extension URL {
+    static let campaigns = Self.documentsDirectory.appending(component: "campaigns.json")
+}
+
 #Preview {
     AppView(store: .init(initialState: AppFeature.State(), reducer: {
         AppFeature()
             ._printChanges()
-    }))
+    }, withDependencies: {
+        $0.dataManager = .mock(initialData: try? JSONEncoder().encode([Campaign.mock1]))
+    } ))
 }
 
 @main
 struct MakeCampaignApp: App {
     var body: some Scene {
         WindowGroup {
-            AppView(store: .init(initialState: AppFeature.State(campaignsList: .init(campaigns: [.mock1, .mock2])), reducer: {
+            AppView(store: .init(initialState: AppFeature.State(campaignsList: .init()), reducer: {
                 AppFeature()
                     ._printChanges()
             }))
