@@ -1,5 +1,5 @@
 import Foundation
-import ComposableArchitecture
+import Dependencies
 
 // MARK: - ValidationError
 
@@ -59,8 +59,19 @@ extension ValidationClient: DependencyKey {
     private static func validateLinkImpl(_ link: String) -> [ValidationError] {
         var errors: [ValidationError] = []
         if !link.isEmpty {
-            if URL(string: link) == nil {
+            guard let url = URL(string: link) else {
                 errors.append(.invalidURL)
+                return errors
+            }
+            
+            if url.scheme == nil {
+                errors.append(.invalidURL)
+                return errors
+            }
+            
+            if url.host == nil || url.host?.isEmpty == true {
+                errors.append(.invalidURL)
+                return errors
             }
         }
         return errors

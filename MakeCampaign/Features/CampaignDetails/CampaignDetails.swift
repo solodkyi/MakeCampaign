@@ -99,7 +99,6 @@ struct CampaignDetailsFeature: Reducer {
         case imagePreviewCloseButtonTappped
         
         case binding(BindingAction<State>)
-        case validate(State.Field?)
         case validateForm
         case delegate(Delegate)
 
@@ -173,24 +172,9 @@ struct CampaignDetailsFeature: Reducer {
                 
             case .binding:
                 if !state.campaign.purpose.isEmpty {
-                    return .send(.validate(.name))
-                }
-                
-                return .none
-                
-            case let .validate(field):
-                if let field = field {
-                    state.validationErrors.clear(field)
-                    
-                    let errors = validationClient.validateField(field, state)
-                    state.validationErrors.set(field, errors: errors)
-                    
-                } else {
-                    validateForm(&state)
+                    validateField(.name, &state)
                     return .none
                 }
-                
-                state.isFormValid = state.validationErrors.isEmpty
                 
                 return .none
                 
@@ -238,6 +222,20 @@ struct CampaignDetailsFeature: Reducer {
         .ifLet(\.$destination, action: /CampaignDetailsFeature.Action.destination) {
             Destination()
         }
+    }
+    
+    private func validateField(_ field: State.Field?, _ state: inout State) {
+        if let field = field {
+            state.validationErrors.clear(field)
+            
+            let errors = validationClient.validateField(field, state)
+            state.validationErrors.set(field, errors: errors)
+            
+        } else {
+            validateForm(&state)
+        }
+        
+        state.isFormValid = state.validationErrors.isEmpty
     }
     
     private func validateForm(_ state: inout State) {
@@ -368,6 +366,13 @@ struct CampaignDetailsFormView: View {
                             }
                         }
                     }
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button("Зберегти") {
+                                viewStore.send(.onSaveButtonTapped)
+                            }
+                        }
+                    }
                 }
                 if viewStore.isPresentingImageOverlay {
                     if let imageData = viewStore.campaign.imageData {
@@ -387,13 +392,6 @@ struct CampaignDetailsFormView: View {
                 state: /CampaignDetailsFeature.Destination.State.alert,
                 action: CampaignDetailsFeature.Destination.Action.alert
             )
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Зберегти") {
-                        viewStore.send(.onSaveButtonTapped)
-                    }
-                }
-            }
         }
     }
 }
