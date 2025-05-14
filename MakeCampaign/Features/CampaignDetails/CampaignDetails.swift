@@ -21,15 +21,17 @@ struct CampaignDetailsFeature: Reducer {
             case name
             case target
             case link
+            case image
         }
         
-        struct FieldErrors: Equatable {
+        struct ValidationErrors: Equatable {
             var name: [ValidationError] = []
             var target: [ValidationError] = []
             var link: [ValidationError] = []
+            var image: [ValidationError] = []
             
             var isEmpty: Bool {
-                name.isEmpty && target.isEmpty && link.isEmpty
+                name.isEmpty && target.isEmpty && link.isEmpty && image.isEmpty
             }
             
             mutating func clear(_ field: Field) {
@@ -37,6 +39,7 @@ struct CampaignDetailsFeature: Reducer {
                 case .name: name = []
                 case .target: target = []
                 case .link: link = []
+                case .image: image = []
                 }
             }
             
@@ -45,6 +48,7 @@ struct CampaignDetailsFeature: Reducer {
                 case .name: name = errors
                 case .target: target = errors
                 case .link: link = errors
+                case .image: image = errors
                 }
             }
             
@@ -53,6 +57,7 @@ struct CampaignDetailsFeature: Reducer {
                 case .name: return !name.isEmpty
                 case .target: return !target.isEmpty
                 case .link: return !link.isEmpty
+                case .image: return !image.isEmpty
                 }
             }
             
@@ -61,6 +66,7 @@ struct CampaignDetailsFeature: Reducer {
                 case .name: return name.map { $0.message }
                 case .target: return target.map { $0.message }
                 case .link: return link.map { $0.message }
+                case .image: return image.map { $0.message }
                 }
             }
         }
@@ -71,7 +77,6 @@ struct CampaignDetailsFeature: Reducer {
         }
         
         @BindingState var focus: Field? = .name
-        @BindingState var previousFocus: Field? = nil
         @BindingState var campaign: Campaign
         @PresentationState var destination: Destination.State?
         
@@ -79,7 +84,7 @@ struct CampaignDetailsFeature: Reducer {
         var isPresentingImageOverlay: Bool = false
         
         var selectedImage: SelectedImage?
-        var fieldErrors = FieldErrors()
+        var validationErrors = ValidationErrors()
         var isFormValid: Bool = false
     }
     
@@ -96,13 +101,10 @@ struct CampaignDetailsFeature: Reducer {
         case binding(BindingAction<State>)
         case validate(State.Field?)
         case validateForm
-        case focusChanged(from: State.Field?, to: State.Field?)
         case delegate(Delegate)
 
         enum Delegate {
-            case campaignUpdated(Campaign)
             case deleteCampaign(Campaign.ID)
-            case didSelectImage(data: Data?, campaignId: Campaign.ID)
             case saveCampaign(Campaign)
         }
     }
@@ -158,17 +160,15 @@ struct CampaignDetailsFeature: Reducer {
                 return .none
                 
             case .onSaveButtonTapped:
-                return .send(.validateForm)
-                
-            case .binding(\.$focus):
-                let previousFocus = state.previousFocus
-                let currentFocus = state.focus
-                
-                if previousFocus != currentFocus {
-                    state.previousFocus = currentFocus
-                    return .send(.focusChanged(from: previousFocus, to: currentFocus))
+                validateForm(&state)
+
+                if state.validationErrors.isEmpty {
+                    return .concatenate(
+                        .send(.delegate(.saveCampaign(state.campaign))),
+                        .run { _ in await dismiss() }
+                    )
                 }
-                
+        
                 return .none
                 
             case .binding:
@@ -178,56 +178,30 @@ struct CampaignDetailsFeature: Reducer {
                 
                 return .none
                 
-            case let .focusChanged(from, _):
-                if let from = from {
-                    return .send(.validate(from))
-                }
-                return .none
-                
             case let .validate(field):
                 if let field = field {
-                    state.fieldErrors.clear(field)
+                    state.validationErrors.clear(field)
                     
                     let errors = validationClient.validateField(field, state)
-                    state.fieldErrors.set(field, errors: errors)
+                    state.validationErrors.set(field, errors: errors)
                     
                     if field == .name {
                         let imageErrors = validationClient.validateImage(state.campaign.imageData)
                         if !imageErrors.isEmpty {
-                            state.fieldErrors.name.append(contentsOf: imageErrors)
+                            state.validationErrors.name.append(contentsOf: imageErrors)
                         }
                     }
                 } else {
-                    return .send(.validateForm)
+                    validateForm(&state)
+                    return .none
                 }
                 
-                state.isFormValid = state.fieldErrors.isEmpty
+                state.isFormValid = state.validationErrors.isEmpty
                 
                 return .none
                 
             case .validateForm:
-                state.fieldErrors = State.FieldErrors()
-                
-                let nameErrors = validationClient.validateName(state.campaign.purpose)
-                state.fieldErrors.name = nameErrors
-                
-                let imageErrors = validationClient.validateImage(state.campaign.imageData)
-                state.fieldErrors.name.append(contentsOf: imageErrors)
-                
-                let targetErrors = validationClient.validateTarget(state.campaign.formattedTarget)
-                state.fieldErrors.target = targetErrors
-                
-                let linkErrors = validationClient.validateLink(state.campaign.jarURLString)
-                state.fieldErrors.link = linkErrors
-                
-                state.isFormValid = state.fieldErrors.isEmpty
-                
-                if state.fieldErrors.isEmpty {
-                    return .concatenate(
-                        .send(.delegate(.saveCampaign(state.campaign))),
-                        .run { _ in await dismiss() }
-                    )
-                }
+                validateForm(&state)
                 
                 return .none
                 
@@ -250,7 +224,7 @@ struct CampaignDetailsFeature: Reducer {
                 return .none
             case let .setSelectedItem(item):
                 state.selectedImage = .item(item)
-                
+
                 return .run { send in
                     if let item = item {
                         guard let data = try? await item.loadTransferable(type: Data.self) else { return }
@@ -261,9 +235,8 @@ struct CampaignDetailsFeature: Reducer {
             case let .onSelectImageDataConverted(data):
                 state.selectedImage = .data(data)
                 state.campaign.imageData = data
+                validateForm(&state)
                 
-                return .send(.delegate(.didSelectImage(data: data, campaignId: state.campaign.id)))
-            case .delegate(.didSelectImage):
                 return .none
             case .delegate: return .none
             }
@@ -271,6 +244,24 @@ struct CampaignDetailsFeature: Reducer {
         .ifLet(\.$destination, action: /CampaignDetailsFeature.Action.destination) {
             Destination()
         }
+    }
+    
+    private func validateForm(_ state: inout State) {
+        state.validationErrors = State.ValidationErrors()
+        
+        let nameErrors = validationClient.validateName(state.campaign.purpose)
+        state.validationErrors.name = nameErrors
+        
+        let imageErrors = validationClient.validateImage(state.campaign.imageData)
+        state.validationErrors.image.append(contentsOf: imageErrors)
+        
+        let targetErrors = validationClient.validateTarget(state.campaign.formattedTarget)
+        state.validationErrors.target = targetErrors
+        
+        let linkErrors = validationClient.validateLink(state.campaign.jarURLString)
+        state.validationErrors.link = linkErrors
+        
+        state.isFormValid = state.validationErrors.isEmpty
     }
 }
 
@@ -287,8 +278,8 @@ struct CampaignDetailsFormView: View {
                             TextField("Назва збору", text: viewStore.$campaign.purpose)
                                 .focused($focus, equals: .name)
                             
-                            if viewStore.fieldErrors.hasErrors(for: .name) {
-                                ForEach(viewStore.fieldErrors.errorMessages(for: .name), id: \.self) { message in
+                            if viewStore.validationErrors.hasErrors(for: .name) {
+                                ForEach(viewStore.validationErrors.errorMessages(for: .name), id: \.self) { message in
                                     Text(message)
                                         .font(.caption)
                                         .foregroundColor(.red)
@@ -299,8 +290,8 @@ struct CampaignDetailsFormView: View {
                                 .focused($focus, equals: .target)
                                 .keyboardType(.decimalPad)
                             
-                            if viewStore.fieldErrors.hasErrors(for: .target) {
-                                ForEach(viewStore.fieldErrors.errorMessages(for: .target), id: \.self) { message in
+                            if viewStore.validationErrors.hasErrors(for: .target) {
+                                ForEach(viewStore.validationErrors.errorMessages(for: .target), id: \.self) { message in
                                     Text(message)
                                         .font(.caption)
                                         .foregroundColor(.red)
@@ -316,8 +307,8 @@ struct CampaignDetailsFormView: View {
                                     text: viewStore.$campaign.jarURLString)
                                 .focused($focus, equals: .link)
                                 
-                                if viewStore.fieldErrors.hasErrors(for: .link) {
-                                    ForEach(viewStore.fieldErrors.errorMessages(for: .link), id: \.self) { message in
+                                if viewStore.validationErrors.hasErrors(for: .link) {
+                                    ForEach(viewStore.validationErrors.errorMessages(for: .link), id: \.self) { message in
                                         Text(message)
                                             .font(.caption)
                                             .foregroundColor(.red)
@@ -339,6 +330,13 @@ struct CampaignDetailsFormView: View {
                             ) {
                                 Label("Обрати фото з бібліотеки", systemImage: "photo")
                                     .foregroundColor(.accentColor)
+                            }
+                            if viewStore.validationErrors.hasErrors(for: .image) {
+                                ForEach(viewStore.validationErrors.errorMessages(for: .image), id: \.self) { message in
+                                    Text(message)
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
                             }
                             
                             if let imageData = viewStore.campaign.imageData,

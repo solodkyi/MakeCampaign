@@ -89,6 +89,8 @@ extension ValidationClient: DependencyKey {
                 return validateTargetImpl(state.campaign.formattedTarget)
             case .link:
                 return validateLinkImpl(state.campaign.jarURLString)
+            case .image:
+                return validateImageImpl(state.campaign.imageData)
             }
         }
     )
