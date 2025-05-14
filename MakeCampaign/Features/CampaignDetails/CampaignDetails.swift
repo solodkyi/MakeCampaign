@@ -185,12 +185,6 @@ struct CampaignDetailsFeature: Reducer {
                     let errors = validationClient.validateField(field, state)
                     state.validationErrors.set(field, errors: errors)
                     
-                    if field == .name {
-                        let imageErrors = validationClient.validateImage(state.campaign.imageData)
-                        if !imageErrors.isEmpty {
-                            state.validationErrors.name.append(contentsOf: imageErrors)
-                        }
-                    }
                 } else {
                     validateForm(&state)
                     return .none
