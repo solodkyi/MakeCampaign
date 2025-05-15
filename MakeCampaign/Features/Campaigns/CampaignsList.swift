@@ -46,12 +46,12 @@ struct CampaignsFeature: Reducer {
             case .onViewInitialLoad:
     
                 return .run { [campaigns = state.campaigns] send in
-                    let campaignsWithLinks = campaigns.filter { $0.jarLink != nil }
+                    let campaignsWithLinks = campaigns.filter { $0.jar?.link != nil }
 
                     await withTaskGroup(of: (Campaign.ID, JarDetails?).self) { group in
                         for campaign in campaignsWithLinks {
                             group.addTask {
-                                guard let jarLink = campaign.jarLink else {
+                                guard let jarLink = campaign.jar?.link else {
                                     return (campaign.id, nil)
                                 }
                                 do {
@@ -69,7 +69,7 @@ struct CampaignsFeature: Reducer {
                     }
                 }
             case let .onCampaignJarDetailsLoaded(campaignId, jarDetails):
-                state.campaigns[id: campaignId]?.jarDetails = jarDetails
+                state.campaigns[id: campaignId]?.jar?.details = jarDetails
                 return .none
             case .createCampaignButtonTapped:
                 state.addCampaign = .init(campaign: .init(id: self.uuid()))
@@ -191,7 +191,7 @@ struct CampaignCardView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
-                if let collected = campaign.jarDetails?.amountInHryvnias {
+                if let collected = campaign.jar?.details?.amountInHryvnias {
                     Text("\(collected.currencyFormatted) грн.")
                         .font(.subheadline)
                         .bold()

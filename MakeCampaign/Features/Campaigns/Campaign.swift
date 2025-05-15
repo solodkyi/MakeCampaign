@@ -13,12 +13,16 @@ struct Campaign: Codable, Equatable, Identifiable {
     var imageData: Data?
     var template: Template?
     var purpose: String = ""
-    var jarLink: URL?
     var target: Double?
-    var jarDetails: JarDetails?
+    var jar: JarInfo?
+    
+    struct JarInfo: Equatable, Codable {
+        var link: URL
+        var details: JarDetails?
+    }
     
     var progress: Progress? {
-        guard let target, let collected = jarDetails?.amountInHryvnias else { return nil }
+        guard let target, let collected = jar?.details?.amountInHryvnias else { return nil }
 
         let progress = Progress(totalUnitCount: Int64(target * 100))
         progress.completedUnitCount = Int64(collected * 100)
@@ -36,10 +40,15 @@ struct Campaign: Codable, Equatable, Identifiable {
     
     var jarURLString: String {
         get {
-            guard let jarLink else { return "" }
+            guard let jarLink = jar?.link else { return "" }
             return jarLink.absoluteString
         } set {
-            return jarLink = URL(string: newValue)
+            guard let url = URL(string: newValue) else { return }
+            if jar == nil {
+                jar = .init(link: url)
+            } else {
+                jar?.link = url
+            }
         }
     }
 }
