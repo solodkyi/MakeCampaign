@@ -150,6 +150,10 @@ struct CampaignDetailsFeature: Reducer {
                 return .run { send in
                     await openSettings()
                 }
+            case let .destination(.presented(.templateSelection(.delegate(.templateApplied(template, forCampaign: _))))):
+                state.campaign.template = template
+                state.destination = nil
+                return .none
             case .destination: return .none
             case .onTemplateButtonTapped:
                 state.destination = .templateSelection(TemplateSelectionFeature.State(
@@ -342,9 +346,9 @@ struct CampaignDetailsFormView: View {
                                         viewStore.send(.onImageTapped)
                                     }
                                 
-                                NavigationLink(
-                                    state: AppFeature.Path.State.templateSelection(TemplateSelectionFeature.State(campaign: viewStore.campaign))
-                                ) {
+                                Button {
+                                    viewStore.send(.onTemplateButtonTapped)
+                                } label: {
                                     let labelText: String = {
                                         guard let template = viewStore.campaign.template else {
                                             return "Обрати шаблон"
@@ -392,6 +396,16 @@ struct CampaignDetailsFormView: View {
                 state: /CampaignDetailsFeature.Destination.State.alert,
                 action: CampaignDetailsFeature.Destination.Action.alert
             )
+            .sheet(
+                store: self.store.scope(state: \.$destination, action: { .destination($0) }),
+                state: /CampaignDetailsFeature.Destination.State.templateSelection,
+                action: CampaignDetailsFeature.Destination.Action.templateSelection
+            ) { store in
+                NavigationStack {
+                    TemplateSelectionView(store: store)
+                        .navigationTitle("Обрати шаблон")
+                }
+            }
         }
     }
 }
