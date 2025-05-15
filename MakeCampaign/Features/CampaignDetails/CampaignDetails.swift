@@ -217,7 +217,7 @@ struct CampaignDetailsFeature: Reducer {
             case let .onSelectImageDataConverted(data):
                 state.selectedImage = .data(data)
                 state.campaign.imageData = data
-                validateForm(&state)
+                validateField(.image, &state)
                 
                 return .none
             case .delegate: return .none
@@ -371,9 +371,11 @@ struct CampaignDetailsFormView: View {
                         }
                     }
                     .toolbar {
-                        ToolbarItem(placement: .primaryAction) {
-                            Button("Зберегти") {
-                                viewStore.send(.onSaveButtonTapped)
+                        if !viewStore.isPresentingImageOverlay {
+                            ToolbarItem(placement: .primaryAction) {
+                                Button("Зберегти") {
+                                    viewStore.send(.onSaveButtonTapped)
+                                }
                             }
                         }
                     }
