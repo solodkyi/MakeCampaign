@@ -9,7 +9,7 @@ import SwiftUI
 import ComposableArchitecture
 
 struct AppFeature: Reducer {
-    struct State {
+    struct State: Equatable {
         var path = StackState<Path.State>()
         var campaignsList = CampaignsFeature.State()
     }
@@ -20,7 +20,7 @@ struct AppFeature: Reducer {
     }
     
     struct Path: Reducer {
-        enum State {
+        enum State: Equatable {
             case details(CampaignDetailsFeature.State)
             case templateSelection(TemplateSelectionFeature.State)
         }
