@@ -16,6 +16,19 @@ struct Campaign: Codable, Equatable, Identifiable {
     var target: Double?
     var jar: JarInfo?
     
+    // Store the raw input string for validation
+    private var rawTargetInput: String = ""
+    
+    init(id: UUID, imageData: Data? = nil, template: Template? = nil, purpose: String = "", target: Double? = nil, jar: JarInfo? = nil) {
+        self.id = id
+        self.imageData = imageData
+        self.template = template
+        self.purpose = purpose
+        self.target = target
+        self.jar = jar
+        self.rawTargetInput = target?.currencyFormatted ?? ""
+    }
+    
     struct JarInfo: Equatable, Codable {
         var link: URL
         var details: JarDetails?
@@ -31,10 +44,19 @@ struct Campaign: Codable, Equatable, Identifiable {
     
     var formattedTarget: String {
         get {
+            // If there's an invalid input stored, return that for validation
+            if !rawTargetInput.isEmpty && target == nil {
+                return rawTargetInput
+            }
+            
             guard let target else { return "" }
             return target.currencyFormatted
         } set {
-            return target = newValue.asCurrencyDouble
+            // Always store the raw input
+            rawTargetInput = newValue
+            
+            // Try to parse the value
+            target = newValue.asCurrencyDouble
         }
     }
     

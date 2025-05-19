@@ -103,12 +103,12 @@ final class MakeCampaignTests: XCTestCase {
               $0.continuousClock = ImmediateClock()
               $0.dataManager = .mock(initialData: try? JSONEncoder().encode([campaign]))
             }
+        
         store.exhaustivity = .off(showSkippedAssertions: false)
         await store.send(.campaignsList(.campaignSelected(campaign.id)))
         await store.send(.path(.element(id: 0, action: .details(.onCampaignDeleteButtonTapped(campaign.id)))))
         await store.send(.path(.element(id: 0, action: .details(.destination(.presented(.alert(.confirmDeleteCampaign)))))))
         await store.skipReceivedActions()
-        
         store.assert {
             XCTAssertEqual($0.path.count, 0)
             XCTAssertEqual($0.campaignsList.campaigns.count, 0)
@@ -139,6 +139,384 @@ final class MakeCampaignTests: XCTestCase {
 
         await store.assert {
             XCTAssertEqual($0.campaignsList.campaigns.first, updatedCampaign)
+        }
+    }
+    
+    // MARK: - Campaign Details Field Validation Tests
+    
+    func test_campaignDetails_nameField_emptyName_showsValidationError() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), purpose: "")
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertFalse($0.isFormValid)
+            XCTAssertFalse($0.validationErrors.name.isEmpty)
+            XCTAssertTrue($0.validationErrors.hasErrors(for: .name))
+            XCTAssertEqual($0.validationErrors.name.first, .empty)
+        }
+    }
+    
+    func test_campaignDetails_nameField_validName_noValidationError() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), purpose: "Valid Campaign Name")
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertTrue($0.validationErrors.name.isEmpty)
+            XCTAssertFalse($0.validationErrors.hasErrors(for: .name))
+        }
+    }
+    
+    func test_campaignDetails_nameField_validatesOnBindingChange() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), purpose: "")
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertFalse($0.validationErrors.name.isEmpty)
+            XCTAssertEqual($0.validationErrors.name.first, .empty)
+        }
+        
+        var newState = store.state
+        newState.campaign.purpose = "Valid Campaign Name"
+        await store.send(.binding(.set(\.$campaign, newState.campaign))) {
+            $0.campaign.purpose = "Valid Campaign Name"
+        }
+        
+        await store.send(.validateForm)
+        
+        await store.assert {
+            XCTAssertTrue($0.validationErrors.name.isEmpty)
+            XCTAssertFalse($0.validationErrors.hasErrors(for: .name))
+        }
+    }
+    
+    // MARK: - Target Field Validation Tests
+    
+    func test_campaignDetails_targetField_emptyTarget_noValidationError() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), purpose: "Valid Name", target: nil)
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertTrue($0.validationErrors.target.isEmpty)
+            XCTAssertFalse($0.validationErrors.hasErrors(for: .target))
+        }
+    }
+    
+    func test_campaignDetails_targetField_validTargetFormat_noValidationError() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), purpose: "Valid Name", target: 1000.0)
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertTrue($0.validationErrors.target.isEmpty)
+            XCTAssertFalse($0.validationErrors.hasErrors(for: .target))
+        }
+    }
+    
+    func test_campaignDetails_targetField_invalidFormat_showsValidationError() async {
+        let campaign = Campaign(id: .init(0), purpose: "Valid Name")
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: campaign
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        var updatedCampaign = store.state.campaign
+        updatedCampaign.formattedTarget = "invalid-amount"
+        
+        await store.send(.binding(.set(\.$campaign, updatedCampaign))) {
+            $0.campaign.formattedTarget = "invalid-amount"
+        }
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertFalse($0.validationErrors.target.isEmpty)
+            XCTAssertTrue($0.validationErrors.hasErrors(for: .target))
+            XCTAssertEqual($0.validationErrors.target.first, .invalidFormat)
+        }
+    }
+    
+    func test_campaignDetails_targetField_fixedAfterError_clearsValidationError() async {
+        let campaign = Campaign(id: .init(0), purpose: "Valid Name")
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: campaign
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        var invalidCampaign = store.state.campaign
+        invalidCampaign.formattedTarget = "invalid-amount"
+        
+        await store.send(.binding(.set(\.$campaign, invalidCampaign))) {
+            $0.campaign.formattedTarget = "invalid-amount"
+        }
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertFalse($0.validationErrors.target.isEmpty)
+            XCTAssertEqual($0.validationErrors.target.first, .invalidFormat)
+        }
+        
+        var validCampaign = store.state.campaign
+        validCampaign.formattedTarget = "1000"
+        
+        await store.send(.binding(.set(\.$campaign, validCampaign))) {
+            $0.campaign.formattedTarget = "1000"
+        }
+        
+        await store.send(.validateForm)
+        
+        await store.assert {
+            XCTAssertTrue($0.validationErrors.target.isEmpty)
+            XCTAssertFalse($0.validationErrors.hasErrors(for: .target))
+        }
+    }
+    
+    func test_campaignDetails_linkField_isNot_mandatory() async {
+            let store = TestStore(
+                initialState: CampaignDetailsFeature.State(
+                    campaign: Campaign(id: .init(0),
+                                       purpose: "Valid Name"),
+                    isEditing: true
+                )
+            ) {
+                CampaignDetailsFeature()
+            } withDependencies: {
+                $0.validationClient = .liveValue
+            }
+            store.exhaustivity = .off(showSkippedAssertions: false)
+        
+            await store.send(.onSaveButtonTapped)
+            
+            await store.assert {
+                XCTAssertTrue($0.validationErrors.link.isEmpty)
+                XCTAssertFalse($0.validationErrors.hasErrors(for: .link))
+            }
+        }
+    
+    func test_campaignDetails_linkField_invalidURL_showsValidationError() async {
+            let campaign = Campaign(id: .init(0), purpose: "Valid Name")
+            var updatedCampaign = campaign
+            updatedCampaign.jarURLString = "invalid-url"
+            
+            let store = TestStore(
+                initialState: CampaignDetailsFeature.State(
+                    campaign: updatedCampaign,
+                    isEditing: true
+                )
+            ) {
+                CampaignDetailsFeature()
+            } withDependencies: {
+                $0.validationClient = .liveValue
+            }
+            store.exhaustivity = .off(showSkippedAssertions: false)
+            
+            await store.send(.onSaveButtonTapped)
+            
+            await store.assert {
+                XCTAssertFalse($0.validationErrors.link.isEmpty)
+                XCTAssertTrue($0.validationErrors.hasErrors(for: .link))
+            }
+        }
+    
+    func test_campaignDetails_linkField_validURL_noValidationError() async {
+            let campaign = Campaign(id: .init(0), purpose: "Valid Name")
+            var updatedCampaign = campaign
+            updatedCampaign.jarURLString = "https://example.com/validjar"
+            
+            let store = TestStore(
+                initialState: CampaignDetailsFeature.State(
+                    campaign: updatedCampaign,
+                    isEditing: true
+                )
+            ) {
+                CampaignDetailsFeature()
+            } withDependencies: {
+                $0.validationClient = .liveValue
+            }
+            store.exhaustivity = .off(showSkippedAssertions: false)
+            
+            await store.send(.onSaveButtonTapped)
+            
+            await store.assert {
+                XCTAssertTrue($0.validationErrors.link.isEmpty)
+                XCTAssertFalse($0.validationErrors.hasErrors(for: .link))
+            }
+        }
+    
+    func test_campaignDetails_linkField_fixedAfterError_clearsValidationError() async {
+            let campaign = Campaign(id: .init(0), purpose: "Valid Name")
+            var invalidCampaign = campaign
+            invalidCampaign.jarURLString = "invalid-url"
+            
+            let store = TestStore(
+                initialState: CampaignDetailsFeature.State(
+                    campaign: invalidCampaign,
+                    isEditing: true
+                )
+            ) {
+                CampaignDetailsFeature()
+            } withDependencies: {
+                $0.validationClient = .liveValue
+            }
+            store.exhaustivity = .off(showSkippedAssertions: false)
+            
+            await store.send(.onSaveButtonTapped)
+            
+            await store.assert {
+                XCTAssertFalse($0.validationErrors.link.isEmpty)
+                XCTAssertTrue($0.validationErrors.hasErrors(for: .link))
+            }
+            
+            var fixedCampaign = store.state.campaign
+            fixedCampaign.jarURLString = "https://example.com/validjar"
+            
+            await store.send(.binding(.set(\.$campaign, fixedCampaign)))
+            await store.send(.validateForm)
+            
+            await store.assert {
+                XCTAssertTrue($0.validationErrors.link.isEmpty)
+                XCTAssertFalse($0.validationErrors.hasErrors(for: .link))
+            }
+        }
+    
+    // MARK: - Image Field Validation Tests
+    
+    func test_campaignDetails_imageField_missingImage_showsValidationError() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), imageData: nil, purpose: "Valid Name")
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertFalse($0.validationErrors.image.isEmpty)
+            XCTAssertTrue($0.validationErrors.hasErrors(for: .image))
+            XCTAssertEqual($0.validationErrors.image.first, .missingImage)
+        }
+    }
+    
+    func test_campaignDetails_imageField_validImage_noValidationError() async {
+        let mockImageData = Data(repeating: 0, count: 100)
+        
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), imageData: mockImageData, purpose: "Valid Name")
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertTrue($0.validationErrors.image.isEmpty)
+            XCTAssertFalse($0.validationErrors.hasErrors(for: .image))
+        }
+    }
+    
+    func test_campaignDetails_imageField_fixedAfterError_clearsValidationError() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), imageData: nil, purpose: "Valid Name")
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertFalse($0.validationErrors.image.isEmpty)
+            XCTAssertTrue($0.validationErrors.hasErrors(for: .image))
+        }
+        
+        let mockImageData = Data(repeating: 0, count: 100)
+        var updatedCampaign = store.state.campaign
+        updatedCampaign.imageData = mockImageData
+        
+        await store.send(.binding(.set(\.$campaign, updatedCampaign))) {
+            $0.campaign.imageData = mockImageData
+        }
+        
+        await store.send(.validateForm)
+        
+        await store.assert {
+            XCTAssertTrue($0.validationErrors.image.isEmpty)
+            XCTAssertFalse($0.validationErrors.hasErrors(for: .image))
         }
     }
 }
