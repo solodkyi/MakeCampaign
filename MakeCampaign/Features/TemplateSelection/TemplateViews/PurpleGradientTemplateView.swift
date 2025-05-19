@@ -40,18 +40,18 @@ struct PurpleGradientTemplateView: View {
                     Rectangle()
                         .fill(Color.white)
                         .frame(width: imageWidth, height: imageHeight)
-                        .cornerRadius(4)
+                        .fixedSize()
                     
                     Spacer().frame(height: purposeTopPadding)
                     
                     HStack {
                         Text(purpose)
-                            .font(.headline)
+                            .font(.body)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                             .multilineTextAlignment(.leading)
+                            .minimumScaleFactor(0.3)
                             .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
                         Spacer()
                     }
                     .padding(.horizontal, horizontalPadding)
@@ -63,11 +63,10 @@ struct PurpleGradientTemplateView: View {
                     HStack {
                         Spacer()
                         Text(goal)
+                            .minimumScaleFactor(0.3)
                             .lineLimit(1)
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                            .font(.headline)
                             .foregroundColor(.white)
-                            .minimumScaleFactor(0.5)
                     }
                     .padding(.horizontal, horizontalPadding)
                     .padding(.bottom, goalBottomPadding)
@@ -82,7 +81,7 @@ struct PurpleGradientTemplateView: View {
 #Preview {
     VStack {
         Spacer()
-        PurpleGradientTemplateView(purpose: "На бус для 5 ОМБр", goal: "Ціль: 600.000 грн.")
+        PurpleGradientTemplateView(purpose: "Для забезпечення 5 ОМБр автомобілем для виконання задач", goal: "Ціль: 600.000 грн.")
             .frame(width: 1080/3, height: 1080/3)
         Spacer()
     }
