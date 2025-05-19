@@ -5,13 +5,13 @@ struct TemplateSelectionFeature: Reducer {
     struct State: Equatable {
         let campaign: Campaign
         var selectedTemplateID: Template.ID?
-        var templates: IdentifiedArrayOf<Template> = Template.mockTemplates
+        var templates: IdentifiedArrayOf<Template> = Template.list
         
         var selectedTemplate: Template? {
             selectedTemplateID.flatMap { id in templates[id: id] }
         }
         
-        init(campaign: Campaign, templates: IdentifiedArrayOf<Template> =    Template.mockTemplates, selectedTemplateID: Template.ID? = nil) {
+        init(campaign: Campaign, templates: IdentifiedArrayOf<Template> = Template.list, selectedTemplateID: Template.ID? = nil) {
             self.campaign = campaign
             self.templates = templates
             self.selectedTemplateID = selectedTemplateID
@@ -151,7 +151,18 @@ struct TemplateItemView: View {
     let isSelected: Bool
     
     var body: some View {
-        Text(template.name)
+        VStack {
+            Image("template_\(template.name)")
+                .resizable()
+                .frame(width: 120, height: 130)
+            Text(template.name)
+                .fontWeight(.bold)
+        }
+        .background {
+            if isSelected {
+                Color.blue.opacity(0.2)
+            }
+        }
     }
 }
 
@@ -170,3 +181,13 @@ struct TemplateItemView: View {
         )
     }
 } 
+
+fileprivate extension Template {
+    static let list: IdentifiedArrayOf<Template> = [
+        .init(name: "1"),
+        .init(name: "2"),
+        .init(name: "3"),
+        .init(name: "4"),
+        .init(name: "5"),
+    ]
+}
