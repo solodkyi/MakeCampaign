@@ -138,11 +138,62 @@ struct TemplateSelectionView: View {
 struct TemplatePreviewView: View {
     let image: UIImage
     let template: Template
+    @State private var offset: CGSize = .zero
+    @State private var scale: CGFloat = 1.0
+    
+    init(image: UIImage, template: Template) {
+        self.image = image
+        self.template = template
+    }
+    
+    init(campaignImageData: Data?, template: Template) {
+        self.image = campaignImageData.flatMap(UIImage.init) ?? UIImage()
+        self.template = template
+    }
     
     var body: some View {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
+        templateView(
+            forTemplate: template,
+            viewProvider:
+                AnyView(Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .scaleEffect(scale)
+                    .offset(offset)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { gesture in
+                                self.offset = gesture.translation
+                            }
+                    )
+                        .gesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    self.scale = value
+                                }
+                                .onEnded { value in
+                                    self.scale = max(1.0, value)
+                                }
+                        )
+                            .clipped()
+                )
+        )
+    }
+    
+    @ViewBuilder
+    func templateView(forTemplate template: Template, viewProvider: @autoclosure @escaping () -> AnyView) -> some View {
+        switch template.name {
+         case "1": PurpleGradientTemplateView(purpose: "текст текст текст", goal: "100.000", viewProvider: viewProvider)
+        case "2":
+            GreenGradientTemplateView(purpose: "текст текст текст", goal: "100.000", viewProvider: viewProvider)
+        case "3":
+            YellowBlueGradientTemplateView(purpose: "текст текст текст", goal: "100.000", viewProvider: viewProvider)
+        case "4":
+            SilverBlueTemplateView(purpose: "текст текст текст", goal: "100.000", viewProvider: viewProvider)
+        case "5":
+            RedBlackGradientTemplateView(purpose: "текст текст текст", goal: "100.000", viewProvider: viewProvider)
+        default: EmptyView()
+        }
     }
 }
 
