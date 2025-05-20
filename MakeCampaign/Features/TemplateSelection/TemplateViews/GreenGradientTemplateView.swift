@@ -35,14 +35,16 @@ struct GreenGradientTemplateView: View {
                         Spacer()
                         VStack(alignment: .leading, spacing: goalValueSpacing) {
                             Text("ціль збору:")
-                                .font(.headline)
-                                .minimumScaleFactor(0.3)
-                                .fontWeight(.bold)
+                                .font(.custom("Roboto-Bold", size: 28)
+                                )
+                                .lineLimit(1)
                                 .foregroundColor(.white)
                             Text(goal)
                                 .font(.headline)
-                                .minimumScaleFactor(0.3)
-                                .fontWeight(.bold)
+                                .font(.custom("Roboto-Bold", size: 38)
+                                )
+                                .minimumScaleFactor(0.35)
+                                .lineLimit(1)
                                 .foregroundColor(.white)
                         }
                         .padding(.top, goalTopSpacing)
@@ -65,7 +67,7 @@ struct GreenGradientTemplateView: View {
 
 #Preview {
     GreenGradientTemplateView(
-        purpose: "Для забезпечення 5 ОМБр автомобілем для виконання задач", goal: "600.000"
+        purpose: "Для забезпечення 5 ОМБр", goal: "600.000"
     )
-    .frame(width: 400, height: 400)
-} 
+    .frame(width: 1080/3, height: 1350/3)
+}

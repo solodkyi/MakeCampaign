@@ -17,7 +17,6 @@ struct PurpleGradientTemplateView: View {
             let imageWidth = side * 885 / 1080
             let imageHeight = side * 422 / 1080
             let topSpacing = side * 93 / 1080
-            let horizontalPadding = side * 98 / 1080
             let purposeTopPadding = side * 42 / 1080
             let betweenTextsSpacing = side * 36 / 1080
             let goalBottomPadding = side * 65 / 1080
@@ -40,21 +39,19 @@ struct PurpleGradientTemplateView: View {
                     Rectangle()
                         .fill(Color.white)
                         .frame(width: imageWidth, height: imageHeight)
-                        .fixedSize()
                     
                     Spacer().frame(height: purposeTopPadding)
                     
                     HStack {
                         Text(purpose)
-                            .font(.body)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
                             .multilineTextAlignment(.leading)
+                            .font(.custom("Roboto-Bold", size: 28)
+                            )
+                            .foregroundColor(.white)
                             .minimumScaleFactor(0.3)
                             .lineLimit(nil)
-                        Spacer()
                     }
-                    .padding(.horizontal, horizontalPadding)
+                    .padding(.horizontal)
                     
                     Spacer().frame(height: betweenTextsSpacing)
                     
@@ -62,13 +59,15 @@ struct PurpleGradientTemplateView: View {
                     
                     HStack {
                         Spacer()
-                        Text(goal)
+                        Text("Ціль: \(goal)")
+                            .font(.custom("Roboto-Bold", size: 44))
+                            .multilineTextAlignment(.trailing)
                             .minimumScaleFactor(0.3)
                             .lineLimit(1)
-                            .font(.headline)
                             .foregroundColor(.white)
+
                     }
-                    .padding(.horizontal, horizontalPadding)
+                    .padding(.horizontal)
                     .padding(.bottom, goalBottomPadding)
                 }
                 .frame(width: side, height: side, alignment: .bottom)
@@ -81,8 +80,8 @@ struct PurpleGradientTemplateView: View {
 #Preview {
     VStack {
         Spacer()
-        PurpleGradientTemplateView(purpose: "Для забезпечення 5 ОМБр автомобілем для виконання задач", goal: "Ціль: 600.000 грн.")
-            .frame(width: 1080/3, height: 1080/3)
+        PurpleGradientTemplateView(purpose: "Для забезпечення 5 ОМБр автомобілем", goal: "600.000")
+            .frame(width: 1080/3, height: 1350/3)
         Spacer()
     }
 }
