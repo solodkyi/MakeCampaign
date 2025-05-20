@@ -10,6 +10,13 @@ import SwiftUI
 struct PurpleGradientTemplateView: View {
     let purpose: String
     let goal: String
+    var viewProvider: () -> AnyView
+    
+    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+        self.purpose = purpose
+        self.goal = goal
+        self.viewProvider = { AnyView(viewProvider()) }
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -36,9 +43,9 @@ struct PurpleGradientTemplateView: View {
                 VStack(spacing: 0) {
                     Spacer().frame(height: topSpacing)
                     
-                    Rectangle()
-                        .fill(Color.white)
+                    viewProvider()
                         .frame(width: imageWidth, height: imageHeight)
+                        .clipped()
                     
                     Spacer().frame(height: purposeTopPadding)
                     
@@ -80,7 +87,17 @@ struct PurpleGradientTemplateView: View {
 #Preview {
     VStack {
         Spacer()
-        PurpleGradientTemplateView(purpose: "Для забезпечення 5 ОМБр автомобілем", goal: "600.000")
+        PurpleGradientTemplateView(purpose: "Для забезпечення 5 ОМБр автомобілем", goal: "600.000") {
+            if let imageData = Campaign.mock1.imageData, let uiImage = UIImage(data: imageData) {
+                return AnyView(
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                )
+            } else {
+                return AnyView(Rectangle().fill(Color.red))
+            }
+        }
             .frame(width: 1080/3, height: 1350/3)
         Spacer()
     }

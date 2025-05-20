@@ -2,7 +2,14 @@ import SwiftUI
 
 struct SilverBlueTemplateView: View {
     let goal: String
-    let description: String
+    let purpose: String
+    var viewProvider: () -> AnyView
+    
+    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+        self.purpose = purpose
+        self.goal = goal
+        self.viewProvider = { AnyView(viewProvider()) }
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -10,6 +17,8 @@ struct SilverBlueTemplateView: View {
             let horizontalPadding = side * 0.05
             let verticalPadding = side * 0.06
             let bottomTextSpacing = side * 0.02
+            let imageWidth = side * 838/1080
+            let imageHeight = side * 432/1080
             
             ZStack {
                 LinearGradient(
@@ -27,8 +36,9 @@ struct SilverBlueTemplateView: View {
                 VStack(alignment: .trailing) {
                     HStack {
                         Spacer()
-                        Rectangle()
-                            .fill(Color.white)
+                        viewProvider()
+                            .frame(width: imageWidth, height: imageHeight)
+                            .clipped()
                             .padding(.top, verticalPadding)
                     }
                     .padding(.leading, 3*horizontalPadding)
@@ -41,7 +51,7 @@ struct SilverBlueTemplateView: View {
                             .foregroundColor(.white)
                             .minimumScaleFactor(0.2)
 
-                        Text(description)
+                        Text(purpose)
                             .multilineTextAlignment(.leading)
                             .font(.custom("Roboto-Bold", size: 28)
                             )
@@ -62,8 +72,16 @@ struct SilverBlueTemplateView: View {
 
 #Preview {
     SilverBlueTemplateView(
-        goal: "000.000",
-        description: "текст текст тексттекст текст тексттекст текст "
-    )
+        purpose: "текст текст тексттекст текст тексттекст текст ", goal: "000.000") {
+            if let imageData = Campaign.mock1.imageData, let uiImage = UIImage(data: imageData) {
+                return AnyView(
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                )
+            } else {
+                return AnyView(Rectangle().fill(Color.red))
+            }
+        }
     .frame(width: 1080/3, height: 1350/3)
 }

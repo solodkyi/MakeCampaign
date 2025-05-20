@@ -9,14 +9,22 @@ import SwiftUI
 
 struct RedBlackGradientTemplateView: View {
     let goal: String
-    let description: String
+    let purpose: String
+    var viewProvider: () -> AnyView
+    
+    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+        self.purpose = purpose
+        self.goal = goal
+        self.viewProvider = { AnyView(viewProvider()) }
+    }
     
     var body: some View {
         GeometryReader { geometry in
             let side = min(geometry.size.width, geometry.size.height)
             let verticalPadding = side * 0.06
             let horizontalPadding = side * 0.05
-            
+            let imageWidth = side * 432 / 1080
+            let imageHeight = side * 728 / 1080
             ZStack {
                 RadialGradient(
                     gradient: Gradient(stops: [
@@ -31,7 +39,7 @@ struct RedBlackGradientTemplateView: View {
                 
                 HStack(spacing: 0) {
                     VStack(alignment: .leading) {
-                        Text(description)
+                        Text(purpose)
                             .multilineTextAlignment(.leading)
                             .font(.custom("Roboto-Bold", size: 25))
                             .foregroundColor(.white)
@@ -41,8 +49,9 @@ struct RedBlackGradientTemplateView: View {
                     }
   
                         VStack(alignment: .trailing) {
-                            Rectangle()
-                                .fill(Color.white)
+                            viewProvider()
+                                .frame(width: imageWidth, height: imageHeight)
+                                .clipped()
                             Spacer()
                             
                             VStack(alignment: .leading, spacing: 5) {
@@ -70,9 +79,19 @@ struct RedBlackGradientTemplateView: View {
 
 #Preview {
     RedBlackGradientTemplateView(
-        goal: "000.000",
-        description: "текст текст текст текст"
-    )
+        purpose: "текст текст текст текст",
+        goal: "000.000"
+    ) {
+        if let imageData = Campaign.mock1.imageData, let uiImage = UIImage(data: imageData) {
+            return AnyView(
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+            )
+        } else {
+            return AnyView(Rectangle().fill(Color.red))
+        }
+    }
     .frame(width: 1080/3, height: 1350/3)
 }
 

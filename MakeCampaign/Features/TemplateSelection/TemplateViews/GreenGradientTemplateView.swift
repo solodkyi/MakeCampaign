@@ -4,11 +4,18 @@ struct GreenGradientTemplateView: View {
     let purpose: String
     let goal: String
     
+    var viewProvider: () -> AnyView
+    
+    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+        self.purpose = purpose
+        self.goal = goal
+        self.viewProvider = { AnyView(viewProvider()) }
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             let side = min(geometry.size.width, geometry.size.height)
             let leftWidth = side * 0.5
-            let rightWidth = side * 0.4
             let imageInset: CGFloat = side * 0.08
             let spacing: CGFloat = side * 0.025
             let goalTopSpacing: CGFloat = side * 0.08
@@ -28,21 +35,18 @@ struct GreenGradientTemplateView: View {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: spacing) {
                             Text(purpose)
-                                .font(.body)
+                                .font(.custom("Roboto-Bold", size: 28))
                                 .minimumScaleFactor(0.2)
                                 .foregroundColor(.white)
                                 .lineLimit(nil)
                         Spacer()
                         VStack(alignment: .leading, spacing: goalValueSpacing) {
                             Text("ціль збору:")
-                                .font(.custom("Roboto-Bold", size: 28)
-                                )
+                                .font(.custom("Roboto-Bold", size: 28))
                                 .lineLimit(1)
                                 .foregroundColor(.white)
                             Text(goal)
-                                .font(.headline)
-                                .font(.custom("Roboto-Bold", size: 38)
-                                )
+                                .font(.custom("Roboto-Bold", size: 38))
                                 .minimumScaleFactor(0.35)
                                 .lineLimit(1)
                                 .foregroundColor(.white)
@@ -53,8 +57,9 @@ struct GreenGradientTemplateView: View {
                     .padding(.vertical, imageInset)
                     .frame(width: leftWidth, alignment: .leading)
                                         
-                    Rectangle()
-                        .fill(Color.white)
+                    viewProvider()
+                        .frame(width: side * 0.35, height: side)
+                        .clipped()
                         .padding(.horizontal, imageInset)
                         
                 }
@@ -67,7 +72,17 @@ struct GreenGradientTemplateView: View {
 
 #Preview {
     GreenGradientTemplateView(
-        purpose: "Для забезпечення 5 ОМБр", goal: "600.000"
+        purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+            if let imageData = Campaign.mock1.imageData, let uiImage = UIImage(data: imageData) {
+                return AnyView(
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                )
+            } else {
+                return AnyView(Rectangle().fill(Color.red))
+            }
+        }
     )
     .frame(width: 1080/3, height: 1350/3)
 }
