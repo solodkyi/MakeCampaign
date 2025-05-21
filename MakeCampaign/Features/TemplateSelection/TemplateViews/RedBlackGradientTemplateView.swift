@@ -83,15 +83,56 @@ struct RedBlackGradientTemplateView: View {
         goal: "000.000"
     ) {
         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+            let initialOffset = Campaign.mock1.image?.offset ?? .zero
+            let initialScale = Campaign.mock1.image?.scale ?? 1.0
+            
             return AnyView(
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
+                ImageTransformPreview(
+                    image: uiImage,
+                    initialOffset: initialOffset,
+                    initialScale: initialScale
+                )
             )
         } else {
             return AnyView(Rectangle().fill(Color.red))
         }
     }
     .frame(width: 1080/3, height: 1350/3)
+}
+
+struct ImageTransformPreview: View {
+    let image: UIImage
+    
+    @State private var offset: CGSize
+    @State private var scale: CGFloat
+    
+    init(image: UIImage, initialOffset: CGSize, initialScale: CGFloat) {
+        self.image = image
+        _offset = State(initialValue: initialOffset)
+        _scale = State(initialValue: initialScale)
+    }
+    
+    var body: some View {
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFill()
+            .scaleEffect(scale)
+            .offset(offset)
+            .gesture(
+                DragGesture()
+                    .onChanged { gesture in
+                        offset = gesture.translation
+                    }
+            )
+            .gesture(
+                MagnificationGesture()
+                    .onChanged { value in
+                        scale = value
+                    }
+                    .onEnded { value in
+                        scale = max(1.0, value)
+                    }
+            )
+    }
 }
 

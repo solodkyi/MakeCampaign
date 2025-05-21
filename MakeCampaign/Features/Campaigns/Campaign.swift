@@ -76,6 +76,30 @@ extension Campaign {
             }
         }
     }
+    
+    var imageScale: CGFloat {
+        get {
+            return image?.scale ?? 1.0
+        } set {
+            if image == nil {
+                image = Image(raw: nil, scale: newValue)
+            } else {
+                image?.scale = newValue
+            }
+        }
+    }
+    
+    var imageOffset: CGSize {
+        get {
+            return image?.offset ?? .zero
+        } set {
+            if image == nil {
+                image = Image(raw: nil, offset: newValue)
+            } else {
+                image?.offset = newValue
+            }
+        }
+    }
 }
 
 struct JarDetails: Equatable, Codable {

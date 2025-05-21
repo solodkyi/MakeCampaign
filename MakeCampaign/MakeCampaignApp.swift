@@ -63,12 +63,21 @@ struct AppFeature: Reducer {
                     
                     return .none
                 }
-            case let .path(.element(_, action: .templateSelection(.delegate(action)))):
+            case let .path(.element(id: id, action: .details(.destination(.presented(.templateSelection(.delegate(action))))))):
                 switch action {
                 case let .templateApplied(template, campaignId):
                     guard let detailsId = state.path.ids.dropLast().last else { return .none }
                     state.path[id: detailsId, case: /Path.State.details]?.campaign.template = template
                     state.campaignsList.campaigns[id: campaignId]?.template = template
+                    return .none
+                case let .imageRepositioned(scale, offset, campaignId):
+                    guard var campaign = state.campaignsList.campaigns[id: campaignId] else { return .none }
+                    campaign.imageOffset = offset
+                    campaign.imageScale = scale
+                    state.campaignsList.campaigns[id: campaignId] = campaign
+                    
+                    guard let detailsId = state.path.ids.dropLast().last else { return .none }
+                    state.path[id: detailsId, case: /Path.State.details]?.campaign = campaign
                     return .none
                 }
             case .path: return .none
@@ -82,7 +91,6 @@ struct AppFeature: Reducer {
                 default: break
                 }
                 return .none
-                
             }
         }
         .forEach(\.path, action: /Action.path) {
