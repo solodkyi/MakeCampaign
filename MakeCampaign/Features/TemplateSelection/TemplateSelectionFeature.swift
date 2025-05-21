@@ -63,7 +63,7 @@ struct TemplateSelectionView: View {
         WithViewStore(self.store, observe: { $0 }) { viewStore in
             VStack(spacing: 0) {
                 ZStack {
-                    if let imageData = viewStore.campaign.imageData,
+                    if let imageData = viewStore.campaign.image?.raw,
                        let uiImage = UIImage(data: imageData) {
                         if let selectedTemplate = viewStore.selectedTemplate {
                             TemplatePreviewView(
@@ -182,16 +182,19 @@ struct TemplatePreviewView: View {
     
     @ViewBuilder
     func templateView(forTemplate template: Template, campaign: Campaign, viewProvider: @autoclosure @escaping () -> AnyView) -> some View {
-        switch template.name {
-        case "1": PurpleGradientTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: viewProvider)
-        case "2":
-            GreenGradientTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: viewProvider)
-        case "3":
-            YellowBlueGradientTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: viewProvider)
-        case "4":
-            SilverBlueTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: viewProvider)
-        case "5":
-            RedBlackGradientTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: viewProvider)
+        let (purpose, goal) = (campaign.purpose, campaign.target?.currencyFormatted ?? "")
+        
+        switch (template.gradient, template.imagePlacement) {
+        case (.linearPurple, .topCenter):
+            PurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: viewProvider)
+        case (.linearGreen, .topToBottomTrailing):
+            GreenGradientTemplateView(purpose: purpose, goal: goal, viewProvider: viewProvider)
+        case (.angularYellowBlue, .trailing):
+            YellowBlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: viewProvider)
+        case (.linearSilverBlue, .trailingToEdge):
+            SilverBlueTemplateView(purpose: purpose, goal: goal, viewProvider: viewProvider)
+        case (.radialRedBlack, .topToEdge):
+            RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: viewProvider)
         default: EmptyView()
         }
     }
@@ -235,10 +238,10 @@ struct TemplateItemView: View {
 
 fileprivate extension Template {
     static let list: IdentifiedArrayOf<Template> = [
-        .init(name: "1"),
-        .init(name: "2"),
-        .init(name: "3"),
-        .init(name: "4"),
-        .init(name: "5"),
+        .init(name: "1", gradient: .linearPurple, imagePlacement: .topCenter),
+        .init(name: "2", gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
+        .init(name: "3", gradient: .angularYellowBlue, imagePlacement: .trailing),
+        .init(name: "4", gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
+        .init(name: "5", gradient: .radialRedBlack, imagePlacement: .topToEdge)
     ]
 }

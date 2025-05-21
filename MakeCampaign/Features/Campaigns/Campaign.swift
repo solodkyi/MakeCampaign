@@ -9,8 +9,13 @@ import Foundation
 import ComposableArchitecture
 
 struct Campaign: Codable, Equatable, Identifiable {
+    struct Image: Codable, Equatable {
+        let raw: Data?
+        var offset: CGSize = .zero
+        var scale: CGFloat = 1.0
+    }
     let id: UUID
-    var imageData: Data?
+    var image: Image?
     var template: Template?
     var purpose: String = ""
     var target: Double?
@@ -18,9 +23,9 @@ struct Campaign: Codable, Equatable, Identifiable {
     
     private var rawTargetInput: String = ""
     
-    init(id: UUID, imageData: Data? = nil, template: Template? = nil, purpose: String = "", target: Double? = nil, jar: JarInfo? = nil) {
+    init(id: UUID, image: Image? = nil, template: Template? = nil, purpose: String = "", target: Double? = nil, jar: JarInfo? = nil) {
         self.id = id
-        self.imageData = imageData
+        self.image = image
         self.template = template
         self.purpose = purpose
         self.target = target
@@ -32,7 +37,9 @@ struct Campaign: Codable, Equatable, Identifiable {
         var link: URL
         var details: JarDetails?
     }
-    
+}
+
+extension Campaign {
     var progress: Progress? {
         guard let target, let collected = jar?.details?.amountInHryvnias else { return nil }
 

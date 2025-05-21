@@ -101,7 +101,7 @@ extension ValidationClient: DependencyKey {
             case .link:
                 return validateLinkImpl(state.campaign.jarURLString)
             case .image:
-                return validateImageImpl(state.campaign.imageData)
+                return validateImageImpl(state.campaign.image?.raw)
             }
         }
     )

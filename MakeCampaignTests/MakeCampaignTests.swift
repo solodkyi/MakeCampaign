@@ -445,7 +445,7 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignDetails_imageField_missingImage_showsValidationError() async {
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
-                campaign: Campaign(id: .init(0), imageData: nil, purpose: "Valid Name")
+                campaign: Campaign(id: .init(0), image: nil, purpose: "Valid Name")
             )
         ) {
             CampaignDetailsFeature()
@@ -468,7 +468,7 @@ final class MakeCampaignTests: XCTestCase {
         
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
-                campaign: Campaign(id: .init(0), imageData: mockImageData, purpose: "Valid Name")
+                campaign: Campaign(id: .init(0), image: .init(raw: mockImageData), purpose: "Valid Name")
             )
         ) {
             CampaignDetailsFeature()
@@ -488,7 +488,7 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignDetails_imageField_fixedAfterError_clearsValidationError() async {
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
-                campaign: Campaign(id: .init(0), imageData: nil, purpose: "Valid Name")
+                campaign: Campaign(id: .init(0), image: nil, purpose: "Valid Name")
             )
         ) {
             CampaignDetailsFeature()
@@ -506,10 +506,10 @@ final class MakeCampaignTests: XCTestCase {
         
         let mockImageData = Data(repeating: 0, count: 100)
         var updatedCampaign = store.state.campaign
-        updatedCampaign.imageData = mockImageData
+        updatedCampaign.image = .init(raw: mockImageData)
         
         await store.send(.binding(.set(\.$campaign, updatedCampaign))) {
-            $0.campaign.imageData = mockImageData
+            $0.campaign.image = .init(raw: mockImageData)
         }
         
         await store.send(.validateForm)

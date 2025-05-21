@@ -73,7 +73,7 @@ struct SilverBlueTemplateView: View {
 #Preview {
     SilverBlueTemplateView(
         purpose: "текст текст тексттекст текст тексттекст текст ", goal: "000.000") {
-            if let imageData = Campaign.mock1.imageData, let uiImage = UIImage(data: imageData) {
+            if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                 return AnyView(
                     Image(uiImage: uiImage)
                         .resizable()

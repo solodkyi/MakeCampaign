@@ -77,7 +77,7 @@ struct YellowBlueGradientTemplateView: View {
     YellowBlueGradientTemplateView(
         purpose: "текст текст тексттекст текст тексттекст текст тексттекст текст текст", goal: "000.000"
     ) {
-        if let imageData = Campaign.mock1.imageData, let uiImage = UIImage(data: imageData) {
+        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
             return AnyView(
                 Image(uiImage: uiImage)
                     .resizable()

@@ -73,7 +73,7 @@ struct GreenGradientTemplateView: View {
 #Preview {
     GreenGradientTemplateView(
         purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
-            if let imageData = Campaign.mock1.imageData, let uiImage = UIImage(data: imageData) {
+            if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                 return AnyView(
                     Image(uiImage: uiImage)
                         .resizable()

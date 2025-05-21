@@ -174,7 +174,7 @@ struct CampaignCardView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let imageData = campaign.imageData,
+            if let imageData = campaign.image?.raw,
                let uiImage = UIImage(data: imageData) {
                 Image(uiImage: uiImage)
                     .resizable()

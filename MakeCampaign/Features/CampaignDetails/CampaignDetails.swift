@@ -216,7 +216,7 @@ struct CampaignDetailsFeature: Reducer {
                 }
             case let .onSelectImageDataConverted(data):
                 state.selectedImage = .data(data)
-                state.campaign.imageData = data
+                state.campaign.image = .init(raw: data)
                 validateField(.image, &state)
                 
                 return .none
@@ -248,7 +248,7 @@ struct CampaignDetailsFeature: Reducer {
         let nameErrors = validationClient.validateName(state.campaign.purpose)
         state.validationErrors.name = nameErrors
         
-        let imageErrors = validationClient.validateImage(state.campaign.imageData)
+        let imageErrors = validationClient.validateImage(state.campaign.image?.raw)
         state.validationErrors.image.append(contentsOf: imageErrors)
         
         let targetErrors = validationClient.validateTarget(state.campaign.formattedTarget)
@@ -335,7 +335,7 @@ struct CampaignDetailsFormView: View {
                                 }
                             }
                             
-                            if let imageData = viewStore.campaign.imageData,
+                            if let imageData = viewStore.campaign.image?.raw,
                                let uiImage = UIImage(data: imageData) {
                                 Image(uiImage: uiImage)
                                     .resizable()
@@ -381,7 +381,7 @@ struct CampaignDetailsFormView: View {
                     }
                 }
                 if viewStore.isPresentingImageOverlay {
-                    if let imageData = viewStore.campaign.imageData {
+                    if let imageData = viewStore.campaign.image?.raw {
                         ImagePreviewView(
                             imageData: imageData, onCancel: {
                                 viewStore.send(.imagePreviewCloseButtonTappped)
