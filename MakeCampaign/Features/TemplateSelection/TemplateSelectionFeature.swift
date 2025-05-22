@@ -14,7 +14,7 @@ struct TemplateSelectionFeature: Reducer {
         init(campaign: Campaign, templates: IdentifiedArrayOf<Template> = Template.list, selectedTemplateID: Template.ID? = nil) {
             self.campaign = campaign
             self.templates = templates
-            self.selectedTemplateID = selectedTemplateID
+            self.selectedTemplateID = campaign.template?.id
         }
     }
     
@@ -145,26 +145,27 @@ struct TemplateSelectionView: View {
     @ViewBuilder
     func templateView(forTemplate template: Template, viewStore: ViewStore<TemplateSelectionFeature.State, TemplateSelectionFeature.Action>, image: UIImage) -> some View {
         let campaign = viewStore.campaign
+        let (purpose, goal) = (campaign.purpose, campaign.target?.formattedAmount.appendingCurrency ?? "")
         
         switch (template.gradient, template.imagePlacement) {
         case (.linearPurple, .topCenter):
-            PurpleGradientTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: {
+            PurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 imageView(viewStore: viewStore, image: image)
             })
         case (.linearGreen, .topToBottomTrailing):
-            GreenGradientTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: {
+            GreenGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 imageView(viewStore: viewStore, image: image)
             })
         case (.angularYellowBlue, .trailing):
-            YellowBlueGradientTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: {
+            YellowBlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 imageView(viewStore: viewStore, image: image)
             })
         case (.linearSilverBlue, .trailingToEdge):
-            SilverBlueTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: {
+            SilverBlueTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 imageView(viewStore: viewStore, image: image)
             })
         case (.radialRedBlack, .topToEdge):
-            RedBlackGradientTemplateView(purpose: campaign.purpose, goal: campaign.target?.currencyFormatted ?? "", viewProvider: {
+            RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 imageView(viewStore: viewStore, image: image)
             })
         default: EmptyView()
@@ -273,4 +274,10 @@ fileprivate extension Template {
         .init(name: "4", gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
         .init(name: "5", gradient: .radialRedBlack, imagePlacement: .topToEdge)
     ]
+}
+
+extension String {
+    var appendingCurrency: String {
+        return self + " грн."
+    }
 }

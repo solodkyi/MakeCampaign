@@ -66,7 +66,7 @@ struct AppFeature: Reducer {
             case let .path(.element(id: id, action: .details(.destination(.presented(.templateSelection(.delegate(action))))))):
                 switch action {
                 case let .templateApplied(template, campaignId):
-                    guard let detailsId = state.path.ids.dropLast().last else { return .none }
+                    guard let detailsId = state.path.ids.last else { return .none }
                     state.path[id: detailsId, case: /Path.State.details]?.campaign.template = template
                     state.campaignsList.campaigns[id: campaignId]?.template = template
                     return .none
@@ -76,7 +76,7 @@ struct AppFeature: Reducer {
                     campaign.imageScale = scale
                     state.campaignsList.campaigns[id: campaignId] = campaign
                     
-                    guard let detailsId = state.path.ids.dropLast().last else { return .none }
+                    guard let detailsId = state.path.ids.last else { return .none }
                     state.path[id: detailsId, case: /Path.State.details]?.campaign = campaign
                     return .none
                 }

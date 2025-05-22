@@ -187,12 +187,12 @@ struct CampaignCardView: View {
                 Text(campaign.purpose)
                     .font(.headline)
                 if let target = campaign.target {
-                    Text("Ціль: \(target.currencyFormatted) грн.")
+                    Text("Ціль: \(target.formattedAmount.appendingCurrency)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 if let collected = campaign.jar?.details?.amountInHryvnias {
-                    Text("\(collected.currencyFormatted) грн.")
+                    Text("\(collected.formattedAmount.appendingCurrency)")
                         .font(.subheadline)
                         .bold()
                 }

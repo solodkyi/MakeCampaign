@@ -30,7 +30,7 @@ struct Campaign: Codable, Equatable, Identifiable {
         self.purpose = purpose
         self.target = target
         self.jar = jar
-        self.rawTargetInput = target?.currencyFormatted ?? ""
+        self.rawTargetInput = target?.formattedAmount ?? ""
     }
     
     struct JarInfo: Equatable, Codable {
@@ -55,7 +55,7 @@ extension Campaign {
             }
             
             guard let target else { return "" }
-            return target.currencyFormatted
+            return target.formattedAmount
         } set {
             rawTargetInput = newValue
             
@@ -126,8 +126,8 @@ struct JarDetails: Equatable, Codable {
         return Double(jarAmount) / 100.0
     }
     
-    var formattedAmount: String {
-        return amountInHryvnias.currencyFormatted + " грн."
+    var currencyFormatted: String {
+        return amountInHryvnias.formattedAmount + " грн."
     }
     
     var isActive: Bool {

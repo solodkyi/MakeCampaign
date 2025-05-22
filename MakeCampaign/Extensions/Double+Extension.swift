@@ -21,9 +21,8 @@ public extension NumberFormatter {
 }
 
 public extension Double {
-    var currencyFormatted: String {
+    var formattedAmount: String {
         let formatter = NumberFormatter.defaultCurrencyFormatter
-        // Show decimals only if needed
         if self.truncatingRemainder(dividingBy: 1) == 0 {
             formatter.maximumFractionDigits = 0
         } else {

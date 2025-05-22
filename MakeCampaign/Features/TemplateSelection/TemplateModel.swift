@@ -3,10 +3,13 @@ import SwiftUI
 import ComposableArchitecture
 
 struct Template: Codable, Equatable, Identifiable {
-    let id: UUID
     let name: String
     let gradient: Gradient
     let imagePlacement: ImagePlacement
+    
+    var id: String {
+        return "\(String(describing: gradient))_\(String(describing: imagePlacement))"
+    }
     
     enum Gradient: Codable, Equatable {
         case linearPurple
@@ -24,8 +27,7 @@ struct Template: Codable, Equatable, Identifiable {
         case topToEdge
     }
     
-    init(id: UUID = UUID(), name: String, gradient: Gradient, imagePlacement: ImagePlacement) {
-        self.id = id
+    init(name: String, gradient: Gradient, imagePlacement: ImagePlacement) {
         self.name = name
         self.gradient = gradient
         self.imagePlacement = imagePlacement
