@@ -118,20 +118,22 @@ struct TemplateSelectionView: View {
                     }
                     .frame(height: 150)
                     
-                    Button("Готово") {
+                    Button {
                         viewStore.send(.doneButtonTapped)
+                    } label: {
+                        Text("Готово")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(viewStore.selectedTemplateID != nil ? Color.accentColor : Color.gray)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
                     }
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(viewStore.selectedTemplateID != nil ? Color.accentColor : Color.gray)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    .contentShape(Rectangle())
                     .padding(.horizontal)
                     .padding(.bottom)
                     .disabled(viewStore.selectedTemplateID == nil)
                 }
-                .frame(height: 240)
                 .background(Color(.systemBackground))
             }
             .onAppear {
