@@ -78,6 +78,7 @@ struct TemplateSelectionView: View {
                        let uiImage = UIImage(data: imageData) {
                         if let selectedTemplate = viewStore.selectedTemplate {
                             templateView(forTemplate: selectedTemplate, viewStore: viewStore, image: uiImage)
+                                .frame(width: 1080/3, height: 1080/3)
                         } else {
                             Image(uiImage: uiImage)
                                 .resizable()
