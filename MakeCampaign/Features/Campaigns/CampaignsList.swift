@@ -113,56 +113,73 @@ struct CampaignsView: View {
     let store: StoreOf<CampaignsFeature>
     
     var body: some View {
-            WithViewStore(self.store, observe: \.campaigns) { viewStore in
-                ZStack {
-                    ScrollView {
-                        LazyVGrid(
-                            columns: [
-                                GridItem(.flexible(), alignment: .top),
-                                GridItem(.flexible(), alignment: .top)
-                            ]) {
-                            ForEach(viewStore.state.elements) { element in
-                                CampaignCardView(campaign: element)
-                                    .padding(.top)
-                                    .onTapGesture {
-                                        viewStore.send(.campaignSelected(element.id))
-                                    }
-                            }
+        WithViewStore(self.store, observe: \.campaigns) { viewStore in
+            ZStack {
+                ScrollView {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12),
+                            GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12)
+                        ],
+                        spacing: 16
+                    ) {
+                        ForEach(viewStore.state.elements) { element in
+                            CampaignCardView(campaign: element)
+                                .onTapGesture {
+                                    viewStore.send(.campaignSelected(element.id))
+                                }
                         }
-                        .padding()
                     }
-                    VStack {
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 120) // Space for floating button
+                }
+                
+                VStack {
+                    Spacer()
+                    HStack {
                         Spacer()
-                            Button {
-                                viewStore.send(.createCampaignButtonTapped)
-                            } label: {
-                                Image(systemName: "plus")
-                                    .resizable()
-                                    .foregroundStyle(.white)
-                                    .padding(20)
-                                    .background(Circle().fill(Color.blue))
-                                    .frame(width: 70, height: 70)
-                            }
-                            .padding()
+                        Button {
+                            viewStore.send(.createCampaignButtonTapped)
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 56, height: 56)
+                                .background(
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.blue, Color.blue.opacity(0.8)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
+                                )
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 36)
                     }
-                    .task {
-                        viewStore.send(.onViewInitialLoad)
-                    }
-                .sheet(store: self.store.scope(
-                    state: \.$addCampaign,
-                    action: \.addCampaign
-                )) { store in
-                    NavigationStack {
-                        CampaignDetailsFormView(store: store)
-                            .navigationTitle("Новий збір")
-                            .toolbar {
-                                ToolbarItem(placement: .cancellationAction) {
-                                    Button("Закрити") {
-                                        viewStore.send(.cancelNewCampaignButtonTapped)
-                                    }
+                }
+            }
+            .task {
+                viewStore.send(.onViewInitialLoad)
+            }
+            .sheet(store: self.store.scope(
+                state: \.$addCampaign,
+                action: \.addCampaign
+            )) { store in
+                NavigationStack {
+                    CampaignDetailsFormView(store: store)
+                        .navigationTitle("Новий збір")
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Закрити") {
+                                    viewStore.send(.cancelNewCampaignButtonTapped)
                                 }
                             }
-                    }
+                        }
                 }
             }
         }
@@ -173,38 +190,131 @@ struct CampaignCardView: View {
     let campaign: Campaign
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(spacing: 0) {
             if let imageData = campaign.image?.raw,
                let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 170, height: 140)
-                    .clipped()
+                Group {
+                    if let template = campaign.template {
+                        CampaignTemplateView(campaign: campaign, template: template, image: uiImage)
+                    } else {
+                        GeometryReader { geometry in
+                            ZStack {
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.05))
+                                
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(
+                                        width: geometry.size.width,
+                                        height: geometry.size.height
+                                    )
+                                    .clipped()
+                            }
+                            .frame(
+                                width: geometry.size.width,
+                                height: geometry.size.height
+                            )
+                        }
+                    }
+                }
+                .aspectRatio(1.0, contentMode: .fit) // Square aspect ratio for templates
+                .clipped()
+                .cornerRadius(12, corners: [.topLeft, .topRight])
+            } else {
+                // Placeholder when no image
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.gray.opacity(0.1), Color.gray.opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .aspectRatio(1.0, contentMode: .fit)
                     .cornerRadius(12, corners: [.topLeft, .topRight])
+                    .overlay(
+                        VStack(spacing: 8) {
+                            Image(systemName: "photo")
+                                .font(.system(size: 32, weight: .light))
+                                .foregroundColor(.gray)
+                            Text("Немає зображення")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.gray)
+                        }
+                    )
             }
-            VStack(alignment: .leading, spacing: 4) {
+            
+            VStack(alignment: .leading, spacing: 6) {
                 Text(campaign.purpose)
-                    .font(.headline)
-                if let target = campaign.target {
-                    Text("Ціль: \(target.formattedAmount.appendingCurrency)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                if let collected = campaign.jar?.details?.amountInHryvnias {
-                    Text("\(collected.formattedAmount.appendingCurrency)")
-                        .font(.subheadline)
-                        .bold()
-                }
-                if let progress = campaign.progress {
-                    ProgressView(value: progress.fractionCompleted)
+                    .font(.system(size: 15, weight: .semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    if let progress = campaign.progress {
+                        VStack(spacing: 2) {
+                            HStack {
+                                Text("Прогрес")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text("\(Int(progress.fractionCompleted * 100))%")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.blue)
+                            }
+                            
+                            ProgressView(value: progress.fractionCompleted)
+                                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                                .scaleEffect(x: 1, y: 0.8)
+                        }
+                    }
+                    
+                    if let target = campaign.target {
+                        HStack {
+                            Text("Ціль:")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text(target.formattedAmount.appendingCurrency)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    if let collected = campaign.jar?.details?.amountInHryvnias {
+                        HStack {
+                            Text("Зібрано:")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text(collected.formattedAmount.appendingCurrency)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.green)
+                        }
+                    }
                 }
             }
-            .padding([.horizontal, .bottom])
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 2)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.gray.opacity(0.1), Color.gray.opacity(0.05)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
     }
 }
 

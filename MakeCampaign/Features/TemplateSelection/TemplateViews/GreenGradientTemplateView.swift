@@ -21,6 +21,10 @@ struct GreenGradientTemplateView: View {
             let goalTopSpacing: CGFloat = side * 0.08
             let goalValueSpacing: CGFloat = side * 0.01
             
+            let purposeFontSize = side * 0.06
+            let goalLabelFontSize = side * 0.07
+            let goalValueFontSize = side * 0.07
+            
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
@@ -35,19 +39,20 @@ struct GreenGradientTemplateView: View {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: spacing) {
                             Text(purpose)
-                                .font(.custom("Roboto-Bold", size: 28))
-                                .minimumScaleFactor(0.2)
+                                .font(.custom("Roboto-Bold", size: purposeFontSize))
+                                .minimumScaleFactor(0.8)
                                 .foregroundColor(.white)
                                 .lineLimit(nil)
                         Spacer()
                         VStack(alignment: .leading, spacing: goalValueSpacing) {
                             Text("ціль збору:")
-                                .font(.custom("Roboto-Bold", size: 28))
+                                .font(.custom("Roboto-Bold", size: goalLabelFontSize))
+                                .minimumScaleFactor(0.8)
                                 .lineLimit(1)
                                 .foregroundColor(.white)
                             Text(goal)
-                                .font(.custom("Roboto-Bold", size: 38))
-                                .minimumScaleFactor(0.35)
+                                .font(.custom("Roboto-Bold", size: goalValueFontSize))
+                                .minimumScaleFactor(0.8)
                                 .lineLimit(1)
                                 .foregroundColor(.white)
                         }
@@ -71,18 +76,113 @@ struct GreenGradientTemplateView: View {
 }
 
 #Preview {
-    GreenGradientTemplateView(
-        purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
-            if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                return AnyView(
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
+    ScrollView {
+        VStack(spacing: 20) {
+            VStack(spacing: 10) {
+                Text("Size: 1080/3 (360x360)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                GreenGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
                 )
-            } else {
-                return AnyView(Rectangle().fill(Color.red))
+                .frame(width: 1080/3, height: 1080/3)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/4 (270x270)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                GreenGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                )
+                .frame(width: 1080/4, height: 1080/4)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/5 (216x216)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                GreenGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                )
+                .frame(width: 1080/5, height: 1080/5)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/6 (180x180)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                GreenGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                )
+                .frame(width: 1080/6, height: 1080/6)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/7 (154x154) - Most problematic")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                
+                GreenGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                )
+                .frame(width: 1080/7, height: 1080/7)
             }
         }
-    )
-    .frame(width: 1080/3, height: 1350/3)
+        .padding()
+    }
 }

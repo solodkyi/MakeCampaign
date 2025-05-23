@@ -25,11 +25,11 @@ struct TemplateSelectionFeature: Reducer {
         case templateSelected(Template)
         case delegate(Delegate)
         case doneButtonTapped
-        case onImageRepositionFinished(CGFloat, CGSize)
+        case onImageRepositionFinished(CGFloat, CGSize, CGSize)
         
         enum Delegate: Equatable {
             case templateApplied(Template, forCampaign: Campaign.ID)
-            case imageRepositioned(CGFloat, CGSize, forCampaign: Campaign.ID)
+            case imageRepositioned(CGFloat, CGSize, CGSize, forCampaign: Campaign.ID)
         }
     }
     
@@ -44,7 +44,7 @@ struct TemplateSelectionFeature: Reducer {
                 state.campaign.imageScale = 1
                 state.campaign.imageOffset = .zero
                 
-                return .send(.delegate(.imageRepositioned(1, .zero, forCampaign: state.campaign.id)))
+                return .send(.delegate(.imageRepositioned(1, .zero, .zero, forCampaign: state.campaign.id)))
 
             case .doneButtonTapped:
                 if let templateID = state.selectedTemplateID,
@@ -55,11 +55,11 @@ struct TemplateSelectionFeature: Reducer {
                     }
                 }
                 return .none
-            case let .onImageRepositionFinished(scale, offset):
+            case let .onImageRepositionFinished(scale, offset, containerSize):
                 state.campaign.imageScale = scale
                 state.campaign.imageOffset = offset
                 
-                return .send(.delegate(.imageRepositioned(scale, offset, forCampaign: state.campaign.id)))
+                return .send(.delegate(.imageRepositioned(scale, offset, containerSize, forCampaign: state.campaign.id)))
             case .delegate:
                 return .none
             }
@@ -81,8 +81,8 @@ struct TemplateSelectionView: View {
                                 campaign: viewStore.campaign,
                                 template: selectedTemplate,
                                 image: uiImage,
-                                onImageTransformEnd: { newScale, newOffset in
-                                    viewStore.send(.onImageRepositionFinished(newScale, newOffset))
+                                onImageTransformEnd: { newScale, newOffset, containerSize in
+                                    viewStore.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
                                 }
                             )
                         } else {

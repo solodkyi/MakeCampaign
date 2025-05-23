@@ -13,6 +13,7 @@ struct Campaign: Codable, Equatable, Identifiable {
         let raw: Data?
         var offset: CGSize = .zero
         var scale: CGFloat = 1.0
+        var referenceSize: CGSize = CGSize(width: 300, height: 300)
     }
     let id: UUID
     var image: Image?
@@ -97,6 +98,18 @@ extension Campaign {
                 image = Image(raw: nil, offset: newValue)
             } else {
                 image?.offset = newValue
+            }
+        }
+    }
+    
+    var imageReferenceSize: CGSize {
+        get {
+            return image?.referenceSize ?? CGSize(width: 300, height: 300)
+        } set {
+            if image == nil {
+                image = Image(raw: nil, referenceSize: newValue)
+            } else {
+                image?.referenceSize = newValue
             }
         }
     }

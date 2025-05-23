@@ -68,10 +68,11 @@ struct AppFeature: Reducer {
                 case let .templateApplied(template, campaignId):
                     state.campaignsList.campaigns[id: campaignId]?.template = template
                     return .none
-                case let .imageRepositioned(scale, offset, campaignId):
+                case let .imageRepositioned(scale, offset, containerSize, campaignId):
                     guard var campaign = state.campaignsList.campaigns[id: campaignId] else { return .none }
                     campaign.imageOffset = offset
                     campaign.imageScale = scale
+                    campaign.imageReferenceSize = containerSize
                     state.campaignsList.campaigns[id: campaignId] = campaign
                     return .none
                 }

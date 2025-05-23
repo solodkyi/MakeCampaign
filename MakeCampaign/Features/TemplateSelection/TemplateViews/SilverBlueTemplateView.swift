@@ -20,6 +20,9 @@ struct SilverBlueTemplateView: View {
             let imageWidth = side * 838/1080
             let imageHeight = side * 432/1080
             
+            let goalFontSize = side * 0.08
+            let purposeFontSize = side * 0.055
+            
             ZStack {
                 LinearGradient(
                     gradient: Gradient(stops: [
@@ -47,15 +50,14 @@ struct SilverBlueTemplateView: View {
                     
                     VStack(alignment: .trailing, spacing: bottomTextSpacing) {
                         Text("Збір на \(goal)")
-                            .font(.custom("Roboto-Bold", size: 44))
+                            .font(.custom("Roboto-Bold", size: goalFontSize))
                             .foregroundColor(.white)
-                            .minimumScaleFactor(0.2)
+                            .minimumScaleFactor(0.8)
 
                         Text(purpose)
-                            .multilineTextAlignment(.leading)
-                            .font(.custom("Roboto-Bold", size: 28)
-                            )
-                            .minimumScaleFactor(0.2)
+                            .multilineTextAlignment(.trailing)
+                            .font(.custom("Roboto-Bold", size: purposeFontSize))
+                            .minimumScaleFactor(0.8)
                             .foregroundColor(.white)
                             .lineLimit(nil)
                     }
@@ -71,17 +73,108 @@ struct SilverBlueTemplateView: View {
 }
 
 #Preview {
-    SilverBlueTemplateView(
-        purpose: "текст текст тексттекст текст тексттекст текст ", goal: "000.000") {
-            if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                return AnyView(
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                )
-            } else {
-                return AnyView(Rectangle().fill(Color.red))
+    ScrollView {
+        VStack(spacing: 20) {
+            VStack(spacing: 10) {
+                Text("Size: 1080/3 (360x360)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                SilverBlueTemplateView(
+                    purpose: "текст текст тексттекст текст тексттекст текст ", goal: "000.000") {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                .frame(width: 1080/3, height: 1080/3)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/4 (270x270)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                SilverBlueTemplateView(
+                    purpose: "текст текст тексттекст текст тексттекст текст ", goal: "000.000") {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                .frame(width: 1080/4, height: 1080/4)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/5 (216x216)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                SilverBlueTemplateView(
+                    purpose: "текст текст тексттекст текст тексттекст текст ", goal: "000.000") {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                .frame(width: 1080/5, height: 1080/5)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/6 (180x180)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                SilverBlueTemplateView(
+                    purpose: "текст текст тексттекст текст тексттекст текст ", goal: "000.000") {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                .frame(width: 1080/6, height: 1080/6)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/7 (154x154)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                SilverBlueTemplateView(
+                    purpose: "текст текст тексттекст текст тексттекст текст ", goal: "000.000") {
+                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                            return AnyView(
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            )
+                        } else {
+                            return AnyView(Rectangle().fill(Color.red))
+                        }
+                    }
+                .frame(width: 1080/7, height: 1080/7)
             }
         }
-    .frame(width: 1080/3, height: 1350/3)
+        .padding()
+    }
 }

@@ -154,9 +154,10 @@ struct CampaignDetailsFeature: Reducer {
                 state.campaign.template = template
                 state.destination = nil
                 return .none
-            case let .destination(.presented(.templateSelection(.delegate(.imageRepositioned(scale, offset, forCampaign: _))))):
+            case let .destination(.presented(.templateSelection(.delegate(.imageRepositioned(scale, offset, containerSize, forCampaign: _))))):
                 state.campaign.imageScale = scale
                 state.campaign.imageOffset = offset
+                state.campaign.imageReferenceSize = containerSize
                 return .none
             case .destination: return .none
             case .onTemplateButtonTapped:
@@ -347,6 +348,7 @@ struct CampaignDetailsFormView: View {
                                         .onTapGesture {
                                             viewStore.send(.onImageTapped)
                                         }
+                                        .frame(width: 1080/4, height: 1080/4)
                                 } else {
                                     Image(uiImage: uiImage)
                                         .resizable()
@@ -393,7 +395,7 @@ struct CampaignDetailsFormView: View {
                 }
                 if viewStore.isPresentingImageOverlay {
                     if let imageData = viewStore.campaign.image?.raw, let uiImage = UIImage(data: imageData) {
-                        ZStack(alignment: .topTrailing) {
+                        ZStack {
                             Color.black.ignoresSafeArea()
                             VStack(alignment: .center) {
                                 Spacer()
@@ -403,8 +405,8 @@ struct CampaignDetailsFormView: View {
                                         template: template,
                                         image: uiImage
                                     )
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
+                                    .frame(maxWidth: 1080/3, maxHeight: 1080/3)
+                                    .edgesIgnoringSafeArea(.all)
                                 } else {
                                     Image(uiImage: uiImage)
                                         .resizable()

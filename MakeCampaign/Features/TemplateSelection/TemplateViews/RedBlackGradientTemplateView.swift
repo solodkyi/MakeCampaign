@@ -25,6 +25,10 @@ struct RedBlackGradientTemplateView: View {
             let horizontalPadding = side * 0.05
             let imageWidth = side * 432 / 1080
             let imageHeight = side * 728 / 1080
+            
+            let purposeFontSize = side * 0.06
+            let goalFontSize = side * 0.08
+            
             ZStack {
                 RadialGradient(
                     gradient: Gradient(stops: [
@@ -41,9 +45,9 @@ struct RedBlackGradientTemplateView: View {
                     VStack(alignment: .leading) {
                         Text(purpose)
                             .multilineTextAlignment(.leading)
-                            .font(.custom("Roboto-Bold", size: 25))
+                            .font(.custom("Roboto-Bold", size: purposeFontSize))
                             .foregroundColor(.white)
-                            .minimumScaleFactor(0.2)
+                            .minimumScaleFactor(0.8)
                             .lineLimit(nil)
                             .padding(horizontalPadding)
                     }
@@ -54,18 +58,18 @@ struct RedBlackGradientTemplateView: View {
                                 .clipped()
                             Spacer()
                             
-                            VStack(alignment: .leading, spacing: 5) {
+                            VStack(alignment: .trailing, spacing: 5) {
                                 Text("ціль збору:")
-                                    .font(.custom("Roboto-Bold", size: 60))
+                                    .font(.custom("Roboto-Bold", size: goalFontSize))
                                     .lineLimit(1)
                                     .foregroundColor(.white)
-                                    .minimumScaleFactor(0.3)
+                                    .minimumScaleFactor(0.8)
                                 
                                 Text(goal)
-                                    .font(.custom("Roboto-Bold", size: 60))
+                                    .font(.custom("Roboto-Bold", size: goalFontSize))
                                     .lineLimit(1)
                                     .foregroundColor(.white)
-                                    .minimumScaleFactor(0.3)
+                                    .minimumScaleFactor(0.8)
                             }
                             .padding(.bottom, verticalPadding)
                     }
@@ -78,26 +82,145 @@ struct RedBlackGradientTemplateView: View {
 }
 
 #Preview {
-    RedBlackGradientTemplateView(
-        purpose: "текст текст текст текст",
-        goal: "000.000"
-    ) {
-        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-            let initialOffset = Campaign.mock1.image?.offset ?? .zero
-            let initialScale = Campaign.mock1.image?.scale ?? 1.0
+    ScrollView {
+        VStack(spacing: 20) {
+            VStack(spacing: 10) {
+                Text("Size: 1080/3 (360x360)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                RedBlackGradientTemplateView(
+                    purpose: "текст текст текст текст",
+                    goal: "000.000"
+                ) {
+                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
+                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
+                        
+                        return AnyView(
+                            ImageTransformPreview(
+                                image: uiImage,
+                                initialOffset: initialOffset,
+                                initialScale: initialScale
+                            )
+                        )
+                    } else {
+                        return AnyView(Rectangle().fill(Color.red))
+                    }
+                }
+                .frame(width: 1080/3, height: 1080/3)
+            }
             
-            return AnyView(
-                ImageTransformPreview(
-                    image: uiImage,
-                    initialOffset: initialOffset,
-                    initialScale: initialScale
-                )
-            )
-        } else {
-            return AnyView(Rectangle().fill(Color.red))
+            VStack(spacing: 10) {
+                Text("Size: 1080/4 (270x270)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                RedBlackGradientTemplateView(
+                    purpose: "текст текст текст текст",
+                    goal: "000.000"
+                ) {
+                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
+                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
+                        
+                        return AnyView(
+                            ImageTransformPreview(
+                                image: uiImage,
+                                initialOffset: initialOffset,
+                                initialScale: initialScale
+                            )
+                        )
+                    } else {
+                        return AnyView(Rectangle().fill(Color.red))
+                    }
+                }
+                .frame(width: 1080/4, height: 1080/4)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/5 (216x216)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                RedBlackGradientTemplateView(
+                    purpose: "текст текст текст текст",
+                    goal: "000.000"
+                ) {
+                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
+                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
+                        
+                        return AnyView(
+                            ImageTransformPreview(
+                                image: uiImage,
+                                initialOffset: initialOffset,
+                                initialScale: initialScale
+                            )
+                        )
+                    } else {
+                        return AnyView(Rectangle().fill(Color.red))
+                    }
+                }
+                .frame(width: 1080/5, height: 1080/5)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/6 (180x180)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                RedBlackGradientTemplateView(
+                    purpose: "текст текст текст текст",
+                    goal: "000.000"
+                ) {
+                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
+                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
+                        
+                        return AnyView(
+                            ImageTransformPreview(
+                                image: uiImage,
+                                initialOffset: initialOffset,
+                                initialScale: initialScale
+                            )
+                        )
+                    } else {
+                        return AnyView(Rectangle().fill(Color.red))
+                    }
+                }
+                .frame(width: 1080/6, height: 1080/6)
+            }
+            
+            VStack(spacing: 10) {
+                Text("Size: 1080/7 (154x154)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                RedBlackGradientTemplateView(
+                    purpose: "текст текст текст текст",
+                    goal: "000.000"
+                ) {
+                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
+                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
+                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
+                        
+                        return AnyView(
+                            ImageTransformPreview(
+                                image: uiImage,
+                                initialOffset: initialOffset,
+                                initialScale: initialScale
+                            )
+                        )
+                    } else {
+                        return AnyView(Rectangle().fill(Color.red))
+                    }
+                }
+                .frame(width: 1080/7, height: 1080/7)
+            }
         }
+        .padding()
     }
-    .frame(width: 1080/3, height: 1350/3)
 }
 
 struct ImageTransformPreview: View {

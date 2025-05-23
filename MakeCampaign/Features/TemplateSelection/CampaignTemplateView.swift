@@ -5,7 +5,7 @@ struct CampaignTemplateView: View {
     let campaign: Campaign
     let template: Template
     let image: UIImage
-    let onImageTransformEnd: ((CGFloat, CGSize) -> Void)?
+    let onImageTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
     
     private var isRepositioningEnabled: Bool {
         onImageTransformEnd != nil
@@ -15,7 +15,7 @@ struct CampaignTemplateView: View {
         campaign: Campaign,
         template: Template,
         image: UIImage,
-        onImageTransformEnd: ((CGFloat, CGSize) -> Void)? = nil
+        onImageTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)? = nil
     ) {
         self.campaign = campaign
         self.template = template
@@ -58,16 +58,67 @@ struct CampaignTemplateView: View {
     }
     
     private func imageView() -> some View {
-        GeometryReader { geometry in
-            let initialOffset = campaign.imageOffset
-            let initialScale = campaign.imageScale
-            
-            ImageTransformView(
-                image: image,
-                initialOffset: initialOffset,
-                initialScale: initialScale,
-                onTransformEnd: onImageTransformEnd
+        if isRepositioningEnabled {
+            // Full transform functionality for editing mode
+            AnyView(
+                GeometryReader { geometry in
+                    let initialOffset = campaign.imageOffset
+                    let initialScale = campaign.imageScale
+                    
+                    ImageTransformView(
+                        image: image,
+                        initialOffset: initialOffset,
+                        initialScale: initialScale,
+                        containerSize: geometry.size,
+                        onTransformEnd: onImageTransformEnd
+                    )
+                }
             )
+        } else {
+            // Simplified display view that applies stored transforms
+            AnyView(
+                DisplayImageView(
+                    image: image,
+                    scale: campaign.imageScale,
+                    offset: campaign.imageOffset,
+                    referenceSize: campaign.imageReferenceSize
+                )
+            )
+        }
+    }
+}
+
+struct DisplayImageView: View {
+    let image: UIImage
+    let scale: CGFloat
+    let offset: CGSize
+    let referenceSize: CGSize
+    
+    var body: some View {
+        GeometryReader { geometry in
+            // Get current container dimensions
+            let currentWidth = geometry.size.width
+            let currentHeight = geometry.size.height
+            
+            // Use the stored reference size for accurate scaling
+            let referenceWidth = referenceSize.width
+            let referenceHeight = referenceSize.height
+            
+            // Calculate relative offset (as percentage of container)
+            let relativeOffsetX = offset.width / referenceWidth
+            let relativeOffsetY = offset.height / referenceHeight
+            
+            // Convert back to absolute offset for current container
+            let scaledOffset = CGSize(
+                width: relativeOffsetX * currentWidth,
+                height: relativeOffsetY * currentHeight
+            )
+            
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .scaleEffect(max(0.1, scale))
+                .offset(scaledOffset)
         }
     }
 }
@@ -76,7 +127,8 @@ struct ImageTransformView: View {
     let image: UIImage
     let initialOffset: CGSize
     let initialScale: CGFloat
-    let onTransformEnd: ((CGFloat, CGSize) -> Void)?
+    let containerSize: CGSize
+    let onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
     
     @State private var offset: CGSize
     @State private var scale: CGFloat
@@ -89,11 +141,13 @@ struct ImageTransformView: View {
         image: UIImage,
         initialOffset: CGSize,
         initialScale: CGFloat,
-        onTransformEnd: ((CGFloat, CGSize) -> Void)? = nil
+        containerSize: CGSize,
+        onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)? = nil
     ) {
         self.image = image
         self.initialOffset = initialOffset
         self.initialScale = initialScale
+        self.containerSize = containerSize
         self.onTransformEnd = onTransformEnd
         _offset = State(initialValue: initialOffset)
         _scale = State(initialValue: initialScale)
@@ -103,13 +157,14 @@ struct ImageTransformView: View {
         Image(uiImage: image)
             .resizable()
             .scaledToFill()
-            .scaleEffect(scale)
+            .scaleEffect(max(0.1, scale))
             .offset(offset)
+            .clipped()
             .onChange(of: initialOffset) { newOffset in
                 offset = newOffset
             }
             .onChange(of: initialScale) { newScale in
-                scale = newScale
+                scale = max(0.1, newScale)
             }
             .applyIf(isRepositioningEnabled) { view in
                 view
@@ -119,17 +174,17 @@ struct ImageTransformView: View {
                                 offset = gesture.translation
                             }
                             .onEnded { _ in
-                                onTransformEnd?(scale, offset)
+                                onTransformEnd?(scale, offset, containerSize)
                             }
                     )
                     .gesture(
                         MagnificationGesture()
                             .onChanged { value in
-                                scale = value
+                                scale = max(0.1, value)
                             }
                             .onEnded { value in
-                                scale = max(1.0, value)
-                                onTransformEnd?(scale, offset)
+                                scale = max(0.1, value)
+                                onTransformEnd?(scale, offset, containerSize)
                             }
                     )
             }
@@ -156,7 +211,7 @@ extension View {
             campaign: .mock1,
             template: Template(name: "1", gradient: .linearPurple, imagePlacement: .topCenter),
             image: UIImage(data: Campaign.mock1.image!.raw!) ?? UIImage(),
-            onImageTransformEnd: { _, _ in }
+            onImageTransformEnd: { _, _, _ in }
         )
         
         Text("Repositioning Disabled")
