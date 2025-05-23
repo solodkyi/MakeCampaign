@@ -115,26 +115,94 @@ struct CampaignsView: View {
     var body: some View {
         WithViewStore(self.store, observe: \.campaigns) { viewStore in
             ZStack {
-                ScrollView {
-                    LazyVGrid(
-                        columns: [
-                            GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12),
-                            GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12)
-                        ],
-                        spacing: 16
-                    ) {
-                        ForEach(viewStore.state.elements) { element in
-                            CampaignCardView(campaign: element)
-                                .onTapGesture {
-                                    viewStore.send(.campaignSelected(element.id))
-                                }
+                if viewStore.state.isEmpty {
+                    // Empty state view
+                    VStack(spacing: 24) {
+                        Spacer()
+                        
+                        VStack(spacing: 16) {
+                            Image(systemName: "megaphone.fill")
+                                .font(.system(size: 64, weight: .light))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [Color.blue, Color.blue.opacity(0.7)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            
+                            VStack(spacing: 8) {
+                                Text("Почніть свій перший збір")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundColor(.primary)
+                                    .multilineTextAlignment(.center)
+                                
+                                Text("Створіть кампанію для збору коштів та допомагайте тим, хто цього потребує")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 32)
+                            }
                         }
+                        
+                        VStack(spacing: 12) {
+                            HStack(spacing: 8) {
+                                Text("Натисніть")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                
+                                Image(systemName: "plus")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 24, height: 24)
+                                    .background(
+                                        Circle()
+                                            .fill(Color.blue)
+                                    )
+                                
+                                Text("щоб створити кампанію")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.blue.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        
+                        Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 120) // Space for floating button
+                    .padding(.horizontal, 32)
+                } else {
+                    // Existing campaigns grid
+                    ScrollView {
+                        LazyVGrid(
+                            columns: [
+                                GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12),
+                                GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12)
+                            ],
+                            spacing: 16
+                        ) {
+                            ForEach(viewStore.state.elements) { element in
+                                CampaignCardView(campaign: element)
+                                    .onTapGesture {
+                                        viewStore.send(.campaignSelected(element.id))
+                                    }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                        .padding(.bottom, 120) // Space for floating button
+                    }
                 }
                 
+                // Floating + button (always visible)
                 VStack {
                     Spacer()
                     HStack {
@@ -173,13 +241,8 @@ struct CampaignsView: View {
                 NavigationStack {
                     CampaignDetailsFormView(store: store)
                         .navigationTitle("Новий збір")
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Закрити") {
-                                    viewStore.send(.cancelNewCampaignButtonTapped)
-                                }
-                            }
-                        }
+                        .navigationBarTitleDisplayMode(.inline)
+                        .navigationBarBackButtonHidden(true)
                 }
             }
         }

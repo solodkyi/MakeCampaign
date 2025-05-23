@@ -6,7 +6,12 @@
 //
 
 import Dependencies
+#if canImport(UIKit)
 import UIKit
+#endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 extension DependencyValues {
   var openSettings: @Sendable () async -> Void {
@@ -19,7 +24,16 @@ extension DependencyValues {
 
     static let liveValue: @Sendable () async -> Void = {
       await MainActor.run {
-        UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
+        #if canImport(UIKit)
+        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+          UIApplication.shared.open(settingsURL)
+        }
+        #elseif canImport(AppKit)
+        // On macOS, open System Preferences/Settings
+        if let settingsURL = URL(string: "x-apple.systempreferences:") {
+          NSWorkspace.shared.open(settingsURL)
+        }
+        #endif
       }
     }
   }
