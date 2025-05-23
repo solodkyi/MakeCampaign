@@ -76,7 +76,7 @@ struct CampaignDetailsFeature: Reducer {
             case item(PhotosPickerItem?)
         }
         
-        @BindingState var focus: Field? = .name
+        @BindingState var focus: Field?
         @BindingState var campaign: Campaign
         @PresentationState var destination: Destination.State?
         
@@ -86,6 +86,31 @@ struct CampaignDetailsFeature: Reducer {
         var selectedImage: SelectedImage?
         var validationErrors = ValidationErrors()
         var isFormValid: Bool = false
+        
+        init(
+            campaign: Campaign,
+            destination: Destination.State? = nil,
+            isEditing: Bool = false,
+            isPresentingImageOverlay: Bool = false,
+            selectedImage: SelectedImage? = nil,
+            validationErrors: ValidationErrors = ValidationErrors(),
+            isFormValid: Bool = false
+        ) {
+            
+            if isEditing {
+                self.focus = nil
+            } else {
+                self.focus = .name
+            }
+            
+            self.campaign = campaign
+            self.destination = destination
+            self.isEditing = isEditing
+            self.isPresentingImageOverlay = isPresentingImageOverlay
+            self.selectedImage = selectedImage
+            self.validationErrors = validationErrors
+            self.isFormValid = isFormValid
+        }
     }
     
     enum Action: BindableAction {
@@ -205,6 +230,7 @@ struct CampaignDetailsFeature: Reducer {
                 return .none
             case .onImageTapped:
                 state.isPresentingImageOverlay.toggle()
+                state.focus = nil
                 return .none
             case .imagePreviewCloseButtonTappped:
                 state.isPresentingImageOverlay.toggle()
