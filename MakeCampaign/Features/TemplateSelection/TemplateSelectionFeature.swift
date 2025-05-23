@@ -77,8 +77,14 @@ struct TemplateSelectionView: View {
                     if let imageData = viewStore.campaign.image?.raw,
                        let uiImage = UIImage(data: imageData) {
                         if let selectedTemplate = viewStore.selectedTemplate {
-                            templateView(forTemplate: selectedTemplate, viewStore: viewStore, image: uiImage)
-                                .frame(width: 1080/3, height: 1080/3)
+                            CampaignTemplateView(
+                                campaign: viewStore.campaign,
+                                template: selectedTemplate,
+                                image: uiImage,
+                                onImageTransformEnd: { newScale, newOffset in
+                                    viewStore.send(.onImageRepositionFinished(newScale, newOffset))
+                                }
+                            )
                         } else {
                             Image(uiImage: uiImage)
                                 .resizable()
@@ -142,93 +148,6 @@ struct TemplateSelectionView: View {
             }
             .navigationTitle("Обрати шаблон")
             .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-    
-    @ViewBuilder
-    func templateView(forTemplate template: Template, viewStore: ViewStore<TemplateSelectionFeature.State, TemplateSelectionFeature.Action>, image: UIImage) -> some View {
-        let campaign = viewStore.campaign
-        let (purpose, goal) = (campaign.purpose, campaign.target?.formattedAmount.appendingCurrency ?? "")
-        
-        switch (template.gradient, template.imagePlacement) {
-        case (.linearPurple, .topCenter):
-            PurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView(viewStore: viewStore, image: image)
-            })
-        case (.linearGreen, .topToBottomTrailing):
-            GreenGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView(viewStore: viewStore, image: image)
-            })
-        case (.angularYellowBlue, .trailing):
-            YellowBlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView(viewStore: viewStore, image: image)
-            })
-        case (.linearSilverBlue, .trailingToEdge):
-            SilverBlueTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView(viewStore: viewStore, image: image)
-            })
-        case (.radialRedBlack, .topToEdge):
-            RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView(viewStore: viewStore, image: image)
-            })
-        default: EmptyView()
-        }
-    }
-    
-    private func imageView(viewStore: ViewStore<TemplateSelectionFeature.State, TemplateSelectionFeature.Action>, image: UIImage) -> some View {
-        GeometryReader { geometry in
-            let initialOffset = viewStore.campaign.image?.offset ?? .zero
-            let initialScale = viewStore.campaign.image?.scale ?? 1.0
-            
-            ImageTransformView(
-                image: image,
-                initialOffset: initialOffset,
-                initialScale: initialScale
-            ) { newOffset, newScale in
-                viewStore.send(.onImageRepositionFinished(newScale, newOffset))
-            }
-        }
-    }
-    
-    struct ImageTransformView: View {
-        let image: UIImage
-        let onTransformEnd: (CGSize, CGFloat) -> Void
-        
-        @State private var offset: CGSize
-        @State private var scale: CGFloat
-        
-        init(image: UIImage, initialOffset: CGSize, initialScale: CGFloat, onTransformEnd: @escaping (CGSize, CGFloat) -> Void) {
-            self.image = image
-            self.onTransformEnd = onTransformEnd
-            _offset = State(initialValue: initialOffset)
-            _scale = State(initialValue: initialScale)
-        }
-        
-        var body: some View {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .scaleEffect(scale)
-                .offset(offset)
-                .gesture(
-                    DragGesture()
-                        .onChanged { gesture in
-                            offset = gesture.translation
-                        }
-                        .onEnded { _ in
-                            onTransformEnd(offset, scale)
-                        }
-                )
-                .gesture(
-                    MagnificationGesture()
-                        .onChanged { value in
-                            scale = value
-                        }
-                        .onEnded { value in
-                            scale = max(1.0, value)
-                            onTransformEnd(offset, scale)
-                        }
-                )
         }
     }
 }

@@ -66,8 +66,6 @@ struct AppFeature: Reducer {
             case let .path(.element(id: id, action: .details(.destination(.presented(.templateSelection(.delegate(action))))))):
                 switch action {
                 case let .templateApplied(template, campaignId):
-                    guard let detailsId = state.path.ids.last else { return .none }
-                    state.path[id: detailsId, case: /Path.State.details]?.campaign.template = template
                     state.campaignsList.campaigns[id: campaignId]?.template = template
                     return .none
                 case let .imageRepositioned(scale, offset, campaignId):
@@ -75,9 +73,6 @@ struct AppFeature: Reducer {
                     campaign.imageOffset = offset
                     campaign.imageScale = scale
                     state.campaignsList.campaigns[id: campaignId] = campaign
-                    
-                    guard let detailsId = state.path.ids.last else { return .none }
-                    state.path[id: detailsId, case: /Path.State.details]?.campaign = campaign
                     return .none
                 }
             case .path: return .none

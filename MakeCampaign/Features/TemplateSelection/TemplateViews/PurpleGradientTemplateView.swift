@@ -51,7 +51,7 @@ struct PurpleGradientTemplateView: View {
                     
                     HStack {
                         Text(purpose)
-                            .multilineTextAlignment(.leading)
+                            .multilineTextAlignment(.center)
                             .font(.custom("Roboto-Bold", size: 28)
                             )
                             .foregroundColor(.white)

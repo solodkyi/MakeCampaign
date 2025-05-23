@@ -12,8 +12,9 @@ extension Campaign {
     static let mock2 = Campaign(
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir2", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
+        template: .init(name: "1", gradient: .linearPurple, imagePlacement: .topCenter),
         purpose: "Збір на машину розмінування ZMIY",
-        target: 50000
+        target: 50000,
     )
     
     static let mock3 = Campaign(

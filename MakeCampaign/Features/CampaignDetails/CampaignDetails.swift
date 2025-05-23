@@ -154,6 +154,10 @@ struct CampaignDetailsFeature: Reducer {
                 state.campaign.template = template
                 state.destination = nil
                 return .none
+            case let .destination(.presented(.templateSelection(.delegate(.imageRepositioned(scale, offset, forCampaign: _))))):
+                state.campaign.imageScale = scale
+                state.campaign.imageOffset = offset
+                return .none
             case .destination: return .none
             case .onTemplateButtonTapped:
                 state.destination = .templateSelection(TemplateSelectionFeature.State(
@@ -337,14 +341,21 @@ struct CampaignDetailsFormView: View {
                             
                             if let imageData = viewStore.campaign.image?.raw,
                                let uiImage = UIImage(data: imageData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: 200)
-                                    .cornerRadius(12)
-                                    .onTapGesture {
-                                        viewStore.send(.onImageTapped)
-                                    }
+                                
+                                if let template = viewStore.campaign.template {
+                                    CampaignTemplateView(campaign: viewStore.campaign, template: template, image: uiImage)
+                                        .onTapGesture {
+                                            viewStore.send(.onImageTapped)
+                                        }
+                                } else {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(height: 200)
+                                        .onTapGesture {
+                                            viewStore.send(.onImageTapped)
+                                        }
+                                }
                                 
                                 Button {
                                     viewStore.send(.onTemplateButtonTapped)
@@ -381,11 +392,33 @@ struct CampaignDetailsFormView: View {
                     }
                 }
                 if viewStore.isPresentingImageOverlay {
-                    if let imageData = viewStore.campaign.image?.raw {
-                        ImagePreviewView(
-                            imageData: imageData, onCancel: {
-                                viewStore.send(.imagePreviewCloseButtonTappped)
-                        })
+                    if let imageData = viewStore.campaign.image?.raw, let uiImage = UIImage(data: imageData) {
+                        ZStack(alignment: .topTrailing) {
+                            Color.black.ignoresSafeArea()
+                            VStack(alignment: .center) {
+                                Spacer()
+                                if let template = viewStore.campaign.template {
+                                    CampaignTemplateView(
+                                        campaign: viewStore.campaign,
+                                        template: template,
+                                        image: uiImage
+                                    )
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                                } else {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .edgesIgnoringSafeArea(.all)
+                                }
+                                Spacer()
+                            }
+                        }
+                        .onTapGesture {
+                            viewStore.send(.imagePreviewCloseButtonTappped)
+                        }
+                        .statusBar(hidden: viewStore.isPresentingImageOverlay)
                         .transition(.opacity)
                         .animation(.easeInOut(duration: 0.2), value: viewStore.isPresentingImageOverlay)
                         .navigationBarBackButtonHidden()
