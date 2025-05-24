@@ -59,7 +59,6 @@ struct CampaignTemplateView: View {
     
     private func imageView() -> some View {
         if isRepositioningEnabled {
-            // Full transform functionality for editing mode
             AnyView(
                 GeometryReader { geometry in
                     let initialOffset = campaign.imageOffset
@@ -75,7 +74,6 @@ struct CampaignTemplateView: View {
                 }
             )
         } else {
-            // Simplified display view that applies stored transforms
             AnyView(
                 DisplayImageView(
                     image: image,
@@ -96,19 +94,15 @@ struct DisplayImageView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            // Get current container dimensions
             let currentWidth = geometry.size.width
             let currentHeight = geometry.size.height
             
-            // Use the stored reference size for accurate scaling
             let referenceWidth = referenceSize.width
             let referenceHeight = referenceSize.height
             
-            // Calculate relative offset (as percentage of container)
             let relativeOffsetX = offset.width / referenceWidth
             let relativeOffsetY = offset.height / referenceHeight
             
-            // Convert back to absolute offset for current container
             let scaledOffset = CGSize(
                 width: relativeOffsetX * currentWidth,
                 height: relativeOffsetY * currentHeight

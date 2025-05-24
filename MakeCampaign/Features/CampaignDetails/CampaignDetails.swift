@@ -133,6 +133,7 @@ struct CampaignDetailsFeature: Reducer {
         case onSelectImageDataConverted(Data)
         case destination(PresentationAction<Destination.Action>)
         case setSelectedItem(PhotosPickerItem?)
+        case onPhotoLibraryPermissionResponse(PHAuthorizationStatus)
         case imagePreviewCloseButtonTappped
         
         case binding(BindingAction<State>)
@@ -164,6 +165,7 @@ struct CampaignDetailsFeature: Reducer {
                 case confirmDeleteCampaign
                 case openAppSettings
                 case photoWasSavedInLibrary
+                case photoSavingFailed
             }
         }
         
@@ -183,6 +185,20 @@ struct CampaignDetailsFeature: Reducer {
                     await send(.delegate(.deleteCampaign(id)))
                     await self.dismiss()
                 }
+            case .destination(.presented(.alert(.photoSavingFailed))):
+                state.destination = .alert(AlertState(title: {
+                    TextState("Немає доступу")
+                }, actions: {
+                    ButtonState(role: .cancel) {
+                        TextState("Закрити")
+                    }
+                    ButtonState(role: .destructive, action: .openAppSettings) {
+                        TextState("Налаштування")
+                    }
+                }, message: {
+                    TextState("Додатку необхідний доступ для збереження зображення у вашій бібліотеці")
+                }))
+                return .none
             case .destination(.presented(.alert(.openAppSettings))):
                 return .run { send in
                     await openSettings()
@@ -206,16 +222,36 @@ struct CampaignDetailsFeature: Reducer {
                 
             case .onSaveButtonTapped:
                 validateForm(&state)
-
+                
                 if state.validationErrors.isEmpty {
-                    return .concatenate(
-                        .send(.delegate(.saveCampaign(state.campaign))),
-                        .run { _ in await dismiss() }
-                    )
+                    return .run { send in
+                        @Dependency(\.photoLibrarySaver) var saver
+                        await send(.onPhotoLibraryPermissionResponse(saver.requestPermission()))
+                    }
                 }
         
                 return .none
-                
+            
+            case let .onPhotoLibraryPermissionResponse(authorizationStatus):
+                switch authorizationStatus {
+                case .authorized, .limited:
+                    return .run { [campaign = state.campaign] send in
+                        @Dependency(\.campaignRenderer) var renderer
+                        @Dependency(\.photoLibrarySaver) var saver
+                        do {
+                            let image = try await renderer.render(campaign)
+                            try await saver.saveImage(image)
+                            
+                            await send(.delegate(.saveCampaign(campaign)))
+                            await dismiss()
+                        } catch {
+                            await send(.destination(.presented(.alert(.photoSavingFailed))))
+                        }
+                    }
+                case .denied, .restricted:
+                    return .send(.destination(.presented(.alert(.photoSavingFailed))))
+                default: return .none
+                }
             case .binding:
                 if !state.campaign.purpose.isEmpty {
                     validateField(.name, &state)

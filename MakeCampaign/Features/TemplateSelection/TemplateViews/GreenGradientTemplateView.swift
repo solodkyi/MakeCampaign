@@ -98,7 +98,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/3, height: 1080/3)
+                .frame(width: 1080/3, height: 1350/3)
             }
             
             VStack(spacing: 10) {
@@ -119,7 +119,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/4, height: 1080/4)
+                .frame(width: 1080/4, height: 1350/4)
             }
             
             VStack(spacing: 10) {
@@ -140,7 +140,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/5, height: 1080/5)
+                .frame(width: 1080/5, height: 1350/5)
             }
             
             VStack(spacing: 10) {
@@ -161,7 +161,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/6, height: 1080/6)
+                .frame(width: 1080/6, height: 1350/6)
             }
             
             VStack(spacing: 10) {
@@ -182,7 +182,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/7, height: 1080/7)
+                .frame(width: 1080/7, height: 1350/7)
             }
         }
         .padding()
