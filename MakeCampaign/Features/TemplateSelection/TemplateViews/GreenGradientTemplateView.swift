@@ -2,11 +2,11 @@ import SwiftUI
 
 struct GreenGradientTemplateView: View {
     let purpose: String
-    let goal: String
+    let goal: String?
     
     var viewProvider: () -> AnyView
     
-    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
@@ -44,19 +44,21 @@ struct GreenGradientTemplateView: View {
                                 .foregroundColor(.white)
                                 .lineLimit(nil)
                         Spacer()
-                        VStack(alignment: .leading, spacing: goalValueSpacing) {
-                            Text("ціль збору:")
-                                .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                .minimumScaleFactor(0.8)
-                                .lineLimit(1)
-                                .foregroundColor(.white)
-                            Text(goal)
-                                .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                .minimumScaleFactor(0.8)
-                                .lineLimit(1)
-                                .foregroundColor(.white)
+                        if let goal {
+                            VStack(alignment: .leading, spacing: goalValueSpacing) {
+                                Text("ціль збору:")
+                                    .font(.custom("Roboto-Bold", size: goalLabelFontSize))
+                                    .minimumScaleFactor(0.8)
+                                    .lineLimit(1)
+                                    .foregroundColor(.white)
+                                Text(goal)
+                                    .font(.custom("Roboto-Bold", size: goalValueFontSize))
+                                    .minimumScaleFactor(0.8)
+                                    .lineLimit(1)
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.top, goalTopSpacing)
                         }
-                        .padding(.top, goalTopSpacing)
                     }
                     .padding(.leading, imageInset)
                     .padding(.vertical, imageInset)

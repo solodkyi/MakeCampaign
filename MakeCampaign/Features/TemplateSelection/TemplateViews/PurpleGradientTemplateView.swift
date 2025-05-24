@@ -9,10 +9,10 @@ import SwiftUI
 
 struct PurpleGradientTemplateView: View {
     let purpose: String
-    let goal: String
+    let goal: String?
     var viewProvider: () -> AnyView
     
-    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
@@ -66,18 +66,20 @@ struct PurpleGradientTemplateView: View {
                     
                     Spacer()
                     
-                    HStack {
-                        Spacer()
-                        Text("Ціль: \(goal)")
-                            .font(.custom("Roboto-Bold", size: goalFontSize))
-                            .multilineTextAlignment(.trailing)
-                            .minimumScaleFactor(0.8)
-                            .lineLimit(1)
-                            .foregroundColor(.white)
-
+                    if let goal {
+                        HStack {
+                            Spacer()
+                            Text("Ціль: \(goal)")
+                                .font(.custom("Roboto-Bold", size: goalFontSize))
+                                .multilineTextAlignment(.trailing)
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                                .foregroundColor(.white)
+                            
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, goalBottomPadding)
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom, goalBottomPadding)
                 }
                 .frame(width: side, height: side, alignment: .bottom)
             }

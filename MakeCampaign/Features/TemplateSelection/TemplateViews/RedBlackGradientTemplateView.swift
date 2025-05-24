@@ -8,11 +8,11 @@
 import SwiftUI
 
 struct RedBlackGradientTemplateView: View {
-    let goal: String
+    let goal: String?
     let purpose: String
     var viewProvider: () -> AnyView
     
-    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
@@ -58,20 +58,22 @@ struct RedBlackGradientTemplateView: View {
                                 .clipped()
                             Spacer()
                             
-                            VStack(alignment: .trailing, spacing: 5) {
-                                Text("ціль збору:")
-                                    .font(.custom("Roboto-Bold", size: goalFontSize))
-                                    .lineLimit(1)
-                                    .foregroundColor(.white)
-                                    .minimumScaleFactor(0.8)
-                                
-                                Text(goal)
-                                    .font(.custom("Roboto-Bold", size: goalFontSize))
-                                    .lineLimit(1)
-                                    .foregroundColor(.white)
-                                    .minimumScaleFactor(0.8)
+                            if let goal {
+                                VStack(alignment: .trailing, spacing: 5) {
+                                    Text("ціль збору:")
+                                        .font(.custom("Roboto-Bold", size: goalFontSize))
+                                        .lineLimit(1)
+                                        .foregroundColor(.white)
+                                        .minimumScaleFactor(0.8)
+                                    
+                                    Text(goal)
+                                        .font(.custom("Roboto-Bold", size: goalFontSize))
+                                        .lineLimit(1)
+                                        .foregroundColor(.white)
+                                        .minimumScaleFactor(0.8)
+                                }
+                                .padding(.bottom, verticalPadding)
                             }
-                            .padding(.bottom, verticalPadding)
                     }
                         .padding(.trailing, horizontalPadding*2)
                 }

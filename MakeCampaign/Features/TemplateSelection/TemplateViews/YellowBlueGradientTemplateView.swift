@@ -8,12 +8,12 @@
 import SwiftUI
 
 struct YellowBlueGradientTemplateView: View {
-    let goal: String
+    let goal: String?
     let purpose: String
     
     var viewProvider: () -> AnyView
     
-    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
@@ -43,19 +43,21 @@ struct YellowBlueGradientTemplateView: View {
                 
                 VStack(alignment: .leading, spacing: side * 0.01) {
                     HStack(alignment: .bottom, spacing: horizontalPadding) {
-                        VStack(alignment: .leading, spacing: side * 0.008) {
-                            Text("ціль збору:")
-                                .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                .foregroundColor(.white)
-                                .minimumScaleFactor(0.7)
-                                .lineLimit(1)
-                            Text(goal)
-                                .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                .foregroundColor(.white)
-                                .minimumScaleFactor(0.7)
-                                .lineLimit(1)
+                        if let goal {
+                            VStack(alignment: .leading, spacing: side * 0.008) {
+                                Text("ціль збору:")
+                                    .font(.custom("Roboto-Bold", size: goalLabelFontSize))
+                                    .foregroundColor(.white)
+                                    .minimumScaleFactor(0.7)
+                                    .lineLimit(1)
+                                Text(goal)
+                                    .font(.custom("Roboto-Bold", size: goalValueFontSize))
+                                    .foregroundColor(.white)
+                                    .minimumScaleFactor(0.7)
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                         
                         viewProvider()
                             .frame(width: imageWidth, height: imageHeight)

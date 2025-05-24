@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct SilverBlueTemplateView: View {
-    let goal: String
+    let goal: String?
     let purpose: String
     var viewProvider: () -> AnyView
     
-    init(purpose: String, goal: String, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
@@ -49,11 +49,12 @@ struct SilverBlueTemplateView: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: bottomTextSpacing) {
-                        Text("Збір на \(goal)")
-                            .font(.custom("Roboto-Bold", size: goalFontSize))
-                            .foregroundColor(.white)
-                            .minimumScaleFactor(0.8)
-
+                        if let goal {
+                            Text("Збір на \(goal)")
+                                .font(.custom("Roboto-Bold", size: goalFontSize))
+                                .foregroundColor(.white)
+                                .minimumScaleFactor(0.8)
+                        }
                         Text(purpose)
                             .multilineTextAlignment(.trailing)
                             .font(.custom("Roboto-Bold", size: purposeFontSize))
