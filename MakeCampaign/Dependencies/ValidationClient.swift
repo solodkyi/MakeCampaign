@@ -8,6 +8,7 @@ public enum ValidationError: Equatable {
     case invalidFormat
     case invalidURL
     case missingImage
+    case missingTemplate
     
     var message: String {
         switch self {
@@ -19,6 +20,8 @@ public enum ValidationError: Equatable {
             return "Неправильний формат URL"
         case .missingImage:
             return "Необхідно вибрати зображення"
+        case .missingTemplate:
+            return "Необхідно вибрати шаблон"
         }
     }
 }
@@ -30,6 +33,7 @@ struct ValidationClient {
     var validateTarget: (String) -> [ValidationError]
     var validateLink: (String) -> [ValidationError]
     var validateImage: (Data?) -> [ValidationError]
+    var validateTemplate: (Template?) -> [ValidationError]
     var validateField: (CampaignDetailsFeature.State.Field?, CampaignDetailsFeature.State) -> [ValidationError]
 }
 
@@ -85,11 +89,21 @@ extension ValidationClient: DependencyKey {
         return errors
     }
     
+    private static func validateTemplateImpl(_ template: Template?) -> [ValidationError] {
+        var errors: [ValidationError] = []
+        guard template != nil else {
+            errors.append(.missingTemplate)
+            return errors
+        }
+        return errors
+    }
+    
     static let liveValue = ValidationClient(
         validateName: validateNameImpl,
         validateTarget: validateTargetImpl,
         validateLink: validateLinkImpl,
         validateImage: validateImageImpl,
+        validateTemplate: validateTemplateImpl,
         validateField: { field, state in
             guard let field = field else { return [] }
             
@@ -102,16 +116,18 @@ extension ValidationClient: DependencyKey {
                 return validateLinkImpl(state.campaign.jarURLString)
             case .image:
                 return validateImageImpl(state.campaign.image?.raw)
+            case .template:
+                return validateTemplateImpl(state.campaign.template)
             }
         }
     )
     
-    // Mock implementation for testing
     static let testValue = ValidationClient(
         validateName: { _ in [] },
         validateTarget: { _ in [] },
         validateLink: { _ in [] },
         validateImage: { _ in [] },
+        validateTemplate: { _ in [] },
         validateField: { _, _ in [] }
     )
 }

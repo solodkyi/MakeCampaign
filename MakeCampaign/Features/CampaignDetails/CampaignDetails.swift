@@ -22,6 +22,7 @@ struct CampaignDetailsFeature: Reducer {
             case target
             case link
             case image
+            case template
         }
         
         struct ValidationErrors: Equatable {
@@ -29,9 +30,10 @@ struct CampaignDetailsFeature: Reducer {
             var target: [ValidationError] = []
             var link: [ValidationError] = []
             var image: [ValidationError] = []
+            var template: [ValidationError] = []
             
             var isEmpty: Bool {
-                name.isEmpty && target.isEmpty && link.isEmpty && image.isEmpty
+                name.isEmpty && target.isEmpty && link.isEmpty && image.isEmpty && template.isEmpty
             }
             
             mutating func clear(_ field: Field) {
@@ -40,6 +42,7 @@ struct CampaignDetailsFeature: Reducer {
                 case .target: target = []
                 case .link: link = []
                 case .image: image = []
+                case .template: template = []
                 }
             }
             
@@ -49,6 +52,7 @@ struct CampaignDetailsFeature: Reducer {
                 case .target: target = errors
                 case .link: link = errors
                 case .image: image = errors
+                case .template: template = errors
                 }
             }
             
@@ -58,6 +62,7 @@ struct CampaignDetailsFeature: Reducer {
                 case .target: return !target.isEmpty
                 case .link: return !link.isEmpty
                 case .image: return !image.isEmpty
+                case .template: return !template.isEmpty
                 }
             }
             
@@ -67,6 +72,7 @@ struct CampaignDetailsFeature: Reducer {
                 case .target: return target.map { $0.message }
                 case .link: return link.map { $0.message }
                 case .image: return image.map { $0.message }
+                case .template: return template.map { $0.message }
                 }
             }
         }
@@ -87,6 +93,12 @@ struct CampaignDetailsFeature: Reducer {
         var validationErrors = ValidationErrors()
         var isFormValid: Bool = false
         
+        var initialCampaign: Campaign
+        
+        var isCampaignChanged: Bool {
+            campaign != initialCampaign
+        }
+        
         init(
             campaign: Campaign,
             destination: Destination.State? = nil,
@@ -102,7 +114,7 @@ struct CampaignDetailsFeature: Reducer {
             } else {
                 self.focus = .name
             }
-            
+            self.initialCampaign = campaign
             self.campaign = campaign
             self.destination = destination
             self.isEditing = isEditing
@@ -288,6 +300,9 @@ struct CampaignDetailsFeature: Reducer {
         let linkErrors = validationClient.validateLink(state.campaign.jarURLString)
         state.validationErrors.link = linkErrors
         
+        let templateErrors = validationClient.validateTemplate(state.campaign.template)
+        state.validationErrors.template = templateErrors
+        
         state.isFormValid = state.validationErrors.isEmpty
     }
 }
@@ -342,7 +357,7 @@ struct CampaignDetailsFormView: View {
                                     }
                                 }
                             } header: {
-                                Text("Посилання на монобанку")
+                                Text("Посилання на банку")
                             }
                         }
                         
@@ -397,6 +412,13 @@ struct CampaignDetailsFormView: View {
                                     Label(labelText, systemImage: "paintpalette.fill")
                                         .foregroundColor(.accentColor)
                                 }
+                                if viewStore.validationErrors.hasErrors(for: .template) {
+                                    ForEach(viewStore.validationErrors.errorMessages(for: .template), id: \.self) { message in
+                                        Text(message)
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
+                                }
                             }
                         } header: {
                             Text("Фото збору")
@@ -415,6 +437,7 @@ struct CampaignDetailsFormView: View {
                                 Button("Зберегти") {
                                     viewStore.send(.onSaveButtonTapped)
                                 }
+                                .disabled(!viewStore.isCampaignChanged)
                             }
                         }
                     }

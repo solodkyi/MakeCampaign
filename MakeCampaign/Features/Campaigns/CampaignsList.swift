@@ -84,9 +84,7 @@ struct CampaignsFeature: Reducer {
                 state.addCampaign = nil
                 return .none
             case let .openCampaign(.presented(.delegate(.saveCampaign(campaign)))):
-                if let index = state.campaigns.firstIndex(where: { $0.id == campaign.id }) {
-                    state.campaigns[index] = campaign
-                }
+                state.campaigns[id: campaign.id] = campaign
                 state.openCampaign = nil
                 return .none
             case let .openCampaign(.presented(.delegate(.deleteCampaign(id)))):
@@ -116,7 +114,6 @@ struct CampaignsView: View {
         WithViewStore(self.store, observe: \.campaigns) { viewStore in
             ZStack {
                 if viewStore.state.isEmpty {
-                    // Empty state view
                     VStack(spacing: 24) {
                         Spacer()
                         
@@ -132,12 +129,12 @@ struct CampaignsView: View {
                                 )
                             
                             VStack(spacing: 8) {
-                                Text("Почніть свій перший збір")
-                                    .font(.system(size: 24, weight: .bold))
+                                Text("Створіть свою першу обкладинку для збору коштів")
+                                    .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.primary)
                                     .multilineTextAlignment(.center)
                                 
-                                Text("Створіть кампанію для збору коштів та допомагайте тим, хто цього потребує")
+                                Text("Допомагайте тим, хто цього потребує")
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
@@ -160,7 +157,7 @@ struct CampaignsView: View {
                                             .fill(Color.blue)
                                     )
                                 
-                                Text("щоб створити кампанію")
+                                Text("щоб створити збір")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.secondary)
                             }
@@ -180,7 +177,6 @@ struct CampaignsView: View {
                     }
                     .padding(.horizontal, 32)
                 } else {
-                    // Existing campaigns grid
                     ScrollView {
                         LazyVGrid(
                             columns: [
@@ -190,19 +186,17 @@ struct CampaignsView: View {
                             spacing: 16
                         ) {
                             ForEach(viewStore.state.elements) { element in
-                                CampaignCardView(campaign: element)
-                                    .onTapGesture {
-                                        viewStore.send(.campaignSelected(element.id))
-                                    }
+                                CampaignCardView(campaign: element, onSelect: { campaignId in
+                                    viewStore.send(.campaignSelected(campaignId))
+                                })
                             }
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
-                        .padding(.bottom, 120) // Space for floating button
+                        .padding(.bottom, 120)
                     }
                 }
                 
-                // Floating + button (always visible)
                 VStack {
                     Spacer()
                     HStack {
@@ -251,6 +245,7 @@ struct CampaignsView: View {
 
 struct CampaignCardView: View {
     let campaign: Campaign
+    let onSelect: (Campaign.ID) -> Void
     
     var body: some View {
         VStack(spacing: 0) {
@@ -378,6 +373,9 @@ struct CampaignCardView: View {
                     lineWidth: 1
                 )
         )
+        .onTapGesture {
+            onSelect(campaign.id)
+        }
     }
 }
 
