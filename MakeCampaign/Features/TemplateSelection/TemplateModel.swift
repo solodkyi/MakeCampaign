@@ -17,6 +17,11 @@ struct Template: Codable, Equatable, Identifiable {
         case angularYellowBlue
         case linearSilverBlue
         case radialRedBlack
+        case pinkAngular
+        case tealPurpleRadial
+        case cyanMagentaRadial
+        case goldBlackLinear
+        case blueLinear
     }
     
     enum ImagePlacement: Codable, Equatable {
@@ -25,6 +30,10 @@ struct Template: Codable, Equatable, Identifiable {
         case trailing
         case trailingToEdge
         case topToEdge
+        case center
+        case roundedTrailing
+        case hexagonTrailing
+        case squareTrailing
     }
     
     init(name: String, gradient: Gradient, imagePlacement: ImagePlacement) {

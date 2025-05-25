@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct GreenGradientTemplateView: View {
+struct BlueGradientTemplateView: View {
     let purpose: String
     let goal: String?
     
@@ -22,61 +22,63 @@ struct GreenGradientTemplateView: View {
     var body: some View {
         GeometryReader { geometry in
             let side = geometry.size.width // Use full width instead of minimum
-            let leftWidth = side * 0.5
-            let imageInset: CGFloat = side * 0.08
-            let spacing: CGFloat = side * 0.025
-            let goalTopSpacing: CGFloat = side * 0.08
-            let goalValueSpacing: CGFloat = side * 0.01
+            let imageSize = side * 0.5
+            let padding = side * 0.04
             
-            let purposeFontSize = side * 0.06
-            let goalLabelFontSize = side * 0.07
-            let goalValueFontSize = side * 0.07
+            let purposeFontSize = side * 0.048
+            let goalLabelFontSize = side * 0.055
+            let goalValueFontSize = side * 0.065
             
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(red: 97/255, green: 113/255, blue: 82/255), // #617152
-                        Color(red: 185/255, green: 215/255, blue: 157/255) // #B9D79D
+                        Color(red: 25/255, green: 25/255, blue: 112/255), // #191970 (Midnight Blue)
+                        Color(red: 135/255, green: 206/255, blue: 235/255) // #87CEEB (Sky Blue)
                     ]),
-                    startPoint: .top,
-                    endPoint: .bottom
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
                 
-                HStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: spacing) {
-                            Text(purpose)
-                                .font(.custom("Roboto-Bold", size: purposeFontSize))
-                                .minimumScaleFactor(0.8)
-                                .foregroundColor(.white)
-                                .lineLimit(nil)
-                        Spacer()
-                        if let goal {
-                            VStack(alignment: .leading, spacing: goalValueSpacing) {
-                                Text("ціль збору:")
-                                    .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                    .minimumScaleFactor(0.8)
-                                    .lineLimit(1)
-                                    .foregroundColor(.white)
-                                Text(goal)
-                                    .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                    .minimumScaleFactor(0.8)
-                                    .lineLimit(1)
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.top, goalTopSpacing)
-                        }
-                    }
-                    .padding(.leading, imageInset)
-                    .padding(.vertical, imageInset)
-                    .frame(width: leftWidth, alignment: .leading)
+                VStack(spacing: padding) {
+                    Spacer()
+                    Text(purpose)
+                        .font(.custom("Roboto-Bold", size: purposeFontSize))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                        .padding(.horizontal, padding)
+                        .padding(.top, padding * 0.5)
                                         
                     viewProvider()
-                        .frame(width: side * 0.35, height: side)
-                        .clipped()
-                        .padding(.horizontal, imageInset)
-                        
+                        .frame(width: imageSize, height: imageSize)
+                        .clipShape(RoundedRectangle(cornerRadius: side * 0.025))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: side * 0.025)
+                                .stroke(.white.opacity(0.3), lineWidth: side * 0.003)
+                        )
+                        .shadow(color: .black.opacity(0.2), radius: side * 0.01, x: 0, y: side * 0.005)
+                    
+                    // Goal at bottom
+                    if let goal {
+                        VStack(spacing: side * 0.005) {
+                            Text("ціль збору:")
+                                .font(.custom("Roboto-Bold", size: goalLabelFontSize))
+                                .foregroundColor(.white)
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                            
+                            Text(goal)
+                                .font(.custom("Roboto-Bold", size: goalValueFontSize))
+                                .foregroundColor(.white)
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                        }
+                        .padding(.bottom, padding)
+                    }
                 }
+                .padding(.bottom)
                 .frame(width: geometry.size.width, height: geometry.size.height)
             }
         }
@@ -91,8 +93,8 @@ struct GreenGradientTemplateView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                BlueGradientTemplateView(
+                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -104,7 +106,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/3, height: 1350/3)
+                .frame(width: 1080/3, height: 1080/3)
             }
             
             VStack(spacing: 10) {
@@ -112,8 +114,8 @@ struct GreenGradientTemplateView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                BlueGradientTemplateView(
+                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -125,7 +127,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/4, height: 1350/4)
+                .frame(width: 1080/4, height: 1080/4)
             }
             
             VStack(spacing: 10) {
@@ -133,8 +135,8 @@ struct GreenGradientTemplateView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                BlueGradientTemplateView(
+                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -146,7 +148,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/5, height: 1350/5)
+                .frame(width: 1080/5, height: 1080/5)
             }
             
             VStack(spacing: 10) {
@@ -154,8 +156,8 @@ struct GreenGradientTemplateView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                BlueGradientTemplateView(
+                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -167,16 +169,16 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/6, height: 1350/6)
+                .frame(width: 1080/6, height: 1080/6)
             }
             
             VStack(spacing: 10) {
-                Text("Size: 1080/7 (154x154) - Most problematic")
+                Text("Size: 1080/7 (154x154)")
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                BlueGradientTemplateView(
+                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -188,9 +190,9 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/7, height: 1350/7)
+                .frame(width: 1080/7, height: 1080/7)
             }
         }
         .padding()
     }
-}
+} 

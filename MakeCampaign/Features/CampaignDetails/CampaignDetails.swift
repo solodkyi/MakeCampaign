@@ -353,7 +353,7 @@ struct CampaignDetailsFormView: View {
                 VStack {
                     Form {
                         Section {
-                            TextField("Назва збору", text: viewStore.$campaign.purpose)
+                            TextField("Призначення збору", text: viewStore.$campaign.purpose)
                                 .focused($focus, equals: .name)
                             
                             if viewStore.validationErrors.hasErrors(for: .name) {
@@ -376,7 +376,7 @@ struct CampaignDetailsFormView: View {
                                 }
                             }
                         } header: {
-                            Text("Ім'я та ціль")
+                            Text("Призначення та ціль")
                         }
                         if viewStore.state.isEditing {
                             Section {

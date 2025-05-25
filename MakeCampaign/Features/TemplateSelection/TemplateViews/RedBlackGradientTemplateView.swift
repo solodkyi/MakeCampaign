@@ -20,7 +20,7 @@ struct RedBlackGradientTemplateView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
+            let side = geometry.size.width // Use full width instead of minimum
             let verticalPadding = side * 0.06
             let horizontalPadding = side * 0.05
             let imageWidth = side * 432 / 1080
@@ -79,7 +79,6 @@ struct RedBlackGradientTemplateView: View {
                 }
             }
         }
-        .aspectRatio(1, contentMode: .fit)
     }
 }
 

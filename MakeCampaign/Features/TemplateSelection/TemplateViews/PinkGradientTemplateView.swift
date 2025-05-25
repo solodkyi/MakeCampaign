@@ -1,5 +1,5 @@
 //
-//  BlueGradientTemplateView.swift
+//  PinkGradientTemplateView.swift
 //  MakeCampaign
 //
 //  Created by Andrii Solodkyi on 5/19/25.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct GreenGradientTemplateView: View {
+struct PinkGradientTemplateView: View {
     let purpose: String
     let goal: String?
     
@@ -22,60 +22,58 @@ struct GreenGradientTemplateView: View {
     var body: some View {
         GeometryReader { geometry in
             let side = geometry.size.width // Use full width instead of minimum
-            let leftWidth = side * 0.5
-            let imageInset: CGFloat = side * 0.08
-            let spacing: CGFloat = side * 0.025
-            let goalTopSpacing: CGFloat = side * 0.08
-            let goalValueSpacing: CGFloat = side * 0.01
+            let imageHeight = side * 0.45
+            let imageWidth = side * 0.8
+            let horizontalPadding = side * 0.06
+            let verticalSpacing = side * 0.03
             
-            let purposeFontSize = side * 0.06
-            let goalLabelFontSize = side * 0.07
-            let goalValueFontSize = side * 0.07
+            let purposeFontSize = side * 0.055
+            let goalLabelFontSize = side * 0.06
+            let goalValueFontSize = side * 0.075
             
             ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 97/255, green: 113/255, blue: 82/255), // #617152
-                        Color(red: 185/255, green: 215/255, blue: 157/255) // #B9D79D
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
+                AngularGradient(
+                    stops: [
+                        Gradient.Stop(color: Color(red: 255/255, green: 20/255, blue: 147/255), location: 0.0), // #FF1493 (Deep Pink)
+                        Gradient.Stop(color: Color(red: 199/255, green: 21/255, blue: 133/255), location: 0.4), // #C71585 (Medium Violet Red)
+                        Gradient.Stop(color: Color(red: 255/255, green: 192/255, blue: 203/255), location: 1.0)  // #FFC0CB (Pink)
+                    ],
+                    center: .bottomLeading,
+                    angle: .degrees(45)
                 )
-                .ignoresSafeArea()
                 
-                HStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: spacing) {
-                            Text(purpose)
-                                .font(.custom("Roboto-Bold", size: purposeFontSize))
-                                .minimumScaleFactor(0.8)
-                                .foregroundColor(.white)
-                                .lineLimit(nil)
-                        Spacer()
-                        if let goal {
-                            VStack(alignment: .leading, spacing: goalValueSpacing) {
-                                Text("ціль збору:")
-                                    .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                    .minimumScaleFactor(0.8)
-                                    .lineLimit(1)
-                                    .foregroundColor(.white)
-                                Text(goal)
-                                    .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                    .minimumScaleFactor(0.8)
-                                    .lineLimit(1)
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.top, goalTopSpacing)
-                        }
-                    }
-                    .padding(.leading, imageInset)
-                    .padding(.vertical, imageInset)
-                    .frame(width: leftWidth, alignment: .leading)
-                                        
+                VStack(spacing: verticalSpacing) {
                     viewProvider()
-                        .frame(width: side * 0.35, height: side)
-                        .clipped()
-                        .padding(.horizontal, imageInset)
-                        
+                        .frame(width: imageWidth, height: imageHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: side * 0.02))
+                        .padding(.top, verticalSpacing)
+                    
+                    Text(purpose)
+                        .font(.custom("Roboto-Bold", size: purposeFontSize))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(nil)
+                        .minimumScaleFactor(0.8)
+                        .padding(.horizontal, horizontalPadding)
+                    
+                    Spacer()
+                    
+                    if let goal {
+                        VStack(spacing: side * 0.008) {
+                            Text("ціль збору:")
+                                .font(.custom("Roboto-Bold", size: goalLabelFontSize))
+                                .foregroundColor(.white)
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                            
+                            Text(goal)
+                                .font(.custom("Roboto-Bold", size: goalValueFontSize))
+                                .foregroundColor(.white)
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                        }
+                        .padding(.bottom, verticalSpacing)
+                    }
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
             }
@@ -91,8 +89,8 @@ struct GreenGradientTemplateView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                PinkGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -104,7 +102,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/3, height: 1350/3)
+                .frame(width: 1080/3, height: 1080/3)
             }
             
             VStack(spacing: 10) {
@@ -112,8 +110,8 @@ struct GreenGradientTemplateView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                PinkGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -125,7 +123,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/4, height: 1350/4)
+                .frame(width: 1080/4, height: 1080/4)
             }
             
             VStack(spacing: 10) {
@@ -133,8 +131,8 @@ struct GreenGradientTemplateView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                PinkGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -146,7 +144,7 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/5, height: 1350/5)
+                .frame(width: 1080/5, height: 1080/5)
             }
             
             VStack(spacing: 10) {
@@ -154,8 +152,8 @@ struct GreenGradientTemplateView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                PinkGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -167,16 +165,16 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/6, height: 1350/6)
+                .frame(width: 1080/6, height: 1080/6)
             }
             
             VStack(spacing: 10) {
-                Text("Size: 1080/7 (154x154) - Most problematic")
+                Text("Size: 1080/7 (154x154)")
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundColor(.secondary)
                 
-                GreenGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр", goal: "600.000", viewProvider: {
+                PinkGradientTemplateView(
+                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
                         if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
                             return AnyView(
                                 Image(uiImage: uiImage)
@@ -188,9 +186,9 @@ struct GreenGradientTemplateView: View {
                         }
                     }
                 )
-                .frame(width: 1080/7, height: 1350/7)
+                .frame(width: 1080/7, height: 1080/7)
             }
         }
         .padding()
     }
-}
+} 

@@ -4,7 +4,7 @@ import ComposableArchitecture
 struct CampaignTemplateView: View {
     let campaign: Campaign
     let template: Template
-    let image: UIImage
+    let image: UIImage?
     let onImageTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
     
     private var isRepositioningEnabled: Bool {
@@ -14,7 +14,7 @@ struct CampaignTemplateView: View {
     init(
         campaign: Campaign,
         template: Template,
-        image: UIImage,
+        image: UIImage? = nil,
         onImageTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)? = nil
     ) {
         self.campaign = campaign
@@ -35,53 +35,77 @@ struct CampaignTemplateView: View {
         switch (template.gradient, template.imagePlacement) {
         case (.linearPurple, .topCenter):
             PurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView()
+                content()
             })
         case (.linearGreen, .topToBottomTrailing):
             GreenGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView()
+                content()
             })
         case (.angularYellowBlue, .trailing):
             YellowBlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView()
+                content()
             })
         case (.linearSilverBlue, .trailingToEdge):
             SilverBlueTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView()
+                content()
             })
         case (.radialRedBlack, .topToEdge):
             RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
-                imageView()
+                content()
+            })
+        case (.blueLinear, .center):
+            BlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.cyanMagentaRadial, .squareTrailing):
+            CyanMagentaGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.goldBlackLinear, .hexagonTrailing):
+            GoldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.pinkAngular, .topCenter):
+            PinkGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.tealPurpleRadial, .roundedTrailing):
+            TealPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
             })
         default: EmptyView()
         }
     }
     
-    private func imageView() -> some View {
-        if isRepositioningEnabled {
-            AnyView(
-                GeometryReader { geometry in
-                    let initialOffset = campaign.imageOffset
-                    let initialScale = campaign.imageScale
-                    
-                    ImageTransformView(
-                        image: image,
-                        initialOffset: initialOffset,
-                        initialScale: initialScale,
-                        containerSize: geometry.size,
-                        onTransformEnd: onImageTransformEnd
-                    )
-                }
-            )
-        } else {
-            AnyView(
-                DisplayImageView(
-                    image: image,
-                    scale: campaign.imageScale,
-                    offset: campaign.imageOffset,
-                    referenceSize: campaign.imageReferenceSize
+    private func content() -> some View {
+        if let image {
+            if isRepositioningEnabled {
+                return AnyView(
+                    GeometryReader { geometry in
+                        let initialOffset = campaign.imageOffset
+                        let initialScale = campaign.imageScale
+                        
+                        ImageTransformView(
+                            image: image,
+                            initialOffset: initialOffset,
+                            initialScale: initialScale,
+                            containerSize: geometry.size,
+                            onTransformEnd: onImageTransformEnd
+                        )
+                    }
                 )
-            )
+            } else {
+                return AnyView(
+                    DisplayImageView(
+                        image: image,
+                        scale: campaign.imageScale,
+                        offset: campaign.imageOffset,
+                        referenceSize: campaign.imageReferenceSize
+                    )
+                )
+            }
+        } else {
+            return AnyView(Color.white)
         }
     }
 }

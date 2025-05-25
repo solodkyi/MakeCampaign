@@ -1,3 +1,10 @@
+//
+//  SilverBlueTemplateView.swift
+//  MakeCampaign
+//
+//  Created by Andrii Solodkyi on 5/19/25.
+//
+
 import SwiftUI
 
 struct SilverBlueTemplateView: View {
@@ -13,7 +20,7 @@ struct SilverBlueTemplateView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
+            let side = geometry.size.width // Use full width instead of minimum
             let horizontalPadding = side * 0.05
             let verticalPadding = side * 0.06
             let bottomTextSpacing = side * 0.02
@@ -69,7 +76,6 @@ struct SilverBlueTemplateView: View {
                 }
             }
         }
-        .aspectRatio(1, contentMode: .fit)
     }
 }
 

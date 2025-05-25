@@ -21,7 +21,7 @@ struct YellowBlueGradientTemplateView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
+            let side = geometry.size.width // Use full width instead of minimum
             let imageWidth = side * 0.38
             let imageHeight = side * 0.55
             let horizontalPadding = side * 0.04

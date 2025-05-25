@@ -20,7 +20,7 @@ struct PurpleGradientTemplateView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
+            let side = geometry.size.width // Use full width instead of minimum
             let imageWidth = side * 885 / 1080
             let imageHeight = side * 422 / 1080
             let topSpacing = side * 93 / 1080
@@ -48,7 +48,7 @@ struct PurpleGradientTemplateView: View {
                     
                     viewProvider()
                         .frame(width: imageWidth, height: imageHeight)
-                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: side * 0.02))
                     
                     Spacer().frame(height: purposeTopPadding)
                     
@@ -81,10 +81,9 @@ struct PurpleGradientTemplateView: View {
                         .padding(.bottom, goalBottomPadding)
                     }
                 }
-                .frame(width: side, height: side, alignment: .bottom)
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
         }
-        .aspectRatio(1, contentMode: .fit)
     }
 }
 

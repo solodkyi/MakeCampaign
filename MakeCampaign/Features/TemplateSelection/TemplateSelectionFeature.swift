@@ -113,12 +113,13 @@ struct TemplateSelectionView: View {
                         HStack(spacing: 16) {
                             ForEach(viewStore.templates) { template in
                                 TemplateItemView(
+                                    campaign: viewStore.campaign,
                                     template: template,
-                                    isSelected: viewStore.selectedTemplateID == template.id
-                                )
+                                    isSelected: viewStore.selectedTemplateID == template.id)
                                 .onTapGesture {
                                     viewStore.send(.templateSelected(template))
                                 }
+                                
                             }
                         }
                         .padding(.horizontal)
@@ -153,14 +154,14 @@ struct TemplateSelectionView: View {
 }
 
 struct TemplateItemView: View {
+    let campaign: Campaign
     let template: Template
     let isSelected: Bool
     
     var body: some View {
         VStack {
-            Image("template_\(template.name)")
-                .resizable()
-                .frame(width: 120, height: 130)
+            CampaignTemplateView(campaign: campaign, template: template)
+                .frame(width: 120, height: 120)
             Text(template.name)
                 .fontWeight(.bold)
         }
@@ -190,11 +191,16 @@ struct TemplateItemView: View {
 
 fileprivate extension Template {
     static let list: IdentifiedArrayOf<Template> = [
-        .init(name: "1", gradient: .linearPurple, imagePlacement: .topCenter),
-        .init(name: "2", gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
-        .init(name: "3", gradient: .angularYellowBlue, imagePlacement: .trailing),
-        .init(name: "4", gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
-        .init(name: "5", gradient: .radialRedBlack, imagePlacement: .topToEdge)
+        .init(name: "1", gradient: .blueLinear, imagePlacement: .center),
+        .init(name: "2", gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
+        .init(name: "3", gradient: .linearPurple, imagePlacement: .topCenter),
+        .init(name: "4", gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
+        .init(name: "5", gradient: .pinkAngular, imagePlacement: .topCenter),
+        .init(name: "6", gradient: .tealPurpleRadial, imagePlacement: .roundedTrailing),
+        .init(name: "7", gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
+        .init(name: "8", gradient: .angularYellowBlue, imagePlacement: .trailing),
+        .init(name: "9", gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
+        .init(name: "10", gradient: .radialRedBlack, imagePlacement: .topToEdge)
     ]
 }
 

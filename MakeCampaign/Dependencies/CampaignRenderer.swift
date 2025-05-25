@@ -17,7 +17,7 @@ extension CampaignRenderer: DependencyKey {
             }
             let templateView = await CampaignTemplateView(campaign: campaign, template: template, image: image)
 
-            return await renderViewToUIImage(view: templateView, size: CGSize(width: 1080, height: 1350))
+            return await renderViewToUIImage(view: templateView, size: CGSize(width: 1080, height: 1080))
         }
     )
     
@@ -37,20 +37,23 @@ extension DependencyValues {
 
 @MainActor
 private func renderViewToUIImage<V: View>(view: V, size: CGSize) async -> UIImage {
-    let controller = UIHostingController(rootView: view)
+    let controller = UIHostingController(rootView: 
+        view
+            .frame(width: size.width, height: size.height)
+            .edgesIgnoringSafeArea(.all)
+    )
     
     controller.view.frame = CGRect(origin: .zero, size: size)
+    controller.view.backgroundColor = .clear
     
     controller.view.setNeedsLayout()
     controller.view.layoutIfNeeded()
     
-    // Use scale: 1.0 to get exact pixel dimensions, not device-scaled
     let format = UIGraphicsImageRendererFormat()
+    format.opaque = false
     let renderer = UIGraphicsImageRenderer(size: size, format: format)
     
     let image = renderer.image { context in
-        UIColor.white.setFill()
-        context.fill(CGRect(origin: .zero, size: size))
         controller.view.drawHierarchy(in: CGRect(origin: .zero, size: size), afterScreenUpdates: true)
     }
     
