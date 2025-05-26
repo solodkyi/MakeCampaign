@@ -147,7 +147,7 @@ extension URL {
         AppFeature()
             ._printChanges()
     }, withDependencies: {
-        $0.dataManager = .mock(initialData: try? JSONEncoder().encode([Campaign.mock1]))
+        $0.dataManager = .mock(initialData: try? JSONEncoder().encode(Campaign.mocks))
     } ))
 }
 

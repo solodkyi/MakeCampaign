@@ -519,4 +519,205 @@ final class MakeCampaignTests: XCTestCase {
             XCTAssertFalse($0.validationErrors.hasErrors(for: .image))
         }
     }
+    
+    func test_campaignDetails_templateField_missingTemplate_showsValidationError() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), image: Campaign.Image(raw: Data()), purpose: "Valid Name")
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertFalse($0.validationErrors.template.isEmpty)
+            XCTAssertTrue($0.validationErrors.hasErrors(for: .template))
+        }
+    }
+    
+    func test_campaignDetails_templateField_validTemplate_noValidationError() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), image: Campaign.Image(raw: Data()), template: .init(name: "1", gradient: .angularYellowBlue, imagePlacement: .center), purpose: "Valid Name")
+            )
+        ) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.validationClient = .liveValue
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        
+        await store.assert {
+            XCTAssertTrue($0.validationErrors.template.isEmpty)
+        }
+    }
+    
+    func test_campaignDetails_imagePreview_presentedOrHiddenByImageTap() async {
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: Campaign(id: .init(0), image: Campaign.Image(raw: Data()))
+            )
+        ) {
+            CampaignDetailsFeature()
+        }
+        
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onImageTapped)
+        
+        await store.assert {
+            XCTAssertTrue($0.isPresentingImageOverlay)
+        }
+        
+        await store.send(.onImageTapped)
+        
+        await store.assert {
+            XCTAssertFalse($0.isPresentingImageOverlay)
+        }
+    }
+
+    func test_campaignTemplate_presentedByTap() async {
+        let campaign = Campaign(id: .init(0), image: Campaign.Image(raw: Data()), purpose: "Valid Name")
+        let store = TestStore(
+            initialState: CampaignDetailsFeature.State(
+                campaign: campaign
+            )
+        ) {
+            CampaignDetailsFeature()
+        }
+        
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onTemplateButtonTapped)
+        
+        store.assert {
+            XCTAssertEqual($0.destination, .templateSelection(.init(campaign: campaign)))
+        }
+    }
+    
+    func test_campaignTemplate_hasNoSelectionAtStart() async {
+        let store = TestStore(
+            initialState: TemplateSelectionFeature.State(campaign: Campaign(id: .init(0), image: Campaign.Image(raw: Data()), purpose: "Valid Name"))
+        ) {
+            TemplateSelectionFeature()
+        }
+        
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        store.assert {
+            XCTAssertNil($0.selectedTemplateID)
+        }
+    }
+    
+    func test_campaignTemplate_hasSelectionForCampaignWithTemplate() async {
+        let campaignWithTemplate = Campaign(id: .init(0), image: Campaign.Image(raw: Data()), template: Template(name: "1", gradient: .linearPurple, imagePlacement: .topCenter), purpose: "Valid Name")
+        let store = TestStore(
+            initialState: TemplateSelectionFeature.State(campaign: campaignWithTemplate)
+        ) {
+            TemplateSelectionFeature()
+        }
+        
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        store.assert {
+            XCTAssertNotNil($0.selectedTemplateID)
+        }
+    }
+    
+    func test_campaignTemplate_updatesCampaignTemplateOnSelectionAndConfirmation() async {
+        let campaign = Campaign(id: .init(0), image: Campaign.Image(raw: Data()), purpose: "Valid Name")
+        let store = TestStore(initialState: CampaignDetailsFeature.State(campaign: campaign, destination: .templateSelection(.init(campaign: campaign)))) {
+            CampaignDetailsFeature()
+        }
+        
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        let template = Template(name: "1", gradient: .linearPurple, imagePlacement: .topCenter)
+        
+        await store.send(.destination(.presented(.templateSelection(.templateSelected(template)))))
+        await store.send(.destination(.presented(.templateSelection(.doneButtonTapped))))
+        await store.skipReceivedActions()
+        
+        await store.assert {
+            XCTAssertEqual($0.campaign.template?.id, template.id)
+        }
+    }
+    
+    func test_campaignDetails_onCampaignSave_rendersImageAndSavesItToPhotoLibrary() async {
+        let campaign = Campaign.mock1
+        var isPhotoSavedInLibrary = false
+        var isCampaignImageRendered = false
+        
+        let store = TestStore(initialState: CampaignDetailsFeature.State(campaign: campaign)) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.photoLibrarySaver = .init(saveImage: { _ in
+                isPhotoSavedInLibrary = true
+            }, requestPermission: {
+                .authorized
+            })
+            
+            $0.campaignRenderer = .init(render: { _ in
+                isCampaignImageRendered = true
+                return UIImage()
+            })
+        }
+            
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        await store.send(.onSaveButtonTapped)
+        await store.skipReceivedActions()
+        
+        await store.assert { _ in
+            XCTAssertTrue(isCampaignImageRendered)
+            XCTAssertTrue(isPhotoSavedInLibrary)
+        }
+    }
+    
+    func test_campaignDetails_onCampaignSaveWithPhotoLibraryAccessDenied_presentsAlert() async {
+        let campaign = Campaign.mock1
+        var isSettingsOpened = false
+        
+        let store = TestStore(initialState: CampaignDetailsFeature.State(campaign: campaign)) {
+            CampaignDetailsFeature()
+        } withDependencies: {
+            $0.photoLibrarySaver = .init(saveImage: { _ in
+            
+            }, requestPermission: {
+                .denied
+            })
+            $0.openSettings = {
+                isSettingsOpened = true
+            }
+        }
+            
+        store.exhaustivity = .off(showSkippedAssertions: false)
+        
+        await store.send(.onSaveButtonTapped)
+        await store.skipReceivedActions()
+        
+        await store.assert {
+            XCTAssertTrue($0.destination?.isAlert ?? false)
+            XCTAssertFalse(isSettingsOpened)
+        }
+        
+        await store.send(.destination(.presented(.alert(.openAppSettings))))
+        
+        await store.assert { _ in
+            XCTAssertTrue(isSettingsOpened)
+        }
+    }
+}
+
+extension CampaignDetailsFeature.Destination.State {
+    var isAlert: Bool {
+        guard case .alert = self else { return false }
+        return true
+    }
 }

@@ -134,6 +134,7 @@ struct CampaignDetailsFeature: Reducer {
         case destination(PresentationAction<Destination.Action>)
         case setSelectedItem(PhotosPickerItem?)
         case onPhotoLibraryPermissionResponse(PHAuthorizationStatus)
+        case onPhotoSavingFailed
         case imagePreviewCloseButtonTappped
         
         case binding(BindingAction<State>)
@@ -185,20 +186,6 @@ struct CampaignDetailsFeature: Reducer {
                     await send(.delegate(.deleteCampaign(id)))
                     await self.dismiss()
                 }
-            case .destination(.presented(.alert(.photoSavingFailed))):
-                state.destination = .alert(AlertState(title: {
-                    TextState("Немає доступу")
-                }, actions: {
-                    ButtonState(role: .cancel) {
-                        TextState("Закрити")
-                    }
-                    ButtonState(role: .destructive, action: .openAppSettings) {
-                        TextState("Налаштування")
-                    }
-                }, message: {
-                    TextState("Додатку необхідний доступ для збереження зображення у вашій бібліотеці")
-                }))
-                return .none
             case .destination(.presented(.alert(.openAppSettings))):
                 return .run { send in
                     await openSettings()
@@ -245,11 +232,23 @@ struct CampaignDetailsFeature: Reducer {
                             await send(.delegate(.saveCampaign(campaign)))
                             await dismiss()
                         } catch {
-                            await send(.destination(.presented(.alert(.photoSavingFailed))))
+                            await send(.onPhotoSavingFailed)
                         }
                     }
                 case .denied, .restricted:
-                    return .send(.destination(.presented(.alert(.photoSavingFailed))))
+                    state.destination = .alert(AlertState(title: {
+                        TextState("Немає доступу")
+                    }, actions: {
+                        ButtonState(role: .cancel) {
+                            TextState("Закрити")
+                        }
+                        ButtonState(role: .destructive, action: .openAppSettings) {
+                            TextState("Налаштування")
+                        }
+                    }, message: {
+                        TextState("Додатку необхідний доступ для збереження зображення у вашій бібліотеці")
+                    }))
+                    return .none
                 default: return .none
                 }
             case .binding:
@@ -300,6 +299,17 @@ struct CampaignDetailsFeature: Reducer {
                 
                 return .none
             case .delegate: return .none
+            case .onPhotoSavingFailed:
+                state.destination = .alert(AlertState(title: {
+                    TextState("Збереження зображення не вдалося")
+                }, actions: {
+                    ButtonState(role: .cancel) {
+                        TextState("Закрити")
+                    }
+                }, message: {
+                    TextState("Спробуйте ще раз пізніше або переконайтеся, що у вас є доступ до фотобібліотеки.")
+                }))
+                return .none
             }
         }
         .ifLet(\.$destination, action: /CampaignDetailsFeature.Action.destination) {

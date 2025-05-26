@@ -189,7 +189,7 @@ struct TemplateItemView: View {
     }
 } 
 
-fileprivate extension Template {
+extension Template {
     static let list: IdentifiedArrayOf<Template> = [
         .init(name: "1", gradient: .blueLinear, imagePlacement: .center),
         .init(name: "2", gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
