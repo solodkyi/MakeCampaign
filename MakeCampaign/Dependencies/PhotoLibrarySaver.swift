@@ -42,6 +42,8 @@ extension PhotoLibrarySaver: DependencyKey {
             return .authorized
         }
     )
+    
+    static let testValue = Self.previewValue
 }
 
 extension DependencyValues {

@@ -26,6 +26,9 @@ extension CampaignRenderer: DependencyKey {
             return UIImage()
         }
     )
+    
+    static let testValue = Self.previewValue
+
 }
 
 extension DependencyValues {
