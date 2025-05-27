@@ -42,7 +42,7 @@ struct ValidationClient {
 extension ValidationClient: DependencyKey {
     private static func validateNameImpl(_ name: String) -> [ValidationError] {
         var errors: [ValidationError] = []
-        if name.isEmpty {
+        if name.isEmpty || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errors.append(.empty)
         }
         return errors
