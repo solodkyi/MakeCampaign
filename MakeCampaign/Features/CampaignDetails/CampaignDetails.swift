@@ -252,11 +252,6 @@ struct CampaignDetailsFeature: Reducer {
                 default: return .none
                 }
             case .binding:
-                if !state.campaign.purpose.isEmpty {
-                    validateField(.name, &state)
-                    return .none
-                }
-                
                 return .none
                 
             case .validateForm:
@@ -523,6 +518,7 @@ struct CampaignDetailsFormView: View {
                 }
             }
             .bind(viewStore.$focus, to: self.$focus)
+            .interactiveDismissDisabled(viewStore.isPresentingImageOverlay)
             .alert(
                 store: self.store.scope(state: \.$destination, action: { .destination($0) }),
                 state: /CampaignDetailsFeature.Destination.State.alert,
