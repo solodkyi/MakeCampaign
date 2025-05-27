@@ -29,7 +29,14 @@ struct CampaignTemplateView: View {
     
     @ViewBuilder
     private func templateView(forTemplate template: Template) -> some View {
-        let purpose = campaign.purpose
+        
+        let purpose: String = {
+            if campaign.purpose.isEmpty {
+                return "Текст текст"
+            }
+            return campaign.purpose
+        }()
+        
         let goal = campaign.target?.formattedAmount.appendingCurrency
         
         switch (template.gradient, template.imagePlacement) {
