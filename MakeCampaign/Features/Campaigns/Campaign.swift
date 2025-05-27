@@ -23,6 +23,7 @@ struct Campaign: Codable, Equatable, Identifiable {
     var jar: JarInfo?
     
     private var rawTargetInput: String = ""
+    private var rawJarLinkInput: String = ""
     
     init(id: UUID, image: Image? = nil, template: Template? = nil, purpose: String = "", target: Double? = nil, jar: JarInfo? = nil) {
         self.id = id
@@ -32,6 +33,7 @@ struct Campaign: Codable, Equatable, Identifiable {
         self.target = target
         self.jar = jar
         self.rawTargetInput = target?.formattedAmount ?? ""
+        self.rawJarLinkInput = jar?.link.absoluteString ?? ""
     }
     
     struct JarInfo: Equatable, Codable {
@@ -66,10 +68,19 @@ extension Campaign {
     
     var jarURLString: String {
         get {
+            if !rawJarLinkInput.isEmpty && jar?.link == nil {
+                return rawJarLinkInput
+            }
+            
             guard let jarLink = jar?.link else { return "" }
             return jarLink.absoluteString
         } set {
-            guard let url = URL(string: newValue) else { return }
+            rawJarLinkInput = newValue
+            
+            guard let url = URL(string: newValue) else {
+                jar = nil
+                return
+            }
             if jar == nil {
                 jar = .init(link: url)
             } else {
