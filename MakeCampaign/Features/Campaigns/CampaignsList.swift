@@ -30,6 +30,7 @@ struct CampaignsFeature: Reducer {
     enum Action {
         case onViewInitialLoad
         case createCampaignButtonTapped
+        case createCampaignPlaceholderButtonTapped
         case campaignSelected(Campaign.ID)
         case cancelNewCampaignButtonTapped
         case addCampaign(PresentationAction<CampaignDetailsFeature.Action>)
@@ -71,7 +72,7 @@ struct CampaignsFeature: Reducer {
             case let .onCampaignJarDetailsLoaded(campaignId, jarDetails):
                 state.campaigns[id: campaignId]?.jar?.details = jarDetails
                 return .none
-            case .createCampaignButtonTapped:
+            case .createCampaignButtonTapped, .createCampaignPlaceholderButtonTapped:
                 state.addCampaign = .init(campaign: .init(id: self.uuid()))
                 return .none
             case let .campaignSelected(campaignId):
@@ -161,6 +162,9 @@ struct CampaignsView: View {
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.secondary)
                             }
+                            .onTapGesture(perform: {
+                                viewStore.send(.createCampaignPlaceholderButtonTapped)
+                            })
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                             .background(

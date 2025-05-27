@@ -374,7 +374,7 @@ struct CampaignDetailsFormView: View {
                                 }
                             }
                             
-                            TextField("Ціль збору (не обов'язково)", text: viewStore.$campaign.formattedTarget)
+                            TextField("Сума збору (не обов'язково)", text: viewStore.$campaign.formattedTarget)
                                 .focused($focus, equals: .target)
                                 .keyboardType(.decimalPad)
                             
@@ -386,7 +386,7 @@ struct CampaignDetailsFormView: View {
                                 }
                             }
                         } header: {
-                            Text("Призначення та ціль")
+                            Text("Призначення та сума")
                         }
                         if viewStore.state.isEditing {
                             Section {

@@ -124,13 +124,19 @@ struct DisplayImageView: View {
             let referenceWidth = referenceSize.width
             let referenceHeight = referenceSize.height
             
-            let relativeOffsetX = offset.width / referenceWidth
-            let relativeOffsetY = offset.height / referenceHeight
-            
-            let scaledOffset = CGSize(
-                width: relativeOffsetX * currentWidth,
-                height: relativeOffsetY * currentHeight
-            )
+            let scaledOffset: CGSize = {
+                if referenceWidth > 0 && referenceHeight > 0 {
+                    let relativeOffsetX = offset.width / referenceWidth
+                    let relativeOffsetY = offset.height / referenceHeight
+                    
+                    return CGSize(
+                        width: relativeOffsetX * currentWidth,
+                        height: relativeOffsetY * currentHeight
+                    )
+                } else {
+                    return offset
+                }
+            }()
             
             Image(uiImage: image)
                 .resizable()
