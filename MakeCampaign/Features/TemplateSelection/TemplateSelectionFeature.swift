@@ -95,6 +95,7 @@ struct TemplateSelectionView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+                .aspectRatio(1, contentMode: .fit)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding()
                 .background(Color(.systemGroupedBackground))
