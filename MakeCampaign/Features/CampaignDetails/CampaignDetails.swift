@@ -216,6 +216,8 @@ struct CampaignDetailsFeature: Reducer {
                         await send(.onPhotoLibraryPermissionResponse(saver.requestPermission()))
                     }
                 }
+                
+                state.focus = nil
         
                 return .none
             
