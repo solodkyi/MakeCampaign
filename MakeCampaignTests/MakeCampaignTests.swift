@@ -163,6 +163,7 @@ final class MakeCampaignTests: XCTestCase {
             XCTAssertFalse($0.validationErrors.name.isEmpty)
             XCTAssertTrue($0.validationErrors.hasErrors(for: .name))
             XCTAssertEqual($0.validationErrors.name.first, .empty)
+            XCTAssertNil($0.focus)
         }
     }
     
@@ -287,6 +288,7 @@ final class MakeCampaignTests: XCTestCase {
             XCTAssertFalse($0.validationErrors.target.isEmpty)
             XCTAssertTrue($0.validationErrors.hasErrors(for: .target))
             XCTAssertEqual($0.validationErrors.target.first, .invalidFormat)
+            XCTAssertNil($0.focus)
         }
     }
     
@@ -376,6 +378,7 @@ final class MakeCampaignTests: XCTestCase {
             await store.assert {
                 XCTAssertFalse($0.validationErrors.link.isEmpty)
                 XCTAssertTrue($0.validationErrors.hasErrors(for: .link))
+                XCTAssertNil($0.focus)
             }
         }
     
@@ -460,6 +463,7 @@ final class MakeCampaignTests: XCTestCase {
             XCTAssertFalse($0.validationErrors.image.isEmpty)
             XCTAssertTrue($0.validationErrors.hasErrors(for: .image))
             XCTAssertEqual($0.validationErrors.image.first, .missingImage)
+            XCTAssertNil($0.focus)
         }
     }
     
