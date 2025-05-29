@@ -36,7 +36,6 @@ extension PhotoLibrarySaver: DependencyKey {
     
     static let previewValue = Self(
         saveImage: { _ in
-            // Mock success for previews
         },
         requestPermission: {
             return .authorized

@@ -9,6 +9,7 @@ import XCTest
 import ComposableArchitecture
 @testable import MakeCampaign
 
+@MainActor
 final class MakeCampaignTests: XCTestCase {
     
     func test_campaignsList_initialState() async {
@@ -52,7 +53,7 @@ final class MakeCampaignTests: XCTestCase {
     
     func test_campaignsList_requestsJarDetailsAndCalculatesProgress() async {
         let campaignWithJarLink = Campaign(id: .init(0), target: 1_000_000, jar: .init(link: URL(string: "https://some.jar")!))
-        let store = await TestStore(
+        let store = TestStore(
             initialState:
                 AppFeature.State(campaignsList: .init())
         ) {
@@ -67,7 +68,7 @@ final class MakeCampaignTests: XCTestCase {
         await store.send(.campaignsList(.onViewInitialLoad))
         await store.skipReceivedActions()
 
-        await store.assert {
+        store.assert {
             XCTAssertNotNil($0.campaignsList.campaigns.first?.progress)
         }
     }
@@ -87,7 +88,7 @@ final class MakeCampaignTests: XCTestCase {
         await store.send(.campaignsList(.campaignSelected(campaign.id)))
         
         store.assert {
-            $0.path[id: 0, case: /AppFeature.Path.State.details]?.campaign = campaign
+            $0.path[id: 0, case: \.details]?.campaign = campaign
             XCTAssertEqual($0.path.count, 1)
         }
     }
@@ -137,7 +138,7 @@ final class MakeCampaignTests: XCTestCase {
         await store.send(.path(.element(id: 0, action: .details(.onSaveButtonTapped))))
         await store.skipReceivedActions()
 
-        await store.assert {
+        store.assert {
             XCTAssertEqual($0.campaignsList.campaigns.first, updatedCampaign)
         }
     }
@@ -158,7 +159,7 @@ final class MakeCampaignTests: XCTestCase {
 
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertFalse($0.isFormValid)
             XCTAssertFalse($0.validationErrors.name.isEmpty)
             XCTAssertTrue($0.validationErrors.hasErrors(for: .name))
@@ -181,7 +182,7 @@ final class MakeCampaignTests: XCTestCase {
 
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.validationErrors.name.isEmpty)
             XCTAssertFalse($0.validationErrors.hasErrors(for: .name))
         }
@@ -201,7 +202,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertFalse($0.validationErrors.name.isEmpty)
             XCTAssertEqual($0.validationErrors.name.first, .empty)
         }
@@ -214,7 +215,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.validateForm)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.validationErrors.name.isEmpty)
             XCTAssertFalse($0.validationErrors.hasErrors(for: .name))
         }
@@ -236,7 +237,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.validationErrors.target.isEmpty)
             XCTAssertFalse($0.validationErrors.hasErrors(for: .target))
         }
@@ -256,7 +257,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.validationErrors.target.isEmpty)
             XCTAssertFalse($0.validationErrors.hasErrors(for: .target))
         }
@@ -284,7 +285,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertFalse($0.validationErrors.target.isEmpty)
             XCTAssertTrue($0.validationErrors.hasErrors(for: .target))
             XCTAssertEqual($0.validationErrors.target.first, .invalidFormat)
@@ -314,7 +315,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertFalse($0.validationErrors.target.isEmpty)
             XCTAssertEqual($0.validationErrors.target.first, .invalidFormat)
         }
@@ -328,7 +329,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.validateForm)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.validationErrors.target.isEmpty)
             XCTAssertFalse($0.validationErrors.hasErrors(for: .target))
         }
@@ -350,7 +351,7 @@ final class MakeCampaignTests: XCTestCase {
         
             await store.send(.onSaveButtonTapped)
             
-            await store.assert {
+            store.assert {
                 XCTAssertTrue($0.validationErrors.link.isEmpty)
                 XCTAssertFalse($0.validationErrors.hasErrors(for: .link))
             }
@@ -375,7 +376,7 @@ final class MakeCampaignTests: XCTestCase {
             
             await store.send(.onSaveButtonTapped)
             
-            await store.assert {
+            store.assert {
                 XCTAssertFalse($0.validationErrors.link.isEmpty)
                 XCTAssertTrue($0.validationErrors.hasErrors(for: .link))
                 XCTAssertNil($0.focus)
@@ -401,7 +402,7 @@ final class MakeCampaignTests: XCTestCase {
             
             await store.send(.onSaveButtonTapped)
             
-            await store.assert {
+            store.assert {
                 XCTAssertTrue($0.validationErrors.link.isEmpty)
                 XCTAssertFalse($0.validationErrors.hasErrors(for: .link))
             }
@@ -426,7 +427,7 @@ final class MakeCampaignTests: XCTestCase {
             
             await store.send(.onSaveButtonTapped)
             
-            await store.assert {
+            store.assert {
                 XCTAssertFalse($0.validationErrors.link.isEmpty)
                 XCTAssertTrue($0.validationErrors.hasErrors(for: .link))
             }
@@ -437,7 +438,7 @@ final class MakeCampaignTests: XCTestCase {
             await store.send(.binding(.set(\.$campaign, fixedCampaign)))
             await store.send(.validateForm)
             
-            await store.assert {
+            store.assert {
                 XCTAssertTrue($0.validationErrors.link.isEmpty)
                 XCTAssertFalse($0.validationErrors.hasErrors(for: .link))
             }
@@ -459,7 +460,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertFalse($0.validationErrors.image.isEmpty)
             XCTAssertTrue($0.validationErrors.hasErrors(for: .image))
             XCTAssertEqual($0.validationErrors.image.first, .missingImage)
@@ -483,7 +484,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.validationErrors.image.isEmpty)
             XCTAssertFalse($0.validationErrors.hasErrors(for: .image))
         }
@@ -503,7 +504,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertFalse($0.validationErrors.image.isEmpty)
             XCTAssertTrue($0.validationErrors.hasErrors(for: .image))
         }
@@ -518,7 +519,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.validateForm)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.validationErrors.image.isEmpty)
             XCTAssertFalse($0.validationErrors.hasErrors(for: .image))
         }
@@ -538,7 +539,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertFalse($0.validationErrors.template.isEmpty)
             XCTAssertTrue($0.validationErrors.hasErrors(for: .template))
         }
@@ -558,7 +559,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onSaveButtonTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.validationErrors.template.isEmpty)
         }
     }
@@ -576,13 +577,13 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onImageTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.isPresentingImageOverlay)
         }
         
         await store.send(.onImageTapped)
         
-        await store.assert {
+        store.assert {
             XCTAssertFalse($0.isPresentingImageOverlay)
         }
     }
@@ -649,7 +650,7 @@ final class MakeCampaignTests: XCTestCase {
         await store.send(.destination(.presented(.templateSelection(.doneButtonTapped))))
         await store.skipReceivedActions()
         
-        await store.assert {
+        store.assert {
             XCTAssertEqual($0.campaign.template?.id, template.id)
         }
     }
@@ -678,7 +679,7 @@ final class MakeCampaignTests: XCTestCase {
         await store.send(.onSaveButtonTapped)
         await store.skipReceivedActions()
         
-        await store.assert { _ in
+        store.assert { _ in
             XCTAssertTrue(isCampaignImageRendered)
             XCTAssertTrue(isPhotoSavedInLibrary)
         }
@@ -706,14 +707,14 @@ final class MakeCampaignTests: XCTestCase {
         await store.send(.onSaveButtonTapped)
         await store.skipReceivedActions()
         
-        await store.assert {
+        store.assert {
             XCTAssertTrue($0.destination?.isAlert ?? false)
             XCTAssertFalse(isSettingsOpened)
         }
         
         await store.send(.destination(.presented(.alert(.openAppSettings))))
         
-        await store.assert { _ in
+        store.assert { _ in
             XCTAssertTrue(isSettingsOpened)
         }
     }
