@@ -8,7 +8,8 @@ import SwiftUI
 import ComposableArchitecture
 import PhotosUI
 
-struct CampaignDetailsFeature: Reducer {
+@Reducer
+struct CampaignDetailsFeature {
     struct State: Equatable {
         enum Error: Equatable {
             case noNameSpecified
@@ -141,18 +142,22 @@ struct CampaignDetailsFeature: Reducer {
         case validateForm
         case delegate(Delegate)
 
+        @CasePathable
+        @dynamicMemberLookup
         enum Delegate {
             case deleteCampaign(Campaign.ID)
             case saveCampaign(Campaign)
         }
     }
     
+    @Dependency(\.isPresented) var isPresented
     @Dependency(\.dismiss) var dismiss
     @Dependency(\.openSettings) var openSettings
     @Dependency(\.validationClient) var validationClient
     @Dependency(\.mainQueue) var mainQueue
     
-    struct Destination: Reducer {
+    @Reducer
+    struct Destination {
         enum State: Equatable {
             case alert(AlertState<Action.Alert>)
             case templateSelection(TemplateSelectionFeature.State)
@@ -162,6 +167,7 @@ struct CampaignDetailsFeature: Reducer {
             case alert(Alert)
             case templateSelection(TemplateSelectionFeature.Action)
             
+            @CasePathable
             enum Alert {
                 case confirmDeleteCampaign
                 case openAppSettings
@@ -171,7 +177,7 @@ struct CampaignDetailsFeature: Reducer {
         }
         
         var body: some ReducerOf<Self> {
-            Scope(state: /State.templateSelection, action: /Action.templateSelection) {
+            Scope(state: \.templateSelection, action: \.templateSelection) {
                 TemplateSelectionFeature()
             }
         }
@@ -184,7 +190,7 @@ struct CampaignDetailsFeature: Reducer {
             case .destination(.presented(.alert(.confirmDeleteCampaign))):
                 return .run { [id = state.campaign.id] send in
                     await send(.delegate(.deleteCampaign(id)))
-                    await self.dismiss()
+                    await self.dismissIfPresented()
                 }
             case .destination(.presented(.alert(.openAppSettings))):
                 return .run { send in
@@ -232,7 +238,7 @@ struct CampaignDetailsFeature: Reducer {
                             try await saver.saveImage(image)
                             
                             await send(.delegate(.saveCampaign(campaign)))
-                            await dismiss()
+                            await dismissIfPresented()
                         } catch {
                             await send(.onPhotoSavingFailed)
                         }
@@ -309,7 +315,7 @@ struct CampaignDetailsFeature: Reducer {
                 return .none
             }
         }
-        .ifLet(\.$destination, action: /CampaignDetailsFeature.Action.destination) {
+        .ifLet(\.$destination, action: \.destination) {
             Destination()
         }
     }
@@ -347,6 +353,12 @@ struct CampaignDetailsFeature: Reducer {
         state.validationErrors.template = templateErrors
         
         state.isFormValid = state.validationErrors.isEmpty
+    }
+    
+    private func dismissIfPresented() async {
+        if isPresented {
+            await dismiss()
+        }
     }
 }
 
@@ -522,14 +534,16 @@ struct CampaignDetailsFormView: View {
             .bind(viewStore.$focus, to: self.$focus)
             .interactiveDismissDisabled(viewStore.isPresentingImageOverlay)
             .alert(
-                store: self.store.scope(state: \.$destination, action: { .destination($0) }),
-                state: /CampaignDetailsFeature.Destination.State.alert,
-                action: CampaignDetailsFeature.Destination.Action.alert
+                store: self.store.scope(
+                    state: \.$destination.alert,
+                    action: \.destination.alert
+                )
             )
             .sheet(
-                store: self.store.scope(state: \.$destination, action: { .destination($0) }),
-                state: /CampaignDetailsFeature.Destination.State.templateSelection,
-                action: CampaignDetailsFeature.Destination.Action.templateSelection
+                store: self.store.scope(
+                    state: \.$destination.templateSelection,
+                    action: \.destination.templateSelection
+                )
             ) { store in
                 NavigationStack {
                     TemplateSelectionView(store: store)

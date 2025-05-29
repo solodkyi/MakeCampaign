@@ -1,7 +1,8 @@
 import SwiftUI
 import ComposableArchitecture
 
-struct TemplateSelectionFeature: Reducer {
+@Reducer
+struct TemplateSelectionFeature {
     struct State: Equatable {
         var campaign: Campaign
         var selectedTemplateID: Template.ID?
@@ -27,6 +28,8 @@ struct TemplateSelectionFeature: Reducer {
         case doneButtonTapped
         case onImageRepositionFinished(CGFloat, CGSize, CGSize)
         
+        @CasePathable
+        @dynamicMemberLookup
         enum Delegate: Equatable {
             case templateApplied(Template, forCampaign: Campaign.ID)
             case imageRepositioned(CGFloat, CGSize, CGSize, forCampaign: Campaign.ID)

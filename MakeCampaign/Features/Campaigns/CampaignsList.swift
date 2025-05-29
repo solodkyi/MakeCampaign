@@ -9,7 +9,7 @@ import SwiftUI
 import ComposableArchitecture
 
 @Reducer
-struct CampaignsFeature: Reducer {
+struct CampaignsFeature {
     struct State: Equatable {
         var campaigns: IdentifiedArrayOf<Campaign> = []
         @PresentationState var addCampaign: CampaignDetailsFeature.State?

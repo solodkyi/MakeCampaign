@@ -8,7 +8,8 @@
 import SwiftUI
 import ComposableArchitecture
 
-struct AppFeature: Reducer {
+@Reducer
+struct AppFeature {
     struct State: Equatable {
         var path = StackState<Path.State>()
         var campaignsList = CampaignsFeature.State()
@@ -19,22 +20,28 @@ struct AppFeature: Reducer {
         case campaignsList(CampaignsFeature.Action)
     }
     
-    struct Path: Reducer {
+    @Reducer
+    struct Path {
+        
+        @CasePathable
+        @dynamicMemberLookup
         enum State: Equatable {
             case details(CampaignDetailsFeature.State)
             case templateSelection(TemplateSelectionFeature.State)
         }
         
+        @CasePathable
+        @dynamicMemberLookup
         enum Action {
             case details(CampaignDetailsFeature.Action)
             case templateSelection(TemplateSelectionFeature.Action)
         }
         
         var body: some ReducerOf<Self> {
-            Scope(state: /State.details, action: /Action.details, child: {
+            Scope(state: \.details, action: \.details, child: {
                 CampaignDetailsFeature()
             })
-            Scope(state: /State.templateSelection, action: /Action.templateSelection, child: {
+            Scope(state: \.templateSelection, action: \.templateSelection, child: {
                 TemplateSelectionFeature()
             })
         }
@@ -46,7 +53,7 @@ struct AppFeature: Reducer {
     var body: some ReducerOf<Self> {
         Scope(
             state: \.campaignsList,
-            action: /Action.campaignsList) {
+            action: \.campaignsList) {
                 CampaignsFeature()
             }
         
@@ -59,7 +66,7 @@ struct AppFeature: Reducer {
                     return .none
                 case let .saveCampaign(campaign):
                     state.campaignsList.campaigns[id: campaign.id] = campaign
-                    state.path[id: id, case: /Path.State.details]?.campaign = campaign
+                    state.path[id: id, case: \.details]?.campaign = campaign
                     
                     return .none
                 }
@@ -89,7 +96,7 @@ struct AppFeature: Reducer {
                 return .none
             }
         }
-        .forEach(\.path, action: /Action.path) {
+        .forEach(\.path, action: \.path) {
             Path()
         }
         Reduce { state, _ in
@@ -115,23 +122,23 @@ struct AppView: View {
             CampaignsView(
                 store: self.store.scope(
                     state: \.campaignsList,
-                    action: { .campaignsList($0) }
+                    action: \.campaignsList
                 )
             )
             .navigationTitle("Збори")
-        } destination: { state in
-            switch state {
-            case .details:
-                CaseLet(
-                    /AppFeature.Path.State.details,
-                     action: AppFeature.Path.Action.details) { store in
-                    CampaignDetailsFormView(store: store)
-                }
-            case .templateSelection:
-                CaseLet(
-                    /AppFeature.Path.State.templateSelection,
-                     action: AppFeature.Path.Action.templateSelection) { store in
-                    TemplateSelectionView(store: store)
+        } destination: { store in
+            WithViewStore(store, observe: { $0 }) { viewStore in
+                switch viewStore.state {
+                case let .details(detailsState):
+                    CampaignDetailsFormView(store: store.scope(
+                        state: { _ in detailsState },
+                        action: { .details($0) }
+                    ))
+                case let .templateSelection(templateState):
+                    TemplateSelectionView(store: store.scope(
+                        state: { _ in templateState },
+                        action: { .templateSelection($0) }
+                    ))
                 }
             }
         }
