@@ -229,6 +229,7 @@ struct ImageTransformPreview: View {
     
     @State private var offset: CGSize
     @State private var scale: CGFloat
+    @State private var dragStartOffset: CGSize = .zero
     
     init(image: UIImage, initialOffset: CGSize, initialScale: CGFloat) {
         self.image = image
@@ -245,7 +246,13 @@ struct ImageTransformPreview: View {
             .gesture(
                 DragGesture()
                     .onChanged { gesture in
-                        offset = gesture.translation
+                        offset = CGSize(
+                            width: dragStartOffset.width + gesture.translation.width,
+                            height: dragStartOffset.height + gesture.translation.height
+                        )
+                    }
+                    .onEnded { _ in
+                        dragStartOffset = offset
                     }
             )
             .gesture(
@@ -257,6 +264,9 @@ struct ImageTransformPreview: View {
                         scale = max(1.0, value)
                     }
             )
+            .onAppear {
+                dragStartOffset = offset
+            }
     }
 }
 
