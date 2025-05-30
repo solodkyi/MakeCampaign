@@ -200,6 +200,8 @@ struct CampaignDetailsFeature {
             case let .destination(.presented(.templateSelection(.delegate(.templateApplied(template, forCampaign: _))))):
                 state.campaign.template = template
                 state.destination = nil
+                
+                validateField(.template, &state)
                 return .none
             case let .destination(.presented(.templateSelection(.delegate(.imageRepositioned(scale, offset, containerSize, forCampaign: _))))):
                 state.campaign.imageScale = scale
