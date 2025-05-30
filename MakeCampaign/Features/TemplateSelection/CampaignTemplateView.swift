@@ -163,6 +163,7 @@ struct ImageTransformView: View {
     
     @State private var offset: CGSize
     @State private var scale: CGFloat
+    @State private var dragStartOffset: CGSize = .zero
     
     private var isRepositioningEnabled: Bool {
         onTransformEnd != nil
@@ -202,9 +203,13 @@ struct ImageTransformView: View {
                     .gesture(
                         DragGesture()
                             .onChanged { gesture in
-                                offset = gesture.translation
+                                offset = CGSize(
+                                    width: dragStartOffset.width + gesture.translation.width,
+                                    height: dragStartOffset.height + gesture.translation.height
+                                )
                             }
                             .onEnded { _ in
+                                dragStartOffset = offset
                                 onTransformEnd?(scale, offset, containerSize)
                             }
                     )
@@ -218,6 +223,9 @@ struct ImageTransformView: View {
                                 onTransformEnd?(scale, offset, containerSize)
                             }
                     )
+            }
+            .onAppear {
+                dragStartOffset = initialOffset
             }
     }
 }
