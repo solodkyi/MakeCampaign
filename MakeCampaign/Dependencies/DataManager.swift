@@ -21,6 +21,10 @@ extension DataManager: DependencyKey {
     
     static let previewValue = Self.mock()
     
+    static let testValue: Self = .mock(
+        initialData: try? JSONEncoder().encode([Campaign.mock1])
+    )
+    
     static let failToWrite = Self(
         load: { _ in Data() },
         save: { _, _ in
