@@ -9,12 +9,10 @@ import SwiftUI
 import ComposableArchitecture
 
 struct AppView: View {
-    let store: StoreOf<AppFeature>
+    @Perception.Bindable var store: StoreOf<AppFeature>
     
     var body: some View {
-        NavigationStackStore(
-            self.store.scope(state: \.path, action: { .path($0) })
-        ) {
+        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
             CampaignsView(
                 store: self.store.scope(
                     state: \.campaignsList,
@@ -23,19 +21,11 @@ struct AppView: View {
             )
             .navigationTitle("Збори")
         } destination: { store in
-            WithViewStore(store, observe: { $0 }) { viewStore in
-                switch viewStore.state {
-                case let .details(detailsState):
-                    CampaignDetailsFormView(store: store.scope(
-                        state: { _ in detailsState },
-                        action: { .details($0) }
-                    ))
-                case let .templateSelection(templateState):
-                    TemplateSelectionView(store: store.scope(
-                        state: { _ in templateState },
-                        action: { .templateSelection($0) }
-                    ))
-                }
+            switch store.case {
+            case let .details(store):
+                CampaignDetailsFormView(store: store)
+            case let .templateSelection(store):
+                TemplateSelectionView(store: store)
             }
         }
     }

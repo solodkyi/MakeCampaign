@@ -9,10 +9,11 @@ import ComposableArchitecture
 
 @Reducer
 struct CampaignsFeature {
+    @ObservableState
     struct State: Equatable {
         var campaigns: IdentifiedArrayOf<Campaign> = []
-        @PresentationState var addCampaign: CampaignDetailsFeature.State?
-        @PresentationState var openCampaign: CampaignDetailsFeature.State?
+        @Presents var addCampaign: CampaignDetailsFeature.State?
+        @Presents var openCampaign: CampaignDetailsFeature.State?
         
         init(addCampaign: CampaignDetailsFeature.State? = nil, openCampaign: CampaignDetailsFeature.State? = nil) {
             do {

@@ -9,12 +9,12 @@ import SwiftUI
 import ComposableArchitecture
 
 struct CampaignsView: View {
-    let store: StoreOf<CampaignsFeature>
+    @Perception.Bindable var store: StoreOf<CampaignsFeature>
     
     var body: some View {
-        WithViewStore(self.store, observe: \.campaigns) { viewStore in
+        WithPerceptionTracking {
             ZStack {
-                if viewStore.state.isEmpty {
+                if store.state.campaigns.isEmpty {
                     VStack(spacing: 24) {
                         Spacer()
                         
@@ -63,7 +63,7 @@ struct CampaignsView: View {
                                     .foregroundColor(.secondary)
                             }
                             .onTapGesture(perform: {
-                                viewStore.send(.createCampaignPlaceholderButtonTapped)
+                                store.send(.createCampaignPlaceholderButtonTapped)
                             })
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -89,9 +89,9 @@ struct CampaignsView: View {
                             ],
                             spacing: 16
                         ) {
-                            ForEach(viewStore.state.elements) { element in
+                            ForEach(store.state.campaigns.elements) { element in
                                 CampaignCardView(campaign: element, onSelect: { campaignId in
-                                    viewStore.send(.campaignSelected(campaignId))
+                                    store.send(.campaignSelected(campaignId))
                                 })
                             }
                         }
@@ -106,7 +106,7 @@ struct CampaignsView: View {
                     HStack {
                         Spacer()
                         Button {
-                            viewStore.send(.createCampaignButtonTapped)
+                            store.send(.createCampaignButtonTapped)
                         } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 22, weight: .bold))
@@ -130,12 +130,9 @@ struct CampaignsView: View {
                 }
             }
             .task {
-                viewStore.send(.onViewInitialLoad)
+                store.send(.onViewInitialLoad)
             }
-            .sheet(store: self.store.scope(
-                state: \.$addCampaign,
-                action: \.addCampaign
-            )) { store in
+            .sheet(item: $store.scope(state: \.addCampaign, action: \.addCampaign)) { store in
                 NavigationStack {
                     CampaignDetailsFormView(store: store)
                         .navigationTitle("Новий збір")
