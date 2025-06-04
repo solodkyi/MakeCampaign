@@ -12,20 +12,22 @@ struct AppView: View {
     @Perception.Bindable var store: StoreOf<AppFeature>
     
     var body: some View {
-        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
-            CampaignsView(
-                store: self.store.scope(
-                    state: \.campaignsList,
-                    action: \.campaignsList
+        WithPerceptionTracking {
+            NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
+                CampaignsView(
+                    store: self.store.scope(
+                        state: \.campaignsList,
+                        action: \.campaignsList
+                    )
                 )
-            )
-            .navigationTitle("Збори")
-        } destination: { store in
-            switch store.case {
-            case let .details(store):
-                CampaignDetailsFormView(store: store)
-            case let .templateSelection(store):
-                TemplateSelectionView(store: store)
+                .navigationTitle("Збори")
+            } destination: { store in
+                switch store.case {
+                case let .details(store):
+                    CampaignDetailsFormView(store: store)
+                case let .templateSelection(store):
+                    TemplateSelectionView(store: store)
+                }
             }
         }
     }
