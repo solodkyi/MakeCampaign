@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ComposableArchitecture
+import Dependencies
 
 struct CampaignsView: View {
     let store: StoreOf<CampaignsFeature>
@@ -150,11 +151,23 @@ struct CampaignsView: View {
 struct CampaignCardView: View {
     let campaign: Campaign
     let onSelect: (Campaign.ID) -> Void
-    
+
+    @Dependency(\.imageCache) private var imageCache
+
     var body: some View {
+        let uiImage: UIImage? = {
+            guard let imageData = campaign.image?.raw else { return nil }
+            let key = imageData as NSData
+            if let cached = imageCache.image(key) {
+                return cached
+            }
+            guard let image = UIImage(data: imageData) else { return nil }
+            imageCache.insert(image, key)
+            return image
+        }()
+
         VStack(spacing: 0) {
-            if let imageData = campaign.image?.raw,
-               let uiImage = UIImage(data: imageData) {
+            if let uiImage {
                 Group {
                     if let template = campaign.template {
                         CampaignTemplateView(campaign: campaign, template: template, image: uiImage)
