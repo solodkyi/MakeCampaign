@@ -10,6 +10,7 @@ import ComposableArchitecture
 
 @Reducer
 struct AppFeature {
+    @ObservableState
     struct State: Equatable {
         var path = StackState<Path.State>()
         var campaignsList = CampaignsFeature.State()
@@ -20,27 +21,10 @@ struct AppFeature {
         case campaignsList(CampaignsFeature.Action)
     }
     
-    @Reducer
-    struct Path {
-
-        enum State: Equatable {
-            case details(CampaignDetailsFeature.State)
-            case templateSelection(TemplateSelectionFeature.State)
-        }
-        
-        enum Action {
-            case details(CampaignDetailsFeature.Action)
-            case templateSelection(TemplateSelectionFeature.Action)
-        }
-        
-        var body: some ReducerOf<Self> {
-            Scope(state: \.details, action: \.details, child: {
-                CampaignDetailsFeature()
-            })
-            Scope(state: \.templateSelection, action: \.templateSelection, child: {
-                TemplateSelectionFeature()
-            })
-        }
+    @Reducer(state: .equatable)
+    enum Path {
+        case details(CampaignDetailsFeature)
+        case templateSelection(TemplateSelectionFeature)
     }
     
     @Dependency(\.continuousClock) var clock
@@ -92,9 +76,7 @@ struct AppFeature {
                 return .none
             }
         }
-        .forEach(\.path, action: \.path) {
-            Path()
-        }
+        .forEach(\.path, action: \.path)
         Reduce { state, _ in
             .run { [campaigns = state.campaignsList.campaigns] _ in
                 enum CancelID { case saveDebounce }

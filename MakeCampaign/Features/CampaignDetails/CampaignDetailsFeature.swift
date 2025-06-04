@@ -11,6 +11,7 @@ import PhotosUI
 
 @Reducer
 struct CampaignDetailsFeature {
+    @ObservableState
     struct State: Equatable {
         enum Error: Equatable {
             case noNameSpecified
@@ -84,9 +85,9 @@ struct CampaignDetailsFeature {
             case item(PhotosPickerItem?)
         }
         
-        @BindingState var focus: Field?
-        @BindingState var campaign: Campaign
-        @PresentationState var destination: Destination.State?
+        var focus: Field?
+        var campaign: Campaign
+        @Presents var destination: Destination.State?
         
         var isEditing: Bool = false
         var isPresentingImageOverlay: Bool = false
@@ -157,13 +158,8 @@ struct CampaignDetailsFeature {
     @Dependency(\.validationClient) var validationClient
     @Dependency(\.mainQueue) var mainQueue
     
-    @Reducer
-    struct Destination {
-        enum State: Equatable {
-            case alert(AlertState<Action.Alert>)
-            case templateSelection(TemplateSelectionFeature.State)
-        }
-        
+    @Reducer(state: .equatable)
+    enum Destination {
         enum Action: Equatable {
             case alert(Alert)
             case templateSelection(TemplateSelectionFeature.Action)
@@ -176,12 +172,8 @@ struct CampaignDetailsFeature {
                 case photoSavingFailed
             }
         }
-        
-        var body: some ReducerOf<Self> {
-            Scope(state: \.templateSelection, action: \.templateSelection) {
-                TemplateSelectionFeature()
-            }
-        }
+        case alert(AlertState<Action.Alert>)
+        case templateSelection(TemplateSelectionFeature)
     }
     
     var body: some ReducerOf<Self> {
@@ -318,9 +310,7 @@ struct CampaignDetailsFeature {
                 return .none
             }
         }
-        .ifLet(\.$destination, action: \.destination) {
-            Destination()
-        }
+        .ifLet(\.$destination, action: \.destination)
     }
     
     private func validateField(_ field: State.Field?, _ state: inout State) {
@@ -361,6 +351,17 @@ struct CampaignDetailsFeature {
     private func dismissIfPresented() async {
         if isPresented {
             await dismiss()
+        }
+    }
+}
+
+extension StoreOf<CampaignDetailsFeature> {
+    var photoPickerBinding: PhotosPickerItem? {
+        get {
+            state.selectedImage?.pickerItem
+        }
+        set {
+            send(.setSelectedItem(newValue))
         }
     }
 }

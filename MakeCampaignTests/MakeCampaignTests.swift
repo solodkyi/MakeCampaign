@@ -134,8 +134,8 @@ final class MakeCampaignTests: XCTestCase {
         updatedCampaign.purpose = "updated campaign"
         updatedCampaign.target = 100_000
         
-        await store.send(.path(.element(id: 0, action: .details(.binding(.set(\.$campaign, updatedCampaign))))))
-        await store.send(.path(.element(id: 0, action: .details(.onSaveButtonTapped))))
+        await store.send(\.path[id: 0].details.binding.campaign, updatedCampaign)
+        await store.send(\.path[id: 0].details.onSaveButtonTapped)
         await store.skipReceivedActions()
 
         store.assert {
@@ -166,7 +166,7 @@ final class MakeCampaignTests: XCTestCase {
         
         var newState = store.state
         newState.campaign.purpose = "Valid Campaign Name"
-        await store.send(.binding(.set(\.$campaign, newState.campaign))) {
+        await store.send(\.binding.campaign, newState.campaign) {
             $0.campaign.purpose = "Valid Campaign Name"
         }
         
@@ -196,7 +196,7 @@ final class MakeCampaignTests: XCTestCase {
         var invalidCampaign = store.state.campaign
         invalidCampaign.formattedTarget = "invalid-amount"
         
-        await store.send(.binding(.set(\.$campaign, invalidCampaign))) {
+        await store.send(\.binding.campaign, invalidCampaign) {
             $0.campaign.formattedTarget = "invalid-amount"
         }
         
@@ -212,7 +212,7 @@ final class MakeCampaignTests: XCTestCase {
         var validCampaign = store.state.campaign
         validCampaign.formattedTarget = "1000"
         
-        await store.send(.binding(.set(\.$campaign, validCampaign))) {
+        await store.send(\.binding.campaign, validCampaign) {
             $0.campaign.formattedTarget = "1000"
         }
         
@@ -274,7 +274,7 @@ final class MakeCampaignTests: XCTestCase {
             var fixedCampaign = store.state.campaign
             fixedCampaign.jarURLString = "https://example.com/validjar"
             
-            await store.send(.binding(.set(\.$campaign, fixedCampaign)))
+            await store.send(\.binding.campaign, fixedCampaign)
             await store.send(.validateForm)
             
             store.assert {
@@ -310,7 +310,7 @@ final class MakeCampaignTests: XCTestCase {
         var updatedCampaign = store.state.campaign
         updatedCampaign.image = .init(raw: mockImageData)
         
-        await store.send(.binding(.set(\.$campaign, updatedCampaign))) {
+        await store.send(\.binding.campaign, updatedCampaign) {
             $0.campaign.image = .init(raw: mockImageData)
         }
         
@@ -343,7 +343,7 @@ final class MakeCampaignTests: XCTestCase {
         
         await store.send(.onTemplateButtonTapped)
         
-        await store.send(.destination(.presented(.templateSelection(.delegate(.templateApplied(.init(name: "1", gradient: .linearPurple, imagePlacement: .topCenter), forCampaign: .init(0)))))))
+        await store.send(\.destination.presented.templateSelection.delegate, .templateApplied(.init(name: "1", gradient: .linearPurple, imagePlacement: .topCenter), forCampaign: .init(0)))
         
         store.assert {
             XCTAssertTrue($0.validationErrors.isEmpty)
@@ -433,8 +433,8 @@ final class MakeCampaignTests: XCTestCase {
         
         let template = Template(name: "1", gradient: .linearPurple, imagePlacement: .topCenter)
         
-        await store.send(.destination(.presented(.templateSelection(.templateSelected(template)))))
-        await store.send(.destination(.presented(.templateSelection(.doneButtonTapped))))
+        await store.send(\.destination.presented.templateSelection, .templateSelected(template))
+        await store.send(\.destination.presented.templateSelection, .doneButtonTapped)
         await store.skipReceivedActions()
         
         store.assert {
@@ -499,7 +499,7 @@ final class MakeCampaignTests: XCTestCase {
             XCTAssertFalse(isSettingsOpened)
         }
         
-        await store.send(.destination(.presented(.alert(.openAppSettings))))
+        await store.send(\.destination.presented, .alert(.openAppSettings))
         
         store.assert { _ in
             XCTAssertTrue(isSettingsOpened)

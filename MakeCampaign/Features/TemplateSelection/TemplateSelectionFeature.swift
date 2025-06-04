@@ -10,6 +10,7 @@ import ComposableArchitecture
 
 @Reducer
 struct TemplateSelectionFeature {
+    @ObservableState
     struct State: Equatable {
         var campaign: Campaign
         var selectedTemplateID: Template.ID?

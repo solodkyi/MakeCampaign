@@ -5,18 +5,18 @@ struct TemplateSelectionView: View {
     let store: StoreOf<TemplateSelectionFeature>
     
     var body: some View {
-        WithViewStore(self.store, observe: { $0 }) { viewStore in
+        WithPerceptionTracking {
             VStack(spacing: 0) {
                 ZStack {
-                    if let imageData = viewStore.campaign.image?.raw,
+                    if let imageData = store.campaign.image?.raw,
                        let uiImage = UIImage(data: imageData) {
-                        if let selectedTemplate = viewStore.selectedTemplate {
+                        if let selectedTemplate = store.selectedTemplate {
                             CampaignTemplateView(
-                                campaign: viewStore.campaign,
+                                campaign: store.campaign,
                                 template: selectedTemplate,
                                 image: uiImage,
                                 onImageTransformEnd: { newScale, newOffset, containerSize in
-                                    viewStore.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
+                                    store.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
                                 }
                             )
                         } else {
@@ -46,13 +46,13 @@ struct TemplateSelectionView: View {
                     
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
-                            ForEach(viewStore.templates) { template in
+                            ForEach(store.templates) { template in
                                 TemplateItemView(
-                                    campaign: viewStore.campaign,
+                                    campaign: store.campaign,
                                     template: template,
-                                    isSelected: viewStore.selectedTemplateID == template.id)
+                                    isSelected: store.selectedTemplateID == template.id)
                                 .onTapGesture {
-                                    viewStore.send(.templateSelected(template))
+                                    store.send(.templateSelected(template))
                                 }
                                 
                             }
@@ -62,25 +62,25 @@ struct TemplateSelectionView: View {
                     .frame(height: 150)
                     
                     Button {
-                        viewStore.send(.doneButtonTapped)
+                        store.send(.doneButtonTapped)
                     } label: {
                         Text("Готово")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(viewStore.selectedTemplateID != nil ? Color.accentColor : Color.gray)
+                            .background(store.selectedTemplateID != nil ? Color.accentColor : Color.gray)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
                     .contentShape(Rectangle())
                     .padding(.horizontal)
                     .padding(.bottom)
-                    .disabled(viewStore.selectedTemplateID == nil)
+                    .disabled(store.selectedTemplateID == nil)
                 }
                 .background(Color(.systemBackground))
             }
             .onAppear {
-                viewStore.send(.onAppear)
+                store.send(.onAppear)
             }
             .navigationTitle("Обрати шаблон")
             .navigationBarTitleDisplayMode(.inline)
