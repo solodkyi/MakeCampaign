@@ -12,7 +12,7 @@ import ComposableArchitecture
 struct TemplateSelectionFeature {
     @ObservableState
     struct State: Equatable {
-        var campaign: Campaign
+        @Shared var campaign: Campaign
         var selectedTemplateID: Template.ID?
         var templates: IdentifiedArrayOf<Template> = Template.list
         
@@ -20,8 +20,8 @@ struct TemplateSelectionFeature {
             selectedTemplateID.flatMap { id in templates[id: id] }
         }
         
-        init(campaign: Campaign, templates: IdentifiedArrayOf<Template> = Template.list, selectedTemplateID: Template.ID? = nil) {
-            self.campaign = campaign
+        init(campaign: Shared<Campaign>, templates: IdentifiedArrayOf<Template> = Template.list, selectedTemplateID: Template.ID? = nil) {
+            self._campaign = campaign
             self.templates = templates
             self.selectedTemplateID = campaign.template?.id
         }
@@ -40,7 +40,6 @@ struct TemplateSelectionFeature {
         @dynamicMemberLookup
         enum Delegate: Equatable {
             case templateApplied(Template, forCampaign: Campaign.ID)
-            case imageRepositioned(CGFloat, CGSize, CGSize, forCampaign: Campaign.ID)
         }
     }
     
@@ -54,8 +53,9 @@ struct TemplateSelectionFeature {
                 state.selectedTemplateID = template.id
                 state.campaign.imageScale = 1
                 state.campaign.imageOffset = .zero
+                state.campaign.template = template
                 
-                return .send(.delegate(.imageRepositioned(1, .zero, .zero, forCampaign: state.campaign.id)))
+                return .none
 
             case .doneButtonTapped:
                 if let templateID = state.selectedTemplateID,
@@ -66,11 +66,11 @@ struct TemplateSelectionFeature {
                     }
                 }
                 return .none
-            case let .onImageRepositionFinished(scale, offset, containerSize):
+            case let .onImageRepositionFinished(scale, offset, _):
                 state.campaign.imageScale = scale
                 state.campaign.imageOffset = offset
                 
-                return .send(.delegate(.imageRepositioned(scale, offset, containerSize, forCampaign: state.campaign.id)))
+                return .none
             case .delegate:
                 return .none
             }

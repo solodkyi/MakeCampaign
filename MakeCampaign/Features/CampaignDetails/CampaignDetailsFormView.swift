@@ -249,7 +249,7 @@ struct CampaignDetailsFormView: View {
 
 #Preview {
     NavigationStack {
-        CampaignDetailsFormView(store: Store(initialState: CampaignDetailsFeature.State(campaign: .mock2, isEditing: true), reducer: {
+        CampaignDetailsFormView(store: Store(initialState: CampaignDetailsFeature.State(campaign: Shared(Campaign.mock2), isEditing: true), reducer: {
             CampaignDetailsFeature()
                 ._printChanges()
         }))

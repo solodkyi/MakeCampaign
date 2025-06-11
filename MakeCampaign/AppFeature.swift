@@ -26,10 +26,7 @@ struct AppFeature {
         case details(CampaignDetailsFeature)
         case templateSelection(TemplateSelectionFeature)
     }
-    
-    @Dependency(\.continuousClock) var clock
-    @Dependency(\.dataManager.save) var saveData
-    
+        
     var body: some ReducerOf<Self> {
         Scope(
             state: \.campaignsList,
@@ -39,53 +36,17 @@ struct AppFeature {
         
         Reduce { state, action in
             switch action {
-            case let .path(.element(id: id, action: .details(.delegate(action)))):
-                switch action {
-                case let .deleteCampaign(campaignId):
-                    state.campaignsList.campaigns.remove(id: campaignId)
-                    return .none
-                case let .saveCampaign(campaign):
-                    state.campaignsList.campaigns[id: campaign.id] = campaign
-                    state.path[id: id, case: \.details]?.campaign = campaign
-                    
-                    return .none
-                }
-            case let .path(.element(id: _, action: .details(.destination(.presented(.templateSelection(.delegate(action))))))):
-                switch action {
-                case let .templateApplied(template, campaignId):
-                    state.campaignsList.campaigns[id: campaignId]?.template = template
-                    return .none
-                case let .imageRepositioned(scale, offset, containerSize, campaignId):
-                    guard var campaign = state.campaignsList.campaigns[id: campaignId] else { return .none }
-                    campaign.imageOffset = offset
-                    campaign.imageScale = scale
-                    campaign.imageReferenceSize = containerSize
-                    state.campaignsList.campaigns[id: campaignId] = campaign
-                    return .none
-                }
             case .path: return .none
-            case let .campaignsList(action):
-                switch action {
-                case let .campaignSelected(campaignId):
-                    guard let campaign = state.campaignsList.campaigns[id: campaignId] else {
-                        return .none
-                    }
-                    state.path.append(.details(.init(campaign: campaign,  isEditing: true)))
-                default: break
+            case let .campaignsList(.delegate(.onCampaignSelected(campaignId))):
+                guard let campaign = state.campaignsList.$campaigns[id: campaignId] else {
+                    return .none
                 }
+                state.path.append(.details(.init(campaign: campaign, isEditing: true)))
+                
                 return .none
+                default: return .none
             }
         }
         .forEach(\.path, action: \.path)
-        Reduce { state, _ in
-            .run { [campaigns = state.campaignsList.campaigns] _ in
-                enum CancelID { case saveDebounce }
-                
-                try await withTaskCancellation(id: CancelID.saveDebounce, cancelInFlight: true) {
-                    try await self.clock.sleep(for: .seconds(1))
-                    try self.saveData(JSONEncoder().encode(campaigns), .campaigns)
-                }
-            }
-        }
     }
 }

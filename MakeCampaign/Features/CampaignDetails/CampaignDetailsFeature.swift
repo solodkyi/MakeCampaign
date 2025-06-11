@@ -86,7 +86,7 @@ struct CampaignDetailsFeature {
         }
         
         var focus: Field?
-        var campaign: Campaign
+        @Shared var campaign: Campaign
         @Presents var destination: Destination.State?
         
         var isEditing: Bool = false
@@ -103,7 +103,7 @@ struct CampaignDetailsFeature {
         }
         
         init(
-            campaign: Campaign,
+            campaign: Shared<Campaign>,
             destination: Destination.State? = nil,
             isEditing: Bool = false,
             isPresentingImageOverlay: Bool = false,
@@ -117,8 +117,8 @@ struct CampaignDetailsFeature {
             } else {
                 self.focus = .name
             }
-            self.initialCampaign = campaign
-            self.campaign = campaign
+            self.initialCampaign = campaign.wrappedValue
+            self._campaign = campaign
             self.destination = destination
             self.isEditing = isEditing
             self.isPresentingImageOverlay = isPresentingImageOverlay
@@ -142,14 +142,6 @@ struct CampaignDetailsFeature {
         
         case binding(BindingAction<State>)
         case validateForm
-        case delegate(Delegate)
-
-        @CasePathable
-        @dynamicMemberLookup
-        enum Delegate {
-            case deleteCampaign(Campaign.ID)
-            case saveCampaign(Campaign)
-        }
     }
     
     @Dependency(\.isPresented) var isPresented
@@ -182,28 +174,24 @@ struct CampaignDetailsFeature {
             switch action {
             case .destination(.presented(.alert(.confirmDeleteCampaign))):
                 return .run { [id = state.campaign.id] send in
-                    await send(.delegate(.deleteCampaign(id)))
                     await self.dismissIfPresented()
+                    
+                    @Shared(.campaigns) var campaigns
+                    campaigns.remove(id: id)
                 }
             case .destination(.presented(.alert(.openAppSettings))):
                 return .run { send in
                     await openSettings()
                 }
-            case let .destination(.presented(.templateSelection(.delegate(.templateApplied(template, forCampaign: _))))):
-                state.campaign.template = template
+            case .destination(.presented(.templateSelection(.delegate(.templateApplied(_, forCampaign: _))))):
                 state.destination = nil
                 
                 validateField(.template, &state)
                 return .none
-            case let .destination(.presented(.templateSelection(.delegate(.imageRepositioned(scale, offset, containerSize, forCampaign: _))))):
-                state.campaign.imageScale = scale
-                state.campaign.imageOffset = offset
-                state.campaign.imageReferenceSize = containerSize
-                return .none
             case .destination: return .none
             case .onTemplateButtonTapped:
                 state.destination = .templateSelection(TemplateSelectionFeature.State(
-                    campaign: state.campaign
+                    campaign: state.$campaign
                 ))
                 
                 return .none
@@ -232,8 +220,10 @@ struct CampaignDetailsFeature {
                             let image = try await renderer.render(campaign)
                             try await saver.saveImage(image)
                             
-                            await send(.delegate(.saveCampaign(campaign)))
                             await dismissIfPresented()
+                            
+                            @Shared(.campaigns) var campaigns
+                            campaigns.append(campaign)
                         } catch {
                             await send(.onPhotoSavingFailed)
                         }
@@ -296,7 +286,6 @@ struct CampaignDetailsFeature {
                 validateField(.image, &state)
                 
                 return .none
-            case .delegate: return .none
             case .onPhotoSavingFailed:
                 state.destination = .alert(AlertState(title: {
                     TextState("Збереження зображення не вдалося")

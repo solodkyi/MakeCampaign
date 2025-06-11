@@ -7,24 +7,18 @@
 import SwiftUI
 import ComposableArchitecture
 
+extension PersistenceKey where Self == PersistenceKeyDefault<FileStorageKey<IdentifiedArrayOf<Campaign>>> {
+    static var campaigns: Self {
+        PersistenceKeyDefault(.fileStorage(.campaigns), [])
+    }
+}
+
 @Reducer
 struct CampaignsFeature {
     @ObservableState
     struct State: Equatable {
-        var campaigns: IdentifiedArrayOf<Campaign> = []
+        @Shared(.campaigns) var campaigns
         @Presents var addCampaign: CampaignDetailsFeature.State?
-        @Presents var openCampaign: CampaignDetailsFeature.State?
-        
-        init(addCampaign: CampaignDetailsFeature.State? = nil, openCampaign: CampaignDetailsFeature.State? = nil) {
-            do {
-                @Dependency(\.dataManager.load) var loadData
-                self.campaigns = try JSONDecoder().decode(IdentifiedArrayOf<Campaign>.self, from: loadData(.campaigns))
-            } catch {
-                self.campaigns = []
-            }
-            self.addCampaign = addCampaign
-            self.openCampaign = openCampaign
-        }
     }
     
     enum Action {
@@ -34,8 +28,13 @@ struct CampaignsFeature {
         case campaignSelected(Campaign.ID)
         case cancelNewCampaignButtonTapped
         case addCampaign(PresentationAction<CampaignDetailsFeature.Action>)
-        case openCampaign(PresentationAction<CampaignDetailsFeature.Action>)
         case onCampaignJarDetailsLoaded(Campaign.ID, JarDetails?)
+        case delegate(Delegate)
+        
+        @CasePathable
+        enum Delegate {
+            case onCampaignSelected(Campaign.ID)
+        }
     }
     
     @Dependency(\.uuid) var uuid
@@ -69,30 +68,15 @@ struct CampaignsFeature {
                         }
                     }
                 }
+            case let .campaignSelected(id):
+                return .send(.delegate(.onCampaignSelected(id)))
             case let .onCampaignJarDetailsLoaded(campaignId, jarDetails):
                 state.campaigns[id: campaignId]?.jar?.details = jarDetails
                 return .none
             case .createCampaignButtonTapped, .createCampaignPlaceholderButtonTapped:
-                state.addCampaign = .init(campaign: .init(id: self.uuid()))
+                state.addCampaign = .init(campaign: Shared(.init(id: self.uuid())))
                 return .none
-            case let .campaignSelected(campaignId):
-                guard let campaign = state.campaigns[id: campaignId] else { return .none }
-                
-                state.openCampaign = .init(campaign: campaign, isEditing: true)
-                return .none
-            case let .addCampaign(.presented(.delegate(.saveCampaign(campaign)))):
-                state.campaigns.append(campaign)
-                state.addCampaign = nil
-                return .none
-            case let .openCampaign(.presented(.delegate(.saveCampaign(campaign)))):
-                state.campaigns[id: campaign.id] = campaign
-                state.openCampaign = nil
-                return .none
-            case let .openCampaign(.presented(.delegate(.deleteCampaign(id)))):
-                state.campaigns.remove(id: id)
-                state.openCampaign = nil
-                return .none
-            case .addCampaign, .openCampaign:
+            case .addCampaign, .delegate:
                 return .none
             case .cancelNewCampaignButtonTapped:
                 state.addCampaign = nil
@@ -100,9 +84,6 @@ struct CampaignsFeature {
             }
         }
         .ifLet(\.$addCampaign, action: \.addCampaign) {
-            CampaignDetailsFeature()
-        }
-        .ifLet(\.$openCampaign, action: \.openCampaign) {
             CampaignDetailsFeature()
         }
     }

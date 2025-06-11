@@ -42,7 +42,7 @@ extension URL {
         AppFeature()
             ._printChanges()
     }, withDependencies: {
-        $0.dataManager = .mock(initialData: try? JSONEncoder().encode(Campaign.mocks))
+        $0.defaultFileStorage = .inMemory
     } ))
 }
 
@@ -50,9 +50,10 @@ extension URL {
 struct MakeCampaignApp: App {
     var body: some Scene {
         WindowGroup {
-            AppView(store: .init(initialState: AppFeature.State(campaignsList: .init()), reducer: {
+            AppView(store: .init(initialState: AppFeature.State(campaignsList: .init())) {
                 AppFeature()
-            }))
+                    ._printChanges()
+            })
         }
     }
 }
