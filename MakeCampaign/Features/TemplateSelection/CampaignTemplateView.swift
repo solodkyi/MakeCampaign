@@ -84,35 +84,31 @@ struct CampaignTemplateView: View {
         }
     }
     
+    @ViewBuilder
     private func content() -> some View {
         if let image {
             if isRepositioningEnabled {
-                return AnyView(
-                    GeometryReader { geometry in
-                        let initialOffset = campaign.imageOffset
-                        let initialScale = campaign.imageScale
-                        
-                        ImageTransformView(
-                            image: image,
-                            initialOffset: initialOffset,
-                            initialScale: initialScale,
-                            containerSize: geometry.size,
-                            onTransformEnd: onImageTransformEnd
-                        )
-                    }
-                )
-            } else {
-                return AnyView(
-                    DisplayImageView(
+                GeometryReader { geometry in
+                    let initialOffset = campaign.imageOffset
+                    let initialScale = campaign.imageScale
+                    ImageTransformView(
                         image: image,
-                        scale: campaign.imageScale,
-                        offset: campaign.imageOffset,
-                        referenceSize: campaign.imageReferenceSize
+                        initialOffset: initialOffset,
+                        initialScale: initialScale,
+                        containerSize: geometry.size,
+                        onTransformEnd: onImageTransformEnd
                     )
+                }
+            } else {
+                DisplayImageView(
+                    image: image,
+                    scale: campaign.imageScale,
+                    offset: campaign.imageOffset,
+                    referenceSize: campaign.imageReferenceSize
                 )
             }
         } else {
-            return AnyView(Color.white)
+            Color.white
         }
     }
 }
@@ -150,6 +146,8 @@ struct DisplayImageView: View {
                 .scaledToFill()
                 .scaleEffect(max(0.1, scale))
                 .offset(scaledOffset)
+                .clipped()
+                .drawingGroup()
         }
     }
 }
@@ -192,6 +190,7 @@ struct ImageTransformView: View {
             .scaleEffect(max(0.1, scale))
             .offset(offset)
             .clipped()
+            .drawingGroup()
             .onChange(of: initialOffset) { newOffset in
                 offset = newOffset
             }
