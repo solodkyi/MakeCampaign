@@ -88,7 +88,9 @@ final class MakeCampaignTests: XCTestCase {
         await store.skipReceivedActions()
         
         store.assert {
-            $0.path[id: 0, case: \.details]?.campaign = campaign
+            $0.path[id: 0, case: \.details]?.$campaign.withLock {
+                $0 = campaign
+            }
             XCTAssertEqual($0.path.count, 1)
         }
     }
@@ -148,8 +150,9 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignDetails_nameField_validatesOnBindingChange() async throws {
         let campaign = Campaign(id: .init(0), purpose: "")
         @Shared(.campaigns) var campaigns = [campaign]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
-        
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
                 campaign: sharedCampaign
@@ -169,9 +172,13 @@ final class MakeCampaignTests: XCTestCase {
         }
         
         let newState = store.state
-        newState.campaign.purpose = "Valid Campaign Name"
+        newState.$campaign.withLock {
+            $0.purpose = "Valid Campaign Name"
+        }
         await store.send(\.binding.campaign, newState.campaign) {
-            $0.campaign.purpose = "Valid Campaign Name"
+            $0.$campaign.withLock {
+                $0.purpose = "Valid Campaign Name"
+            }
         }
         
         await store.send(.validateForm)
@@ -187,8 +194,9 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignDetails_targetField_fixedAfterError_clearsValidationError() async throws {
         let campaign = Campaign(id: .init(0), purpose: "Valid Name")
         @Shared(.campaigns) var campaigns = [campaign]
-        var sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
-        
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
                 campaign: sharedCampaign
@@ -204,7 +212,9 @@ final class MakeCampaignTests: XCTestCase {
         invalidCampaign.formattedTarget = "invalid-amount"
         
         await store.send(\.binding.campaign, invalidCampaign) {
-            $0.campaign.formattedTarget = "invalid-amount"
+            $0.$campaign.withLock {
+                $0.formattedTarget = "invalid-amount"
+            }
         }
         
         await store.send(.onSaveButtonTapped)
@@ -220,7 +230,9 @@ final class MakeCampaignTests: XCTestCase {
         validCampaign.formattedTarget = "1000"
         
         await store.send(\.binding.campaign, validCampaign) {
-            $0.campaign.formattedTarget = "1000"
+            $0.$campaign.withLock {
+                $0.formattedTarget = "1000"
+            }
         }
         
         await store.send(.validateForm)
@@ -235,8 +247,9 @@ final class MakeCampaignTests: XCTestCase {
         let campaign = Campaign(id: .init(0),
                                 purpose: "Valid Name")
         @Shared(.campaigns) var campaigns = [campaign]
-        var sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
-        
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
             let store = TestStore(
                 initialState: CampaignDetailsFeature.State(
                     campaign: sharedCampaign,
@@ -263,8 +276,9 @@ final class MakeCampaignTests: XCTestCase {
             invalidCampaign.jarURLString = "invalid-url"
         
             @Shared(.campaigns) var campaigns = [invalidCampaign]
-            let sharedCampaign = try XCTUnwrap($campaigns[id: invalidCampaign.id])
-        
+            guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+                return XCTFail("Shared campaign is nil")
+            }
             let store = TestStore(
                 initialState: CampaignDetailsFeature.State(
                     campaign: sharedCampaign,
@@ -302,7 +316,10 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignDetails_imageField_fixedAfterError_clearsValidationError() async throws {
         let campaign = Campaign(id: .init(0), image: nil, purpose: "Valid Name")
         @Shared(.campaigns) var campaigns = [campaign]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
+        
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
@@ -329,7 +346,9 @@ final class MakeCampaignTests: XCTestCase {
         updatedCampaign.image = .init(raw: mockImageData)
         
         await store.send(\.binding.campaign, updatedCampaign) {
-            $0.campaign.image = .init(raw: mockImageData)
+            $0.$campaign.withLock {
+                $0.image = .init(raw: mockImageData)
+            }
         }
         
         await store.send(.validateForm)
@@ -343,8 +362,9 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignDetails_templateField_missingTemplate_showsValidationError_andResetsWhenTemplateApplied() async throws {
         let campaign = Campaign(id: .init(0), image: Campaign.Image(raw: Data()), purpose: "Valid Name")
         @Shared(.campaigns) var campaigns = [campaign]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
-
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
                 campaign: sharedCampaign
@@ -379,7 +399,9 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignDetails_imagePreview_presentedOrHiddenByImageTap() async throws{
         let campaign = Campaign(id: .init(0), image: Campaign.Image(raw: Data()))
         @Shared(.campaigns) var campaigns = [campaign]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
@@ -407,8 +429,9 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignTemplate_presentedByTap() async throws {
         let campaign = Campaign(id: .init(0), image: Campaign.Image(raw: Data()), purpose: "Valid Name")
         @Shared(.campaigns) var campaigns = [campaign]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
-        
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         let store = TestStore(
             initialState: CampaignDetailsFeature.State(
                 campaign: sharedCampaign
@@ -422,14 +445,16 @@ final class MakeCampaignTests: XCTestCase {
         await store.send(.onTemplateButtonTapped)
         
         store.assert {
-            XCTAssertEqual($0.destination, .templateSelection(.init(campaign: Shared(campaign))))
+            XCTAssertEqual($0.destination, .templateSelection(.init(campaign: sharedCampaign)))
         }
     }
     
     func test_campaignTemplate_hasNoSelectionAtStart() async throws {
         let campaign = Campaign(id: .init(0), image: Campaign.Image(raw: Data()), purpose: "Valid Name")
         @Shared(.campaigns) var campaigns = [campaign]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         let store = TestStore(
             initialState: TemplateSelectionFeature.State(campaign: sharedCampaign)
         ) {
@@ -446,7 +471,9 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignTemplate_hasSelectionForCampaignWithTemplate() async throws {
         let campaignWithTemplate = Campaign(id: .init(0), image: Campaign.Image(raw: Data()), template: Template(name: "1", gradient: .linearPurple, imagePlacement: .topCenter), purpose: "Valid Name")
         @Shared(.campaigns) var campaigns = [campaignWithTemplate]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaignWithTemplate.id])
+        guard let sharedCampaign = Shared($campaigns[id: campaignWithTemplate.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         let store = TestStore(
             initialState: TemplateSelectionFeature.State(campaign: sharedCampaign)
         ) {
@@ -463,8 +490,9 @@ final class MakeCampaignTests: XCTestCase {
     func test_campaignTemplate_updatesCampaignTemplateOnSelectionAndConfirmation() async throws {
         let campaign = Campaign(id: .init(0), image: Campaign.Image(raw: Data()), purpose: "Valid Name")
         @Shared(.campaigns) var campaigns = [campaign]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
-        
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         let store = TestStore(initialState: CampaignDetailsFeature.State(campaign: sharedCampaign, destination: .templateSelection(.init(campaign: sharedCampaign)))) {
             CampaignDetailsFeature()
         }
@@ -488,7 +516,9 @@ final class MakeCampaignTests: XCTestCase {
         var isCampaignImageRendered = false
         
         @Shared(.campaigns) var campaigns = [campaign]
-        let sharedCampaign = try XCTUnwrap($campaigns[id: campaign.id])
+        guard let sharedCampaign = Shared($campaigns[id: campaign.id]) else {
+            return XCTFail("Shared campaign is nil")
+        }
         
         let store = TestStore(initialState: CampaignDetailsFeature.State(campaign: sharedCampaign)) {
             CampaignDetailsFeature()
@@ -519,7 +549,7 @@ final class MakeCampaignTests: XCTestCase {
         let campaign = Campaign.mock1
         var isSettingsOpened = false
         
-        let store = TestStore(initialState: CampaignDetailsFeature.State(campaign: Shared(campaign))) {
+        let store = TestStore(initialState: CampaignDetailsFeature.State(campaign: Shared(value: campaign))) {
             CampaignDetailsFeature()
         } withDependencies: {
             $0.photoLibrarySaver = .init(saveImage: { _ in
