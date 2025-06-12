@@ -53,7 +53,7 @@ The project uses The Composable Architecture (TCA) for state management. Ensure 
 
 ## Data Flow
 
-The application follows The Composable Architecture pattern, providing a unidirectional data flow:
+The application follows The Composable Architecture pattern with @Shared state management, providing a unidirectional data flow:
 
 ### Architecture Overview
 
@@ -66,158 +66,210 @@ User Action → Store → Reducer → State Change → View Update
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                           AppFeature (Root)                        │
-│  ┌─────────────────┐  ┌─────────────────────────────────────────┐  │
-│  │ Navigation      │  │ Auto-Save System                        │  │
-│  │ StackState      │  │ • Debounced JSON save (1 second)       │  │
-│  │ • details       │  │ • Encodes campaigns to campaigns.json  │  │
-│  │ • template      │  │ • Triggers on any state change         │  │
-│  └─────────────────┘  └─────────────────────────────────────────┘  │
-│                                    │                                │
-│                    ┌───────────────▼───────────────┐                │
-│                    │       CampaignsFeature        │                │
-│                    └───────────────┬───────────────┘                │
-└─────────────────────────────────────┼─────────────────────────────────┘
+│                                                                     │
+│  State:                                                             │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ • path: StackState<Path.State>()                            │   │
+│  │ • campaignsList: CampaignsFeature.State()                   │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Navigation Management:                                             │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ Path.State cases:                                           │   │
+│  │ • .details(CampaignDetailsFeature)                          │   │
+│  │ • .templateSelection(TemplateSelectionFeature)              │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Delegate Actions:                                                  │
+│  • campaignsList(.delegate(.onCampaignSelected)) → Navigate         │
+└─────────────────────────────────────────────────────────────────────┘
                                       │
-        ┌─────────────────────────────▼─────────────────────────────┐
-        │                CampaignsFeature                          │
-        │                                                          │
-        │  Data Loading:                                           │
-        │  ┌─────────────────────────────────────────────────────┐ │
-        │  │ Init → JSONDecoder.decode(campaigns.json)           │ │
-        │  │ onViewInitialLoad → Parallel API calls             │ │
-        │  │   ├─ TaskGroup for jar link campaigns             │ │
-        │  │   └─ jarApiClient.loadProgress(jarLink)            │ │
-        │  └─────────────────────────────────────────────────────┘ │
-        │                                                          │
-        │  User Actions:                                           │
-        │  • createCampaign → Present modal                        │
-        │  • campaignSelected → Navigate to details               │
-        │                                                          │
-        │  State Management:                                       │
-        │  • campaigns: IdentifiedArrayOf<Campaign>               │
-        │  • @PresentationState addCampaign                       │
-        │  • @PresentationState openCampaign                      │
-        └─────────────────┬────────────────────────────────────────┘
-                          │
-    ┌─────────────────────▼─────────────────────┐
-    │           CampaignDetailsFeature          │
-    │                                           │
-    │  Complex State Management:                │
-    │  ┌─────────────────────────────────────┐  │
-    │  │ @BindingState campaign: Campaign    │  │
-    │  │ @BindingState focus: Field?         │  │
-    │  │ validationErrors: ValidationErrors  │  │
-    │  │ selectedImage: SelectedImage?       │  │
-    │  │ initialCampaign: Campaign          │  │
-    │  └─────────────────────────────────────┘  │
-    │                                           │
-    │  Validation System:                       │
-    │  ┌─────────────────────────────────────┐  │
-    │  │ Field-by-field validation:          │  │
-    │  │ • name (purpose)                    │  │
-    │  │ • target (formatted target)         │  │
-    │  │ • link (jar URL)                    │  │
-    │  │ • image (image data)                │  │
-    │  │ • template                          │  │
-    │  └─────────────────────────────────────┘  │
-    │                                           │
-    │  Photo Management:                        │
-    │  ┌─────────────────────────────────────┐  │
-    │  │ PhotosPickerItem → Data conversion  │  │
-    │  │ PHAuthorizationStatus checking      │  │
-    │  │ Image rendering & library saving    │  │
-    │  └─────────────────────────────────────┘  │
-    │                                           │
-    │  Delegate Actions:                        │
-    │  • saveCampaign(Campaign) ↑              │
-    │  • deleteCampaign(Campaign.ID) ↑         │
-    └─────────────────┬─────────────────────────┘
-                      │
-    ┌─────────────────▼─────────────────────┐
-    │        TemplateSelectionFeature       │
-    │                                       │
-    │  Template Management:                 │
-    │  ┌─────────────────────────────────┐  │
-    │  │ templates: IdentifiedArrayOf    │  │
-    │  │ selectedTemplateID: Template.ID │  │
-    │  │ campaign: Campaign (copy)       │  │
-    │  └─────────────────────────────────┘  │
-    │                                       │
-    │  Image Positioning:                   │
-    │  ┌─────────────────────────────────┐  │
-    │  │ Interactive image manipulation: │  │
-    │  │ • imageScale: CGFloat           │  │
-    │  │ • imageOffset: CGSize           │  │
-    │  │ • referenceSize: CGSize         │  │
-    │  └─────────────────────────────────┘  │
-    │                                       │
-    │  Delegate Actions:                    │
-    │  • templateApplied(template, id) ↑    │
-    │  • imageRepositioned(scale, ...) ↑    │
-    └───────────────────────────────────────┘
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                          CampaignsFeature                          │
+│                                                                     │
+│  Shared State Management:                                           │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ @Shared(.campaigns) var campaigns                            │   │
+│  │ • Persistent file storage: .fileStorage(.campaigns)         │   │
+│  │ • Default: empty IdentifiedArrayOf<Campaign>                │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Presentation State:                                                │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ @Presents var addCampaign: CampaignDetailsFeature.State?    │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Jar API Integration:                                               │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ onViewInitialLoad:                                           │   │
+│  │ • Parallel TaskGroup for campaigns with jar links           │   │
+│  │ • jarApiClient.loadProgress(jarLink) → JarDetails           │   │
+│  │ • Updates shared campaigns with jar details                 │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Actions:                                                           │
+│  • createCampaignButtonTapped → Present modal                      │
+│  • campaignSelected(id) → Send delegate action                     │
+│  • onCampaignJarDetailsLoaded → Update shared state                │
+└─────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      CampaignDetailsFeature                        │
+│                                                                     │
+│  Shared Campaign State:                                             │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ @Shared var campaign: Campaign                               │   │
+│  │ • Direct reference to shared campaign instance              │   │
+│  │ • Changes automatically persist through @Shared system      │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  State Management:                                                  │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ • focus: Field? (for form focus management)                 │   │
+│  │ • validationErrors: ValidationErrors                        │   │
+│  │ • selectedImage: SelectedImage?                             │   │
+│  │ • isEditing: Bool                                            │   │
+│  │ • initialCampaign: Campaign (for change detection)          │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Destination Management:                                            │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ @Presents var destination: Destination.State?               │   │
+│  │ • .alert(AlertState) - various alerts                       │   │
+│  │ • .templateSelection(TemplateSelectionFeature)              │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Validation System:                                                 │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ Field validation via ValidationClient:                      │   │
+│  │ • name (campaign.purpose)                                   │   │
+│  │ • target (campaign.formattedTarget)                         │   │
+│  │ • link (campaign.jarURLString)                              │   │
+│  │ • image (campaign.image?.raw)                               │   │
+│  │ • template (campaign.template)                              │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Photo Management Flow:                                             │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ PhotosPickerItem → Data conversion → Campaign.image update  │   │
+│  │ PHAuthorization check → CampaignRenderer → PhotoLibrarySave │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Campaign Operations:                                               │
+│  • onSaveButtonTapped → Render & save to photo library             │
+│  • onCampaignDeleteButtonTapped → Remove from shared campaigns     │
+│  • onTemplateButtonTapped → Present template selection             │
+└─────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     TemplateSelectionFeature                       │
+│                                                                     │
+│  Shared Campaign Reference:                                         │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ @Shared var campaign: Campaign                               │   │
+│  │ • Same shared reference as CampaignDetailsFeature           │   │
+│  │ • Direct updates to campaign.template, imageScale, offset   │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Template Management:                                               │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ • selectedTemplateID: Template.ID?                          │   │
+│  │ • templates: IdentifiedArrayOf<Template> = Template.list    │   │
+│  │ • selectedTemplate: Template? (computed)                    │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Template Application Flow:                                         │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ templateSelected(template):                                  │   │
+│  │ • Reset imageScale = 1, imageOffset = .zero                 │   │
+│  │ • Set campaign.template = template                          │   │
+│  │                                                              │   │
+│  │ onImageRepositionFinished(scale, offset):                   │   │
+│  │ • Update campaign.imageScale & campaign.imageOffset         │   │
+│  │                                                              │   │
+│  │ doneButtonTapped:                                            │   │
+│  │ • Send delegate(.templateApplied) → dismiss                 │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│  Delegate Actions:                                                  │
+│  • templateApplied(Template, forCampaign: Campaign.ID)              │
+└─────────────────────────────────────────────────────────────────────┘
 
 Data Flow Patterns:
 
-1. INITIALIZATION FLOW:
-   App Launch → AppFeature.init → CampaignsFeature.init 
-   → JSON decode → Load campaigns → API calls for jar details
+1. SHARED STATE FLOW:
+   • @Shared(.campaigns) provides persistent storage via FileStorageKey
+   • All campaign modifications automatically persist
+   • CampaignDetailsFeature & TemplateSelectionFeature share same campaign reference
 
 2. NAVIGATION FLOW:
-   CampaignsView.campaignSelected → AppFeature.path.append(.details)
-   → CampaignDetailsView → Template button → path.append(.templateSelection)
+   CampaignsView.campaignSelected → CampaignsFeature.delegate(.onCampaignSelected)
+   → AppFeature navigation → path.append(.details(campaign: shared))
+   CampaignDetails.templateButton → destination = .templateSelection
 
-3. SAVE FLOW:
-   Template/Details changes → Delegate actions → AppFeature updates
-   → Auto-save debounce → JSON encode → File system write
+3. TEMPLATE SELECTION FLOW:
+   Template selection → campaign.template update (via @Shared)
+   → Image repositioning → campaign.imageScale/Offset update
+   → Done → delegate(.templateApplied) → dismiss → back to CampaignDetails
 
 4. VALIDATION FLOW:
-   User input → @BindingState updates → validateForm() 
-   → ValidationErrors → UI error display
+   User input → @Shared campaign updates → validateForm() trigger
+   → ValidationClient field validation → ValidationErrors update → UI refresh
 
-5. IMAGE FLOW:
-   PhotosPicker → Data conversion → Campaign.image update
-   → Template application → Image positioning → Final render
+5. SAVE FLOW:
+   CampaignDetails.save → Permission check → CampaignRenderer.render
+   → PhotoLibrarySaver.saveImage → campaigns.append(campaign) via @Shared
+
+6. JAR API FLOW:
+   CampaignsFeature.onViewInitialLoad → TaskGroup parallel calls
+   → jarApiClient.loadProgress → onCampaignJarDetailsLoaded
+   → campaigns[id].jar.details update via @Shared
 ```
 
 ### Key Components
 
-**AppFeature**: Root feature managing the entire application state and navigation
-- Handles the navigation stack using `StackState<Path.State>`
-- Coordinates between different screens via delegate actions
-- Implements auto-save with 1-second debounce using `continuousClock`
-- Manages campaign updates from child features
+**AppFeature**: Root feature managing navigation and coordinating child features
+- Manages navigation stack using `StackState<Path.State>`
+- Delegates campaign selection to navigate to details
+- Contains `CampaignsFeature` as scoped child feature
 
-**CampaignsFeature**: Main screen displaying the list of campaigns
-- Loads campaigns from JSON on initialization with error handling
-- Manages parallel API calls to fetch jar progress details
-- Handles campaign creation and selection through presentation states
-- Maintains `IdentifiedArrayOf<Campaign>` for efficient updates
+**CampaignsFeature**: Campaign list management with persistent storage
+- Uses `@Shared(.campaigns)` for automatic file-based persistence
+- Loads jar progress details via parallel API calls on view load
+- Presents new campaign creation modal via `@Presents`
+- Sends delegate actions for campaign selection navigation
 
-**CampaignDetailsFeature**: Form for editing campaign details
-- Complex validation system with field-specific error tracking
-- Photo picker integration with permission handling
-- Real-time form validation using `ValidationClient` dependency
-- Manages campaign state changes and delegates saves/deletes upward
+**CampaignDetailsFeature**: Complex form with validation and media management
+- Operates on `@Shared var campaign` for direct state updates
+- Comprehensive validation system with field-specific error tracking
+- Photo picker integration with permission handling and library saving
+- Template selection via destination presentation
+- Campaign deletion from shared campaigns array
 
-**TemplateSelectionFeature**: Interface for choosing promotional templates
-- Template selection from predefined `Template.list`
-- Interactive image positioning with scale and offset controls
-- Real-time preview of template application
-- Delegates template and positioning changes back to parent
+**TemplateSelectionFeature**: Template picker with image positioning
+- Shares same `@Shared var campaign` reference for direct updates
+- Template selection with automatic image scale/offset reset
+- Interactive image positioning controls
+- Delegate action communication for completion state
 
-### Data Persistence
+### State Management Architecture
 
-- Campaign data is stored locally as JSON in the app's documents directory
-- File location: `Documents/campaigns.json`
-- Data is automatically saved using debounced effects (1-second delay)
-- Loading happens during `CampaignsFeature` initialization with graceful error handling
+**@Shared System**: 
+- Campaigns stored in `FileStorageKey<IdentifiedArrayOf<Campaign>>`
+- Automatic persistence to `campaigns.json` in Documents directory
+- Direct state sharing between features eliminates manual synchronization
 
-### State Management
+**Validation Flow**:
+- Field-level validation via `ValidationClient` dependency
+- Real-time error tracking in `ValidationErrors` struct
+- Form validity computed from all field validation states
 
-Each feature maintains its own state and communicates through actions:
-- **Actions**: User interactions and system events (binding, delegate, presentation)
-- **Reducers**: Pure functions that handle state transitions and coordinate between features
-- **Effects**: Handle side effects like data persistence, API calls, and photo library operations
-- **Dependencies**: Injected services for testability (DataManager, ValidationClient, JarApiClient, etc.)
+**Navigation Pattern**:
+- Stack-based navigation via TCA's `StackState`
+- Delegate actions for cross-feature communication
+- Presentation states for modals and sheets
 
-This architecture ensures predictable state management, easy testing, and maintainable code structure.
+This architecture provides type-safe state management, automatic persistence, and clear separation of concerns while maintaining predictable data flow throughout the application.
