@@ -15,10 +15,16 @@ struct Campaign: Codable, Equatable, Identifiable {
         var scale: CGFloat = 1.0
         var referenceSize: CGSize = CGSize(width: 300, height: 300)
     }
+    
+    struct JarInfo: Equatable, Codable {
+        var link: URL
+        var details: JarDetails?
+    }
+    
     let id: UUID
     var image: Image?
     var template: Template?
-    var purpose: String = ""
+    var purpose: String
     var target: Double?
     var jar: JarInfo?
     
@@ -32,13 +38,6 @@ struct Campaign: Codable, Equatable, Identifiable {
         self.purpose = purpose
         self.target = target
         self.jar = jar
-        self.rawTargetInput = target?.formattedAmount ?? ""
-        self.rawJarLinkInput = jar?.link.absoluteString ?? ""
-    }
-    
-    struct JarInfo: Equatable, Codable {
-        var link: URL
-        var details: JarDetails?
     }
 }
 
@@ -135,17 +134,6 @@ struct JarDetails: Equatable, Codable {
         case jarStatus
     }
     
-    init(jarAmount: Int, jarStatus: String) {
-        self.jarAmount = jarAmount
-        self.jarStatus = jarStatus
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        jarAmount = try container.decode(Int.self, forKey: .jarAmount)
-        jarStatus = try container.decode(String.self, forKey: .jarStatus)
-    }
-    
     var amountInHryvnias: Double {
         return Double(jarAmount) / 100.0
     }
@@ -164,4 +152,8 @@ extension JarDetails {
         jarAmount: 10000,
         jarStatus: "ACTIVE"
     )
+}
+
+extension Font {
+    static let standard: Self = .init(name: "Roboto-Bold", size: nil)
 }

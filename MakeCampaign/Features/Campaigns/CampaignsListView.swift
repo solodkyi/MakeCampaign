@@ -301,6 +301,8 @@ struct RoundedCorner: Shape {
 }
 
 #Preview {
+    @Shared(.fileStorage(.campaigns)) var campaigns: IdentifiedArrayOf<Campaign> = Campaign.mocks
+    
     CampaignsView(
         store: Store(
             initialState:

@@ -47,14 +47,15 @@ struct TemplateSelectionView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
                             ForEach(store.templates) { template in
-                                TemplateItemView(
-                                    campaign: store.campaign,
-                                    template: template,
-                                    isSelected: store.selectedTemplateID == template.id)
-                                .onTapGesture {
-                                    store.send(.templateSelected(template))
+                                WithPerceptionTracking {
+                                    TemplateItemView(
+                                        campaign: store.campaign,
+                                        template: template,
+                                        isSelected: store.selectedTemplateID == template.id)
+                                    .onTapGesture {
+                                        store.send(.templateSelected(template))
+                                    }
                                 }
-                                
                             }
                         }
                         .padding(.horizontal)
@@ -113,7 +114,7 @@ struct TemplateItemView: View {
         TemplateSelectionView(
             store: Store(
                 initialState: TemplateSelectionFeature.State(
-                    campaign: .mock1
+                    campaign: Shared(value: Campaign.mock1)
                 ),
                 reducer: {
                     TemplateSelectionFeature()
