@@ -177,7 +177,7 @@ struct CampaignDetailsFeature {
                     await self.dismissIfPresented()
                     
                     @Shared(.campaigns) var campaigns
-                    $campaigns.withLock {
+                    _ = $campaigns.withLock {
                         $0.remove(id: id)
                     }
                 }

@@ -24,7 +24,6 @@ struct AppFeature {
     @Reducer(state: .equatable)
     enum Path {
         case details(CampaignDetailsFeature)
-        case templateSelection(TemplateSelectionFeature)
     }
         
     var body: some ReducerOf<Self> {

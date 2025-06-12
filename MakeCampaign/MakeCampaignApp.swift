@@ -25,8 +25,6 @@ struct AppView: View {
                 switch store.case {
                 case let .details(store):
                     CampaignDetailsFormView(store: store)
-                case let .templateSelection(store):
-                    TemplateSelectionView(store: store)
                 }
             }
         }
