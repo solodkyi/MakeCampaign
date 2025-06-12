@@ -114,7 +114,7 @@ struct TemplateItemView: View {
         TemplateSelectionView(
             store: Store(
                 initialState: TemplateSelectionFeature.State(
-                    campaign: Shared(Campaign.mock1)
+                    campaign: Shared(value: Campaign.mock1)
                 ),
                 reducer: {
                     TemplateSelectionFeature()

@@ -6,10 +6,11 @@
 //
 import SwiftUI
 import ComposableArchitecture
+import Sharing
 
-extension PersistenceKey where Self == PersistenceKeyDefault<FileStorageKey<IdentifiedArrayOf<Campaign>>> {
+extension SharedKey where Self == FileStorageKey<IdentifiedArrayOf<Campaign>>.Default {
     static var campaigns: Self {
-        PersistenceKeyDefault(.fileStorage(.campaigns), [])
+        Self[.fileStorage(.campaigns), default: []]
     }
 }
 
@@ -71,10 +72,12 @@ struct CampaignsFeature {
             case let .campaignSelected(id):
                 return .send(.delegate(.onCampaignSelected(id)))
             case let .onCampaignJarDetailsLoaded(campaignId, jarDetails):
-                state.campaigns[id: campaignId]?.jar?.details = jarDetails
+                state.$campaigns.withLock {
+                    $0[id: campaignId]?.jar?.details = jarDetails
+                }
                 return .none
             case .createCampaignButtonTapped, .createCampaignPlaceholderButtonTapped:
-                state.addCampaign = .init(campaign: Shared(.init(id: self.uuid())))
+                state.addCampaign = .init(campaign: Shared(value: .init(id: self.uuid())))
                 return .none
             case .addCampaign, .delegate:
                 return .none

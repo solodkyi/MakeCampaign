@@ -23,7 +23,7 @@ struct TemplateSelectionFeature {
         init(campaign: Shared<Campaign>, templates: IdentifiedArrayOf<Template> = Template.list, selectedTemplateID: Template.ID? = nil) {
             self._campaign = campaign
             self.templates = templates
-            self.selectedTemplateID = campaign.template?.id
+            self.selectedTemplateID = campaign.wrappedValue.template?.id
         }
     }
     
@@ -51,10 +51,11 @@ struct TemplateSelectionFeature {
                 
             case let .templateSelected(template):
                 state.selectedTemplateID = template.id
-                state.campaign.imageScale = 1
-                state.campaign.imageOffset = .zero
-                state.campaign.template = template
-                
+                state.$campaign.withLock {
+                    $0.imageScale = 1
+                    $0.imageOffset = .zero
+                    $0.template = template
+                }
                 return .none
 
             case .doneButtonTapped:
@@ -67,9 +68,11 @@ struct TemplateSelectionFeature {
                 }
                 return .none
             case let .onImageRepositionFinished(scale, offset, _):
-                state.campaign.imageScale = scale
-                state.campaign.imageOffset = offset
                 
+                state.$campaign.withLock {
+                    $0.imageScale = scale
+                    $0.imageOffset = offset
+                }
                 return .none
             case .delegate:
                 return .none

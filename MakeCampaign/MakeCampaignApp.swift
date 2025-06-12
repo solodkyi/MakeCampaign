@@ -52,7 +52,6 @@ struct MakeCampaignApp: App {
         WindowGroup {
             AppView(store: .init(initialState: AppFeature.State(campaignsList: .init())) {
                 AppFeature()
-                    ._printChanges()
             })
         }
     }

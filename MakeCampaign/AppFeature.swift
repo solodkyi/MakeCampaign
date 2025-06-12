@@ -38,7 +38,7 @@ struct AppFeature {
             switch action {
             case .path: return .none
             case let .campaignsList(.delegate(.onCampaignSelected(campaignId))):
-                guard let campaign = state.campaignsList.$campaigns[id: campaignId] else {
+                guard let campaign = Shared(state.campaignsList.$campaigns[id: campaignId]) else {
                     return .none
                 }
                 state.path.append(.details(.init(campaign: campaign, isEditing: true)))

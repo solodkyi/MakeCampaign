@@ -25,19 +25,17 @@ struct Campaign: Codable, Equatable, Identifiable {
     var image: Image?
     var template: Template?
     var purpose: String
-    var font: Font
     var target: Double?
     var jar: JarInfo?
     
     private var rawTargetInput: String = ""
     private var rawJarLinkInput: String = ""
     
-    init(id: UUID, image: Image? = nil, template: Template? = nil, purpose: String = "", font: Font = .standard, target: Double? = nil, jar: JarInfo? = nil) {
+    init(id: UUID, image: Image? = nil, template: Template? = nil, purpose: String = "", target: Double? = nil, jar: JarInfo? = nil) {
         self.id = id
         self.image = image
         self.template = template
         self.purpose = purpose
-        self.font = font
         self.target = target
         self.jar = jar
     }

@@ -177,7 +177,9 @@ struct CampaignDetailsFeature {
                     await self.dismissIfPresented()
                     
                     @Shared(.campaigns) var campaigns
-                    campaigns.remove(id: id)
+                    $campaigns.withLock {
+                        $0.remove(id: id)
+                    }
                 }
             case .destination(.presented(.alert(.openAppSettings))):
                 return .run { send in
@@ -223,7 +225,10 @@ struct CampaignDetailsFeature {
                             await dismissIfPresented()
                             
                             @Shared(.campaigns) var campaigns
-                            campaigns.append(campaign)
+                            
+                            _ = $campaigns.withLock {
+                                $0.append(campaign)
+                            }
                         } catch {
                             await send(.onPhotoSavingFailed)
                         }
@@ -282,7 +287,10 @@ struct CampaignDetailsFeature {
                 }
             case let .onSelectImageDataConverted(data):
                 state.selectedImage = .data(data)
-                state.campaign.image = .init(raw: data)
+                
+                state.$campaign.withLock {
+                    $0.image = .init(raw: data)
+                }
                 validateField(.image, &state)
                 
                 return .none
