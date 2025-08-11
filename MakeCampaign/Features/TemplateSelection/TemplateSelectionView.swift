@@ -136,7 +136,12 @@ extension Template {
         .init(name: "7", gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
         .init(name: "8", gradient: .angularYellowBlue, imagePlacement: .trailing),
         .init(name: "9", gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
-        .init(name: "10", gradient: .radialRedBlack, imagePlacement: .topToEdge)
+        .init(name: "10", gradient: .radialRedBlack, imagePlacement: .topToEdge),
+        .init(name: "11", gradient: .linearIndigoOrange, imagePlacement: .trailing),
+        .init(name: "12", gradient: .linearEmeraldBlack, imagePlacement: .hexagonTrailing),
+        .init(name: "13", gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
+        .init(name: "14", gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
+        .init(name: "15", gradient: .linearCoralTeal, imagePlacement: .trailing)
     ]
 }
 

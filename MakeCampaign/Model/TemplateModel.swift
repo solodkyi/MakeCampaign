@@ -1,6 +1,5 @@
 import Foundation
 import SwiftUI
-import ComposableArchitecture
 
 struct Template: Codable, Equatable, Identifiable {
     let name: String
@@ -17,11 +16,16 @@ struct Template: Codable, Equatable, Identifiable {
         case angularYellowBlue
         case linearSilverBlue
         case radialRedBlack
+         case radialAquaPurple
         case pinkAngular
         case tealPurpleRadial
         case cyanMagentaRadial
         case goldBlackLinear
         case blueLinear
+         case linearIndigoOrange
+         case linearEmeraldBlack
+         case radialMintIndigo
+         case linearCoralTeal
     }
     
     enum ImagePlacement: Codable, Equatable {

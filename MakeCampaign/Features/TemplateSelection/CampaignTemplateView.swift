@@ -1,5 +1,4 @@
 import SwiftUI
-import ComposableArchitecture
 
 struct CampaignTemplateView: View {
     let campaign: Campaign
@@ -56,6 +55,10 @@ struct CampaignTemplateView: View {
             SilverBlueTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 content()
             })
+        case (.linearCoralTeal, .trailing):
+            CoralTealGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
         case (.radialRedBlack, .topToEdge):
             RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 content()
@@ -68,8 +71,16 @@ struct CampaignTemplateView: View {
             CyanMagentaGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 content()
             })
+        case (.radialAquaPurple, .squareTrailing):
+            AquaPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
         case (.goldBlackLinear, .hexagonTrailing):
             GoldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.linearEmeraldBlack, .hexagonTrailing):
+            EmeraldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 content()
             })
         case (.pinkAngular, .topCenter):
@@ -78,6 +89,14 @@ struct CampaignTemplateView: View {
             })
         case (.tealPurpleRadial, .roundedTrailing):
             TealPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.radialMintIndigo, .roundedTrailing):
+            MintIndigoGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.linearIndigoOrange, .trailing):
+            IndigoOrangeGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
                 content()
             })
         default: EmptyView()
