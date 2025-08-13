@@ -28,7 +28,7 @@ jobs:
       - name: Install gems
         run: bundle install --path vendor/bundle
 
-     - name: Start SSH agent and add deploy key
+      - name: Start SSH agent and add deploy key
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.MATCH_DEPLOY_KEY }}
@@ -48,7 +48,7 @@ jobs:
         with:
           name: xcode-result-bundle
           path: test_output/**/*
-beta:
+  beta:
     needs: tests
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: macos-latest
