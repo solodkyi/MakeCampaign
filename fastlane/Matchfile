@@ -1,0 +1,5 @@
+git_url("git@github.com:solodkyi/ios-signing-certificates.git")  # private repo
+type("appstore")
+storage_mode("git")
+app_identifier(["com.solodky.MakeCampaign"])
+username("andrey_solodkiy@me.com")

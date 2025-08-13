@@ -1,0 +1,54 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites tests='23' failures='0' skipped='0' time='56.9125'>
+  <testsuite name='MakeCampaignTests' time='1.9124999999999999' tests='19' failures='0' skipped='0'>
+    <testsuite name='MakeCampaignTests' time='1.9124999999999999' tests='19' failures='0' skipped='0'>
+      <testcase name='test_campaignDetails_campaign_deleted()' classname='MakeCampaignTests' time='0.075'/>
+      <testcase name='test_campaignDetails_editCampaign()' classname='MakeCampaignTests' time='0.29'/>
+      <testcase name='test_campaignDetails_imageField_fixedAfterError_clearsValidationError()' classname='MakeCampaignTests' time='0.027'/>
+      <testcase name='test_campaignDetails_imagePreview_presentedOrHiddenByImageTap()' classname='MakeCampaignTests' time='0.013'/>
+      <testcase name='test_campaignDetails_linkField_fixedAfterError_clearsValidationError()' classname='MakeCampaignTests' time='0.017'/>
+      <testcase name='test_campaignDetails_linkField_isNot_mandatory()' classname='MakeCampaignTests' time='1.0'/>
+      <testcase name='test_campaignDetails_nameField_validatesOnBindingChange()' classname='MakeCampaignTests' time='0.02'/>
+      <testcase name='test_campaignDetails_onCampaignSave_rendersImageAndSavesItToPhotoLibrary()' classname='MakeCampaignTests' time='0.12'/>
+      <testcase name='test_campaignDetails_onCampaignSaveWithPhotoLibraryAccessDenied_presentsAlert()' classname='MakeCampaignTests' time='0.02'/>
+      <testcase name='test_campaignDetails_presented_byTap()' classname='MakeCampaignTests' time='0.15'/>
+      <testcase name='test_campaignDetails_targetField_fixedAfterError_clearsValidationError()' classname='MakeCampaignTests' time='0.028'/>
+      <testcase name='test_campaignDetails_templateField_missingTemplate_showsValidationError_andResetsWhenTemplateApplied()' classname='MakeCampaignTests' time='0.038'/>
+      <testcase name='test_campaignsList_initialState()' classname='MakeCampaignTests' time='0.0095'/>
+      <testcase name='test_campaignsList_matches_saved_campaigns_count()' classname='MakeCampaignTests' time='0.021'/>
+      <testcase name='test_campaignsList_requestsJarDetailsAndCalculatesProgress()' classname='MakeCampaignTests' time='0.026'/>
+      <testcase name='test_campaignTemplate_hasNoSelectionAtStart()' classname='MakeCampaignTests' time='0.011'/>
+      <testcase name='test_campaignTemplate_hasSelectionForCampaignWithTemplate()' classname='MakeCampaignTests' time='0.012'/>
+      <testcase name='test_campaignTemplate_presentedByTap()' classname='MakeCampaignTests' time='0.016'/>
+      <testcase name='test_campaignTemplate_updatesCampaignTemplateOnSelectionAndConfirmation()' classname='MakeCampaignTests' time='0.019'/>
+    </testsuite>
+    <properties>
+      <property name='Configuration' value='Test Scheme Action'/>
+      <property name='device' value='iPhone 16 Pro (18.6)'/>
+    </properties>
+  </testsuite>
+  <testsuite name='MakeCampaignUITests' time='55.0' tests='4' failures='0' skipped='0'>
+    <testsuite name='MakeCampaignUITestsLaunchTests' time='22.0' tests='2' failures='0' skipped='0'>
+      <testcase name='testLaunch(1)' classname='MakeCampaignUITestsLaunchTests' time='11.0'>
+        <properties>
+          <property name='testname' value='testLaunch()'/>
+          <property name='argument' value='1'/>
+        </properties>
+      </testcase>
+      <testcase name='testLaunch(2)' classname='MakeCampaignUITestsLaunchTests' time='11.0'>
+        <properties>
+          <property name='testname' value='testLaunch()'/>
+          <property name='argument' value='2'/>
+        </properties>
+      </testcase>
+    </testsuite>
+    <testsuite name='MakeCampaignUITests' time='33.0' tests='2' failures='0' skipped='0'>
+      <testcase name='testExample()' classname='MakeCampaignUITests' time='4.0'/>
+      <testcase name='testLaunchPerformance()' classname='MakeCampaignUITests' time='29.0'/>
+    </testsuite>
+    <properties>
+      <property name='Configuration' value='Test Scheme Action'/>
+      <property name='device' value='iPhone 16 Pro (18.6)'/>
+    </properties>
+  </testsuite>
+</testsuites>
