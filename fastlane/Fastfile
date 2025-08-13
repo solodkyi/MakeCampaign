@@ -28,7 +28,14 @@ platform :ios do
   lane :tests do
     scan(
       scheme: "MakeCampaign",
-      clean: true
+      clean: true,
+      only_testing: ["MakeCampaignTests"],
+      devices: ["iPhone 16"],
+      sdk: "iphonesimulator",
+      result_bundle: true,
+      output_directory: "test_output",
+      skip_detect_devices: true,
+      disable_concurrent_testing: true
     )
   end
 
