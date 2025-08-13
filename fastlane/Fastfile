@@ -30,12 +30,12 @@ platform :ios do
       scheme: "MakeCampaign",
       clean: true,
       only_testing: ["MakeCampaignTests"],
-      devices: ["iPhone 16"],
+      destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=latest",
       sdk: "iphonesimulator",
       result_bundle: true,
       output_directory: "test_output",
-      skip_detect_devices: true,
-      disable_concurrent_testing: true
+      disable_concurrent_testing: true,
+      xcodebuild_command: "env NSUnbufferedIO=YES xcodebuild -skipMacroValidation"
     )
   end
 
