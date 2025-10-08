@@ -16,16 +16,16 @@ struct Template: Codable, Equatable, Identifiable {
         case angularYellowBlue
         case linearSilverBlue
         case radialRedBlack
-         case radialAquaPurple
+        case radialAquaPurple
         case pinkAngular
         case tealPurpleRadial
         case cyanMagentaRadial
         case goldBlackLinear
         case blueLinear
-         case linearIndigoOrange
-         case linearEmeraldBlack
-         case radialMintIndigo
-         case linearCoralTeal
+        case linearIndigoOrange
+        case linearEmeraldBlack
+        case radialMintIndigo
+        case linearCoralTeal
     }
     
     enum ImagePlacement: Codable, Equatable {

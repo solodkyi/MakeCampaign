@@ -5,87 +5,83 @@ struct TemplateSelectionView: View {
     let store: StoreOf<TemplateSelectionFeature>
     
     var body: some View {
-        WithPerceptionTracking {
-            VStack(spacing: 0) {
-                ZStack {
-                    if let imageData = store.campaign.image?.raw,
-                       let uiImage = UIImage(data: imageData) {
-                        if let selectedTemplate = store.selectedTemplate {
-                            CampaignTemplateView(
-                                campaign: store.campaign,
-                                template: selectedTemplate,
-                                image: uiImage,
-                                onImageTransformEnd: { newScale, newOffset, containerSize in
-                                    store.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
-                                }
-                            )
-                        } else {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                        }
+        VStack(spacing: 0) {
+            ZStack {
+                if let imageData = store.campaign.image?.raw,
+                   let uiImage = UIImage(data: imageData) {
+                    if let selectedTemplate = store.selectedTemplate {
+                        CampaignTemplateView(
+                            campaign: store.campaign,
+                            template: selectedTemplate,
+                            image: uiImage,
+                            onImageTransformEnd: { newScale, newOffset, containerSize in
+                                store.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
+                            }
+                        )
                     } else {
-                        Text("Неможливо завантажити зображення")
-                            .foregroundColor(.secondary)
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
                     }
+                } else {
+                    Text("Неможливо завантажити зображення")
+                        .foregroundColor(.secondary)
                 }
-                .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding()
-                .background(Color(.systemGroupedBackground))
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding()
+            .background(Color(.systemGroupedBackground))
+            
+            Divider()
+            Spacer()
+            
+            VStack(spacing: 12) {
+                Text("Оберіть шаблон")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.top)
                 
-                Divider()
-                Spacer()
-                
-                VStack(spacing: 12) {
-                    Text("Оберіть шаблон")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                        .padding(.top)
-                    
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 16) {
-                            ForEach(store.templates) { template in
-                                WithPerceptionTracking {
-                                    TemplateItemView(
-                                        campaign: store.campaign,
-                                        template: template,
-                                        isSelected: store.selectedTemplateID == template.id)
-                                    .onTapGesture {
-                                        store.send(.templateSelected(template))
-                                    }
-                                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(store.templates) { template in
+                            TemplateItemView(
+                                campaign: store.campaign,
+                                template: template,
+                                isSelected: store.selectedTemplateID == template.id)
+                            .onTapGesture {
+                                store.send(.templateSelected(template))
                             }
                         }
-                        .padding(.horizontal)
                     }
-                    .frame(height: 150)
-                    
-                    Button {
-                        store.send(.doneButtonTapped)
-                    } label: {
-                        Text("Готово")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(store.selectedTemplateID != nil ? Color.accentColor : Color.gray)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                    .contentShape(Rectangle())
                     .padding(.horizontal)
-                    .padding(.bottom)
-                    .disabled(store.selectedTemplateID == nil)
                 }
-                .background(Color(.systemBackground))
+                .frame(height: 150)
+                
+                Button {
+                    store.send(.doneButtonTapped)
+                } label: {
+                    Text("Готово")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(store.selectedTemplateID != nil ? Color.accentColor : Color.gray)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .contentShape(Rectangle())
+                .padding(.horizontal)
+                .padding(.bottom)
+                .disabled(store.selectedTemplateID == nil)
             }
-            .onAppear {
-                store.send(.onAppear)
-            }
-            .navigationTitle("Обрати шаблон")
-            .navigationBarTitleDisplayMode(.inline)
+            .background(Color(.systemBackground))
         }
+        .onAppear {
+            store.send(.onAppear)
+        }
+        .navigationTitle("Обрати шаблон")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -123,7 +119,7 @@ struct TemplateItemView: View {
             )
         )
     }
-} 
+}
 
 extension Template {
     static let list: IdentifiedArrayOf<Template> = [

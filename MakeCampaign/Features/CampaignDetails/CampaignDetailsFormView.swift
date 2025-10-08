@@ -9,27 +9,25 @@ import ComposableArchitecture
 import PhotosUI
 
 struct CampaignDetailsFormView: View {
-    @Perception.Bindable var store: StoreOf<CampaignDetailsFeature>
+    @Bindable var store: StoreOf<CampaignDetailsFeature>
     @FocusState var focus: CampaignDetailsFeature.State.Field?
     
     var body: some View {
-        WithPerceptionTracking {
-            ZStack {
-                mainContentView
-                imageOverlayView
-            }
-            .bind($store.focus, to: self.$focus)
-            .interactiveDismissDisabled(store.isPresentingImageOverlay)
-            .alert($store.scope(
-                    state: \.destination?.alert,
-                    action: \.destination.alert
-                )
-            )
-            .sheet(item: $store.scope(state: \.destination?.templateSelection, action: \.destination.templateSelection)) { store in
-                NavigationStack {
-                    TemplateSelectionView(store: store)
-                        .navigationTitle("Обрати шаблон")
-                }
+        ZStack {
+            mainContentView
+            imageOverlayView
+        }
+        .focused($focus, equals: store.state.focus)
+        .interactiveDismissDisabled(store.isPresentingImageOverlay)
+        .alert($store.scope(
+            state: \.destination?.alert,
+            action: \.destination.alert
+        )
+        )
+        .sheet(item: $store.scope(state: \.destination?.templateSelection, action: \.destination.templateSelection)) { store in
+            NavigationStack {
+                TemplateSelectionView(store: store)
+                    .navigationTitle("Обрати шаблон")
             }
         }
     }
@@ -272,3 +270,4 @@ extension CampaignDetailsFeature.State.SelectedImage {
         return photosPickerItem
     }
 }
+

@@ -9,136 +9,134 @@ import SwiftUI
 import ComposableArchitecture
 
 struct CampaignsView: View {
-    @Perception.Bindable var store: StoreOf<CampaignsFeature>
+    @Bindable var store: StoreOf<CampaignsFeature>
     
     var body: some View {
-        WithPerceptionTracking {
-            ZStack {
-                if store.state.campaigns.isEmpty {
-                    VStack(spacing: 24) {
-                        Spacer()
-                        
-                        VStack(spacing: 16) {
-                            Image(systemName: "megaphone.fill")
-                                .font(.system(size: 64, weight: .light))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [Color.blue, Color.blue.opacity(0.7)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                            
-                            VStack(spacing: 8) {
-                                Text("Створіть свою першу обкладинку для збору коштів")
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(.primary)
-                                    .multilineTextAlignment(.center)
-                                
-                                Text("Допомагайте тим, хто цього потребує")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 32)
-                            }
-                        }
-                        
-                        VStack(spacing: 12) {
-                            HStack(spacing: 8) {
-                                Text("Натисніть")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                
-                                Image(systemName: "plus")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 24, height: 24)
-                                    .background(
-                                        Circle()
-                                            .fill(Color.blue)
-                                    )
-                                
-                                Text("щоб створити збір")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                            .onTapGesture(perform: {
-                                store.send(.createCampaignPlaceholderButtonTapped)
-                            })
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.blue.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-                                    )
-                            )
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 32)
-                } else {
-                    ScrollView {
-                        LazyVGrid(
-                            columns: [
-                                GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12),
-                                GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12)
-                            ],
-                            spacing: 16
-                        ) {
-                            ForEach(store.state.campaigns.elements) { element in
-                                CampaignCardView(campaign: element, onSelect: { campaignId in
-                                    store.send(.campaignSelected(campaignId))
-                                })
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, 120)
-                    }
-                }
-                
-                VStack {
+        ZStack {
+            if store.state.campaigns.isEmpty {
+                VStack(spacing: 24) {
                     Spacer()
-                    HStack {
-                        Spacer()
-                        Button {
-                            store.send(.createCampaignButtonTapped)
-                        } label: {
+                    
+                    VStack(spacing: 16) {
+                        Image(systemName: "megaphone.fill")
+                            .font(.system(size: 64, weight: .light))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color.blue, Color.blue.opacity(0.7)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        
+                        VStack(spacing: 8) {
+                            Text("Створіть свою першу обкладинку для збору коштів")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.center)
+                            
+                            Text("Допомагайте тим, хто цього потребує")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+                    }
+                    
+                    VStack(spacing: 12) {
+                        HStack(spacing: 8) {
+                            Text("Натисніть")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
                             Image(systemName: "plus")
-                                .font(.system(size: 22, weight: .bold))
+                                .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(.white)
-                                .frame(width: 56, height: 56)
+                                .frame(width: 24, height: 24)
                                 .background(
                                     Circle()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [Color.blue, Color.blue.opacity(0.8)],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
-                                        )
-                                        .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
+                                        .fill(Color.blue)
                                 )
+                            
+                            Text("щоб створити збір")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
                         }
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 36)
+                        .onTapGesture(perform: {
+                            store.send(.createCampaignPlaceholderButtonTapped)
+                        })
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                                )
+                        )
                     }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 32)
+            } else {
+                ScrollView {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12),
+                            GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12)
+                        ],
+                        spacing: 16
+                    ) {
+                        ForEach(store.state.campaigns.elements) { element in
+                            CampaignCardView(campaign: element, onSelect: { campaignId in
+                                store.send(.campaignSelected(campaignId))
+                            })
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 120)
                 }
             }
-            .task {
-                store.send(.onViewInitialLoad)
-            }
-            .sheet(item: $store.scope(state: \.addCampaign, action: \.addCampaign)) { store in
-                NavigationStack {
-                    CampaignDetailsFormView(store: store)
-                        .navigationTitle("Новий збір")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .navigationBarBackButtonHidden(true)
+            
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button {
+                        store.send(.createCampaignButtonTapped)
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 56, height: 56)
+                            .background(
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color.blue, Color.blue.opacity(0.8)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
+                            )
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 36)
                 }
+            }
+        }
+        .task {
+            store.send(.onViewInitialLoad)
+        }
+        .sheet(item: $store.scope(state: \.addCampaign, action: \.addCampaign)) { store in
+            NavigationStack {
+                CampaignDetailsFormView(store: store)
+                    .navigationTitle("Новий збір")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationBarBackButtonHidden(true)
             }
         }
     }
@@ -289,7 +287,7 @@ extension View {
 struct RoundedCorner: Shape {
     var radius: CGFloat = .infinity
     var corners: UIRectCorner = .allCorners
-
+    
     func path(in rect: CGRect) -> Path {
         let path = UIBezierPath(
             roundedRect: rect,
@@ -308,7 +306,7 @@ struct RoundedCorner: Shape {
             initialState:
                 CampaignsFeature.State()
         ) {
-        CampaignsFeature()
+            CampaignsFeature()
                 ._printChanges()
-    })
+        })
 }

@@ -210,10 +210,10 @@ struct ImageTransformView: View {
             .offset(offset)
             .clipped()
             .drawingGroup()
-            .onChange(of: initialOffset) { newOffset in
+            .onChange(of: initialOffset) { _, newOffset in
                 offset = newOffset
             }
-            .onChange(of: initialScale) { newScale in
+            .onChange(of: initialScale) { _, newScale in
                 scale = max(0.1, newScale)
             }
             .applyIf(isRepositioningEnabled) { view in
@@ -281,3 +281,4 @@ extension View {
         )
     }
 } 
+
