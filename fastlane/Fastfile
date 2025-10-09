@@ -30,17 +30,11 @@ platform :ios do
       scheme: "MakeCampaign",
       clean: false,
       only_testing: ["MakeCampaignTests"],
-      destination: "platform=iOS Simulator,id=E1BFD92B-1FFE-4BCB-9DDF-D783F7A74991",
+      device: "iPhone 15 Pro",
       result_bundle: true,
       output_directory: "test_output"
     )
   end
-
-  desc "Build for distribution"
-  lane :build do
-    gym(scheme: "MakeCampaign", export_method: "app-store")
-  end
-
   
   
 end

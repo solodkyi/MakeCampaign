@@ -40,7 +40,7 @@ jobs:
 
 
       - name: Run unit tests
-        run: bundle exec fastlane tests
+        run: bundle exec fastlane ios tests
 
       - name: Upload result bundle (if created)
         if: always()
