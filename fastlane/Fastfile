@@ -28,14 +28,11 @@ platform :ios do
   lane :tests do
     scan(
       scheme: "MakeCampaign",
-      clean: true,
+      clean: false,
       only_testing: ["MakeCampaignTests"],
-      destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=latest",
-      sdk: "iphonesimulator",
+      destination: "platform=iOS Simulator,id=E1BFD92B-1FFE-4BCB-9DDF-D783F7A74991",
       result_bundle: true,
-      output_directory: "test_output",
-      disable_concurrent_testing: true,
-      xcodebuild_command: "env NSUnbufferedIO=YES xcodebuild -skipMacroValidation"
+      output_directory: "test_output"
     )
   end
 
