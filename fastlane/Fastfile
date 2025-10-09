@@ -32,7 +32,8 @@ platform :ios do
       only_testing: ["MakeCampaignTests"],
       device: "iPhone 15 Pro",
       result_bundle: true,
-      output_directory: "test_output"
+      output_directory: "test_output",
+      xcargs: "-skipMacroValidation"
     )
   end
   
