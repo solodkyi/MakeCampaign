@@ -1,6 +1,6 @@
 # MakeCampaign
 
-[![Actions Status](https://github.com/solodkyi/MakeCampaign/workflows/iOS CI/badge.svg)](https://github.com/solodkyi/MakeCampaign/actions)
+[![iOS CI](https://github.com/solodkyi/MakeCampaign/actions/workflows/ios-ci.yml/badge.svg)](https://github.com/solodkyi/MakeCampaign/actions/workflows/ios-ci.yml)
 
 A SwiftUI application for creating and managing donation campaign promotional materials, built with The Composable Architecture (TCA).
 
