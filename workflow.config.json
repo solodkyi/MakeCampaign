@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "artifact_root": ".workflow-runs",
+  "default_timeout_seconds": 1800,
+  "max_output_bytes_per_stream": 10485760,
+  "command_policies": [
+    {
+      "id": "python-unittest",
+      "argv_prefix": [
+        "python3",
+        "-m",
+        "unittest"
+      ]
+    },
+    {
+      "id": "git-diff",
+      "argv_prefix": [
+        "git",
+        "diff"
+      ]
+    },
+    {
+      "id": "xcodebuild",
+      "argv_prefix": [
+        "xcodebuild"
+      ]
+    }
+  ],
+  "scopes": {
+    "core/development-workflow-harness-redesign": {
+      "workflow_id": "automatic-workflow-runner-v1",
+      "steps": [
+        {
+          "id": "python-tests",
+          "kind": "unit",
+          "policy": "python-unittest",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "Scripts/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 300,
+          "env_from": []
+        },
+        {
+          "id": "diff-check",
+          "kind": "integration",
+          "policy": "git-diff",
+          "argv": [
+            "git",
+            "diff",
+            "--check"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 60,
+          "env_from": []
+        }
+      ]
+    }
+  }
+}

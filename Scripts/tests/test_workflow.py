@@ -1,46 +1,38 @@
+import subprocess
 import unittest
 from pathlib import Path
+
+from Scripts.workflow_runner.config import load_config
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
-class WorkflowContractTests(unittest.TestCase):
-    def test_repository_contract(self):
-        contract = (REPOSITORY_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+class RepositoryWorkflowTests(unittest.TestCase):
+    def test_repository_configuration_defines_fully_automatic_harness_scope(self):
+        config = load_config(REPOSITORY_ROOT / "workflow.config.json", REPOSITORY_ROOT)
+        scope = config.scopes["core/development-workflow-harness-redesign"]
 
-        self.assertIn("python3 Scripts/workflow.py", contract)
-        for scope_root in ("core/", "components/", "features/"):
-            self.assertIn(scope_root, contract)
-
-        lifecycle_records = (
-            "00-codebase-research",
-            "01-refactoring-plan",
-            "02-implementation-plan",
-            "03-test-plan",
-            "04-execution-cycle-N",
-            "05-verification-cycle-N",
-            "06-review-cycle-N",
-            "07-review-decision-cycle-N",
-            "08-remediation-plan-cycle-N",
-            "09-remediation-test-plan-cycle-N",
+        self.assertEqual("automatic-workflow-runner-v1", scope.workflow_id)
+        self.assertEqual(("python-tests", "diff-check"), tuple(step.identifier for step in scope.steps))
+        self.assertEqual(
+            ("python3", "-m", "unittest", "discover", "-s", "Scripts/tests", "-p", "test_*.py", "-v"),
+            scope.steps[0].argv,
         )
-        for record in lifecycle_records:
-            self.assertIn(record, contract)
+        self.assertEqual(("git", "diff", "--check"), scope.steps[1].argv)
 
-        self.assertRegex(contract, r"P0/P1.{0,120}(block|attention|open)")
-        self.assertRegex(contract, r"P2/P3.{0,120}(technical debt|debt)")
-        self.assertIn("gpt-5.6-sol", contract)
-        self.assertIn("gpt-5.6-luna", contract)
-
-        for required_skill in (
-            "swiftui-liquid-glass",
-            "swiftui-ui-patterns",
-            "pfw-composable-architecture",
-            "pfw-testing",
-            "ios-debugger-agent",
+    def test_generated_runner_artifacts_are_ignored(self):
+        for path in (
+            ".workflow-runs/core/example/run.json",
+            "Scripts/workflow_runner/__pycache__/models.cpython-314.pyc",
         ):
-            self.assertIn(required_skill, contract)
+            result = subprocess.run(
+                ["git", "check-ignore", "-q", path],
+                cwd=REPOSITORY_ROOT,
+                check=False,
+            )
+            with self.subTest(path=path):
+                self.assertEqual(0, result.returncode)
 
 
 if __name__ == "__main__":

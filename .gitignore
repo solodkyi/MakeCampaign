@@ -5,3 +5,6 @@ MakeCampaign.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # Local agent workflow evidence: intentionally never committed.
 docs/
+.workflow-runs/
+__pycache__/
+*.pyc
