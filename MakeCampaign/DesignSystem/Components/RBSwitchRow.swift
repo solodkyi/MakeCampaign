@@ -21,6 +21,9 @@ struct RBSwitchRow: View {
             .font(.system(size: 16, weight: .medium))
             .foregroundStyle(palette.ink)
             .toggleStyle(RBSwitchToggleStyle())
+            .accessibilityLabel(title)
+            .accessibilityValue(isOn ? "On" : "Off")
+            .accessibilityAddTraits(.isToggle)
     }
 }
 
@@ -28,8 +31,6 @@ private struct RBSwitchToggleStyle: ToggleStyle {
     @Environment(\.rbThemePalette) private var palette
 
     func makeBody(configuration: Configuration) -> some View {
-        let stateLabel = configuration.isOn ? "On" : "Off"
-
         HStack {
             configuration.label
             Spacer(minLength: RBSpacing.base)
@@ -46,7 +47,6 @@ private struct RBSwitchToggleStyle: ToggleStyle {
                     }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(stateLabel)
         }
     }
 }

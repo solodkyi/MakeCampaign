@@ -23,24 +23,14 @@ struct RBSegmentedControl<Value: Hashable>: View {
     }
 
     var body: some View {
-        HStack(spacing: RBSpacing.xs) {
+        Picker("Selection", selection: $selection) {
             ForEach(values, id: \.self) { value in
-                let isSelected = value == selection
-                Button {
-                    selection = value
-                } label: {
-                    Text(title(value))
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(isSelected ? palette.ink : palette.mutedInk)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(isSelected ? palette.surface : .clear)
-                        .clipShape(RoundedRectangle(cornerRadius: RBRadius.compact, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
+                Text(title(value))
+                    .tag(value)
             }
         }
+        .pickerStyle(.segmented)
+        .font(.system(size: 14, weight: .semibold))
         .padding(RBSpacing.xs)
         .background(palette.field)
         .clipShape(RoundedRectangle(cornerRadius: RBRadius.control, style: .continuous))
