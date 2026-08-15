@@ -12,6 +12,13 @@ import ComposableArchitecture
 @MainActor
 final class MakeCampaignTests: XCTestCase {
 
+    func test_rbEditorTray_activeTabMatchesTheSelection() {
+        enum Tab: Hashable { case photo, data }
+
+        XCTAssertTrue(RBEditorTray<Tab>.isActive(.data, selection: .data))
+        XCTAssertFalse(RBEditorTray<Tab>.isActive(.photo, selection: .data))
+    }
+
     func test_rbProgressBar_clampsValuesToUnitInterval() {
         XCTAssertEqual(RBProgressBar.clampedProgress(-0.2), 0)
         XCTAssertEqual(RBProgressBar.clampedProgress(0.62), 0.62)
