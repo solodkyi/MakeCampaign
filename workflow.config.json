@@ -63,6 +63,92 @@
           "env_from": []
         }
       ]
+    },
+    "components/robyzbir-design-system": {
+      "workflow_id": "automatic-workflow-runner-v1",
+      "steps": [
+        {
+          "id": "build",
+          "kind": "build",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-sdk",
+            "iphonesimulator",
+            "-destination",
+            "platform=iOS Simulator,name=iPhone 15 Pro",
+            "IPHONEOS_DEPLOYMENT_TARGET=17.0",
+            "build",
+            "-skipMacroValidation"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 900,
+          "env_from": []
+        },
+        {
+          "id": "unit-tests",
+          "kind": "unit",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-sdk",
+            "iphonesimulator",
+            "-destination",
+            "platform=iOS Simulator,name=iPhone 15 Pro",
+            "IPHONEOS_DEPLOYMENT_TARGET=17.0",
+            "test",
+            "-skipMacroValidation",
+            "-only-testing:MakeCampaignTests"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "ui-tests",
+          "kind": "simulator",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-sdk",
+            "iphonesimulator",
+            "-destination",
+            "platform=iOS Simulator,name=iPhone 15 Pro",
+            "IPHONEOS_DEPLOYMENT_TARGET=17.0",
+            "test",
+            "-skipMacroValidation",
+            "-only-testing:MakeCampaignUITests"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "diff-check",
+          "kind": "integration",
+          "policy": "git-diff",
+          "argv": [
+            "git",
+            "diff",
+            "--check"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 60,
+          "env_from": []
+        }
+      ]
     }
   }
 }
