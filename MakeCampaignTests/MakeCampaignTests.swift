@@ -11,6 +11,18 @@ import ComposableArchitecture
 
 @MainActor
 final class MakeCampaignTests: XCTestCase {
+
+    func test_rbTheme_lightAndDarkResolveDifferentSurfaceRoles() {
+        XCTAssertNotEqual(RBThemePalette.light.surface, RBThemePalette.dark.surface)
+        XCTAssertEqual(RBThemePalette.light.accent, RBThemePalette.dark.accent)
+    }
+
+    func test_rbLayout_usesHTMLContractValues() {
+        XCTAssertEqual(RBSpacing.xs, 4)
+        XCTAssertEqual(RBSpacing.lg, 24)
+        XCTAssertEqual(RBRadius.card, 20)
+        XCTAssertEqual(RBRadius.sheet, 26)
+    }
     
     func test_campaignsList_initialState() async {
         let store = TestStore(
