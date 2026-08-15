@@ -12,6 +12,12 @@ import ComposableArchitecture
 @MainActor
 final class MakeCampaignTests: XCTestCase {
 
+    func test_rbProgressBar_clampsValuesToUnitInterval() {
+        XCTAssertEqual(RBProgressBar.clampedProgress(-0.2), 0)
+        XCTAssertEqual(RBProgressBar.clampedProgress(0.62), 0.62)
+        XCTAssertEqual(RBProgressBar.clampedProgress(1.4), 1)
+    }
+
     func test_rbTheme_lightAndDarkResolveDifferentSurfaceRoles() {
         XCTAssertNotEqual(RBThemePalette.light.surface, RBThemePalette.dark.surface)
         XCTAssertEqual(RBThemePalette.light.accent, RBThemePalette.dark.accent)
