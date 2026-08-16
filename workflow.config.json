@@ -50,6 +50,26 @@
           "env_from": []
         },
         {
+          "id": "ios-build",
+          "kind": "build",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-configuration",
+            "Debug",
+            "-destination",
+            "generic/platform=iOS",
+            "build"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
           "id": "diff-check",
           "kind": "integration",
           "policy": "git-diff",

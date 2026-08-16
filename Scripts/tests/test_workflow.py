@@ -14,12 +14,27 @@ class RepositoryWorkflowTests(unittest.TestCase):
         scope = config.scopes["core/development-workflow-harness-redesign"]
 
         self.assertEqual("automatic-workflow-runner-v1", scope.workflow_id)
-        self.assertEqual(("python-tests", "diff-check"), tuple(step.identifier for step in scope.steps))
+        self.assertEqual(("python-tests", "ios-build", "diff-check"), tuple(step.identifier for step in scope.steps))
         self.assertEqual(
             ("python3", "-m", "unittest", "discover", "-s", "Scripts/tests", "-p", "test_*.py", "-v"),
             scope.steps[0].argv,
         )
-        self.assertEqual(("git", "diff", "--check"), scope.steps[1].argv)
+        self.assertEqual(
+            (
+                "xcodebuild",
+                "-project",
+                "MakeCampaign.xcodeproj",
+                "-scheme",
+                "MakeCampaign",
+                "-configuration",
+                "Debug",
+                "-destination",
+                "generic/platform=iOS",
+                "build",
+            ),
+            scope.steps[1].argv,
+        )
+        self.assertEqual(("git", "diff", "--check"), scope.steps[2].argv)
 
     def test_generated_runner_artifacts_are_ignored(self):
         for path in (
