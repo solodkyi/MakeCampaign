@@ -216,6 +216,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				13C0C9042DE8773400EE8E0E /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+				13F9A0012E00000000AB0001 /* XCRemoteSwiftPackageReference "swift-perception" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 13E237002DC3DAC400571CE6 /* Products */;
@@ -627,6 +628,14 @@
 			requirement = {
 				kind = exactVersion;
 				version = 1.26.1;
+			};
+		};
+		13F9A0012E00000000AB0001 /* XCRemoteSwiftPackageReference "swift-perception" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-perception";
+			requirement = {
+				kind = exactVersion;
+				version = 1.3.4;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
