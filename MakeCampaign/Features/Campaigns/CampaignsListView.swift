@@ -1,453 +1,373 @@
 //
-//  CampaignList.swift
+//  CampaignsListView.swift
 //  MakeCampaign
-//
-//  Created by Andrii Solodkyi on 5/1/25.
 //
 
 import SwiftUI
 import ComposableArchitecture
 
-// MARK: - Main View
-
 struct CampaignsView: View {
     @Bindable var store: StoreOf<CampaignsFeature>
-    
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var campaignPendingDeletion: Campaign?
+
     var body: some View {
-        ZStack {
-            CampaignsContentView(store: store)
-            CampaignsFooterView(store: store)
+        let palette = CampaignsPalette(colorScheme: colorScheme)
+
+        ZStack(alignment: .bottomTrailing) {
+            palette.app.ignoresSafeArea()
+
+            if store.state.campaigns.isEmpty {
+                CampaignsEmptyState(palette: palette)
+            } else {
+                CampaignsList(
+                    campaigns: store.state.campaigns.elements,
+                    palette: palette,
+                    presentation: store.state.jarPresentation(for:),
+                    onEdit: { store.send(.editCampaign($0)) },
+                    onDelete: { campaignPendingDeletion = $0 }
+                )
+            }
+
+            CreateCampaignButton()
+                .padding(.trailing, 22)
+                .padding(.bottom, 26)
         }
         .task {
             store.send(.onViewInitialLoad)
         }
-        .sheet(item: $store.scope(state: \.addCampaign, action: \.addCampaign)) { store in
-            NavigationStack {
-                CampaignDetailsFormView(store: store)
-                    .navigationTitle("Новий збір")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .navigationBarBackButtonHidden(true)
+        .alert(
+            "Видалити збір?",
+            isPresented: Binding(
+                get: { campaignPendingDeletion != nil },
+                set: { if !$0 { campaignPendingDeletion = nil } }
+            ),
+            presenting: campaignPendingDeletion
+        ) { campaign in
+            Button("Скасувати", role: .cancel) {
+                campaignPendingDeletion = nil
             }
-        }
-    }
-}
-
-// MARK: - Content View
-
-private struct CampaignsContentView: View {
-    let store: StoreOf<CampaignsFeature>
-    
-    var body: some View {
-        if store.state.campaigns.isEmpty {
-            EmptyStateView(store: store)
-        } else {
-            CampaignsGridView(store: store)
-        }
-    }
-}
-
-// MARK: - Empty State
-
-private struct EmptyStateView: View {
-    let store: StoreOf<CampaignsFeature>
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            EmptyStateHeaderView()
-            EmptyStateCallToActionView(store: store)
-            Spacer()
-        }
-        .padding(.horizontal, 32)
-    }
-}
-
-private struct EmptyStateHeaderView: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "megaphone.fill")
-                .font(.system(size: 64, weight: .light))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color.blue, Color.blue.opacity(0.7)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-            
-            VStack(spacing: 8) {
-                Text("Створіть свою першу обкладинку для збору коштів")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.center)
-                
-                Text("Допомагайте тим, хто цього потребує")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+            Button("Видалити", role: .destructive) {
+                store.send(.deleteCampaignConfirmed(campaign.id))
+                campaignPendingDeletion = nil
             }
+        } message: { _ in
+            Text("Цю дію неможливо скасувати.")
         }
     }
 }
 
-private struct EmptyStateCallToActionView: View {
-    let store: StoreOf<CampaignsFeature>
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                Text("Натисніть")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
-                
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 24, height: 24)
-                    .background(Circle().fill(Color.blue))
-                
-                Text("щоб створити збір")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
-            }
-            .onTapGesture {
-                store.send(.createCampaignPlaceholderButtonTapped)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.blue.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-                    )
-            )
-        }
-    }
-}
+private struct CampaignsList: View {
+    let campaigns: [Campaign]
+    let palette: CampaignsPalette
+    let presentation: (Campaign) -> CampaignsFeature.JarPresentation
+    let onEdit: (Campaign.ID) -> Void
+    let onDelete: (Campaign) -> Void
 
-// MARK: - Campaigns Grid
-
-private struct CampaignsGridView: View {
-    let store: StoreOf<CampaignsFeature>
-    
-    private let columns = [
-        GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12),
-        GridItem(.flexible(minimum: 150, maximum: 200), spacing: 12)
-    ]
-    
-    var body: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(store.state.campaigns.elements) { campaign in
-                    CampaignCardView(
-                        campaign: campaign,
-                        onSelect: { campaignId in
-                            store.send(.campaignSelected(campaignId))
-                        }
-                    )
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 120)
-        }
-    }
-}
-
-// MARK: - Footer (Floating Action Button)
-
-private struct CampaignsFooterView: View {
-    let store: StoreOf<CampaignsFeature>
-    
-    var body: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Spacer()
-                FloatingActionButton {
-                    store.send(.createCampaignButtonTapped)
-                }
-                .padding(.trailing, 20)
-                .padding(.bottom, 36)
-            }
-        }
-    }
-}
-
-private struct FloatingActionButton: View {
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: "plus")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
-                .background(
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.blue, Color.blue.opacity(0.8)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: .blue.opacity(0.3), radius: 12, x: 0, y: 6)
-                )
-        }
-    }
-}
-
-// MARK: - Campaign Card
-
-struct CampaignCardView: View {
-    let campaign: Campaign
-    let onSelect: (Campaign.ID) -> Void
-    
     var body: some View {
         VStack(spacing: 0) {
-            CampaignCardImageView(campaign: campaign)
-            CampaignCardDetailsView(campaign: campaign)
-        }
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.gray.opacity(0.1), Color.gray.opacity(0.05)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
-        .onTapGesture {
-            onSelect(campaign.id)
+            HStack {
+                Text("Збори")
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 10)
+            .foregroundStyle(palette.foreground)
+
+            List {
+                ForEach(campaigns) { campaign in
+                    CampaignRow(
+                        campaign: campaign,
+                        palette: palette,
+                        jarPresentation: presentation(campaign)
+                    ) {
+                        onEdit(campaign.id)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button {
+                            onDelete(campaign)
+                        } label: {
+                            Label("Видалити", systemImage: "trash")
+                        }
+                        .tint(.red)
+
+                        Button {
+                            onEdit(campaign.id)
+                        } label: {
+                            Label("Змінити", systemImage: "pencil")
+                        }
+                        .tint(palette.steel)
+                    }
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(palette.app)
+                    .listRowInsets(.init(top: 0, leading: 20, bottom: 14, trailing: 20))
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
         }
     }
 }
 
-// MARK: - Campaign Card Image
-
-private struct CampaignCardImageView: View {
+private struct CampaignRow: View {
     let campaign: Campaign
-    
+    let palette: CampaignsPalette
+    let jarPresentation: CampaignsFeature.JarPresentation
+    let onEdit: () -> Void
+
     var body: some View {
-        if let imageData = campaign.image?.raw,
-           let uiImage = UIImage(data: imageData) {
-            CampaignImageContent(campaign: campaign, image: uiImage)
-        } else {
-            CampaignImagePlaceholder()
+        Button(action: onEdit) {
+            HStack(spacing: 13) {
+                CampaignThumbnail(campaign: campaign, palette: palette)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(campaign.purpose.isEmpty ? "Без назви" : campaign.purpose)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(palette.foreground)
+                        .lineLimit(2)
+
+                    Spacer(minLength: 8)
+                    CampaignJarDetails(
+                        campaign: campaign,
+                        presentation: jarPresentation,
+                        palette: palette
+                    )
+                }
+                .padding(.vertical, 2)
+            }
+            .frame(minHeight: 126)
+            .padding(11)
+            .background(palette.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: palette.shadow, radius: 10, x: 0, y: 2)
         }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("campaign-row-\(campaign.id.uuidString)")
+        .accessibilityLabel(campaign.purpose.isEmpty ? "Без назви" : campaign.purpose)
+        .accessibilityHint("Відкрити редактор збору")
     }
 }
 
-private struct CampaignImageContent: View {
+private struct CampaignThumbnail: View {
     let campaign: Campaign
-    let image: UIImage
-    
+    let palette: CampaignsPalette
+
     var body: some View {
         Group {
-            if let template = campaign.template {
-                CampaignTemplateView(campaign: campaign, template: template, image: image)
-            } else {
-                CampaignRawImage(image: image)
-            }
-        }
-        .aspectRatio(1.0, contentMode: .fit)
-        .clipped()
-        .cornerRadius(12, corners: [.topLeft, .topRight])
-    }
-}
-
-private struct CampaignRawImage: View {
-    let image: UIImage
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Rectangle()
-                    .fill(Color.black.opacity(0.05))
-                
+            if let imageData = campaign.image?.raw, let image = UIImage(data: imageData) {
                 Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(
-                        width: geometry.size.width,
-                        height: geometry.size.height
-                    )
-                    .clipped()
-            }
-            .frame(
-                width: geometry.size.width,
-                height: geometry.size.height
-            )
-        }
-    }
-}
-
-private struct CampaignImagePlaceholder: View {
-    var body: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [Color.gray.opacity(0.1), Color.gray.opacity(0.3)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .aspectRatio(1.0, contentMode: .fit)
-            .cornerRadius(12, corners: [.topLeft, .topRight])
-            .overlay(
-                VStack(spacing: 8) {
+                    .scaledToFill()
+            } else {
+                ZStack {
+                    palette.field
                     Image(systemName: "photo")
-                        .font(.system(size: 32, weight: .light))
-                        .foregroundColor(.gray)
-                    Text("Немає зображення")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.gray)
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundStyle(palette.muted)
                 }
-            )
+            }
+        }
+        .frame(width: 104, height: 104)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityHidden(true)
     }
 }
 
-// MARK: - Campaign Card Details
-
-private struct CampaignCardDetailsView: View {
+private struct CampaignJarDetails: View {
     let campaign: Campaign
-    
+    let presentation: CampaignsFeature.JarPresentation
+    let palette: CampaignsPalette
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            CampaignPurposeText(purpose: campaign.purpose)
-            CampaignMetricsView(campaign: campaign)
+        switch presentation {
+        case .loaded:
+            if let details = campaign.jar?.details {
+                Text(details.currencyFormatted)
+                    .font(.system(size: 19, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(palette.accent)
+
+                if let progress = campaign.progress {
+                    CampaignProgress(progress: progress.fractionCompleted, palette: palette)
+                }
+
+                CampaignMeta(updatedAt: campaign.updatedAt, palette: palette)
+            } else {
+                UnavailableJarDetails(
+                    message: "Не вдалося оновити",
+                    updatedAt: campaign.updatedAt,
+                    palette: palette
+                )
+            }
+        case .noLink, .loading, .failed:
+            UnavailableJarDetails(
+                message: presentation.message,
+                updatedAt: campaign.updatedAt,
+                palette: palette
+            )
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+    }
+}
+
+private struct CampaignProgress: View {
+    let progress: Double
+    let palette: CampaignsPalette
+
+    private var clampedProgress: Double {
+        min(max(progress, 0), 1)
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            Capsule()
+                .fill(palette.progressTrack)
+                .overlay(alignment: .leading) {
+                    Capsule()
+                        .fill(palette.accent)
+                        .frame(width: proxy.size.width * clampedProgress)
+                }
+        }
+        .frame(height: 5)
+        .padding(.top, 9)
+        .padding(.bottom, 7)
+    }
+}
+
+private struct CampaignMeta: View {
+    let updatedAt: Date
+    let palette: CampaignsPalette
+
+    var body: some View {
+        HStack {
+            Text(updatedAt, format: .relative(presentation: .named))
+            Spacer()
+            Text("оновлено")
+        }
+        .font(.system(size: 10, weight: .medium, design: .monospaced))
+        .foregroundStyle(palette.muted)
+    }
+}
+
+private struct UnavailableJarDetails: View {
+    let message: String
+    let updatedAt: Date
+    let palette: CampaignsPalette
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(message)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(palette.muted)
+            CampaignMeta(updatedAt: updatedAt, palette: palette)
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-private struct CampaignPurposeText: View {
-    let purpose: String
-    
-    var body: some View {
-        Text(purpose)
-            .font(.system(size: 15, weight: .semibold))
-            .lineLimit(2)
-            .multilineTextAlignment(.leading)
-            .foregroundColor(.primary)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-}
+private struct CampaignsEmptyState: View {
+    let palette: CampaignsPalette
 
-private struct CampaignMetricsView: View {
-    let campaign: Campaign
-    
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            if let progress = campaign.progress {
-                CampaignProgressView(progress: progress)
-            }
-            
-            if let target = campaign.target {
-                CampaignTargetRow(target: target)
-            }
-            
-            if let collected = campaign.jar?.details?.amountInHryvnias {
-                CampaignCollectedRow(collected: collected)
-            }
-        }
-    }
-}
-
-private struct CampaignProgressView: View {
-    let progress: Progress
-    
-    var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 0) {
             HStack {
-                Text("Прогрес")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
+                Text("Збори")
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
                 Spacer()
-                Text("\(Int(progress.fractionCompleted * 100))%")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.blue)
             }
-            
-            ProgressView(value: progress.fractionCompleted)
-                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                .scaleEffect(x: 1, y: 0.8)
-        }
-    }
-}
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .foregroundStyle(palette.foreground)
 
-private struct CampaignTargetRow: View {
-    let target: Double
-    
-    var body: some View {
-        HStack {
-            Text("Ціль:")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.secondary)
             Spacer()
-            Text(target.formattedAmount.appendingCurrency)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.secondary)
-        }
-    }
-}
 
-private struct CampaignCollectedRow: View {
-    let collected: Double
-    
-    var body: some View {
-        HStack {
-            Text("Зібрано:")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.secondary)
+            ZStack {
+                RoundedRectangle(cornerRadius: 34, style: .continuous)
+                    .fill(palette.paper)
+                    .frame(width: 180, height: 180)
+                Circle()
+                    .trim(from: 0.08, to: 0.82)
+                    .stroke(palette.progressTrack, style: .init(lineWidth: 14, lineCap: .round))
+                    .overlay {
+                        Circle()
+                            .trim(from: 0.08, to: 0.32)
+                            .stroke(palette.accent, style: .init(lineWidth: 14, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                    }
+                    .frame(width: 84, height: 84)
+                    .rotationEffect(.degrees(-90))
+            }
+
+            Text("Активних зборів\nще немає")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(palette.foreground)
+                .padding(.top, 26)
+
+            Text("Створіть обкладинку або імпортуйте дані з посилання на банку.")
+                .font(.system(size: 14))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(palette.muted)
+                .padding(.top, 10)
+                .padding(.horizontal, 34)
+
+            Button("Створити збір") {}
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(palette.accent, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .padding(.top, 24)
+                .padding(.horizontal, 24)
+                .accessibilityIdentifier("empty-create-campaign-button")
+
             Spacer()
-            Text(collected.formattedAmount.appendingCurrency)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.green)
         }
     }
 }
 
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
-    }
-}
+private struct CreateCampaignButton: View {
+    @Environment(\.colorScheme) private var colorScheme
 
-struct RoundedCorner: Shape {
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
-    
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: corners,
-            cornerRadii: CGSize(width: radius, height: radius)
+    var body: some View {
+        Button(action: {}) {
+            Image(systemName: "plus")
+                .font(.system(size: 26, weight: .medium))
+                .frame(width: 58, height: 58)
+        }
+        .foregroundStyle(colorScheme == .dark ? Color.campaignFabDarkForeground : Color.campaignFabForeground)
+        .background(
+            colorScheme == .dark ? Color.campaignFabDarkBackground : Color.campaignFabBackground,
+            in: RoundedRectangle(cornerRadius: 19, style: .continuous)
         )
-        return Path(path.cgPath)
+        .shadow(color: .black.opacity(0.22), radius: 13, x: 0, y: 7)
+        .accessibilityLabel("Створити збір")
+        .accessibilityIdentifier("create-campaign-button")
     }
 }
 
-#Preview {
-    @Shared(.fileStorage(.campaigns)) var campaigns: IdentifiedArrayOf<Campaign> = Campaign.mocks
-    
-    CampaignsView(
-        store: Store(
-            initialState:
-                CampaignsFeature.State()
-        ) {
-            CampaignsFeature()
-                ._printChanges()
-        })
+private struct CampaignsPalette {
+    let colorScheme: ColorScheme
+
+    var app: Color { colorScheme == .dark ? Color(red: 13 / 255, green: 13 / 255, blue: 12 / 255) : Color(red: 250 / 255, green: 249 / 255, blue: 247 / 255) }
+    var surface: Color { colorScheme == .dark ? Color(red: 26 / 255, green: 26 / 255, blue: 24 / 255) : .white }
+    var field: Color { colorScheme == .dark ? Color(red: 26 / 255, green: 26 / 255, blue: 24 / 255) : Color(red: 245 / 255, green: 243 / 255, blue: 239 / 255) }
+    var paper: Color { colorScheme == .dark ? Color(red: 23 / 255, green: 23 / 255, blue: 22 / 255) : Color(red: 245 / 255, green: 243 / 255, blue: 239 / 255) }
+    var foreground: Color { colorScheme == .dark ? .white.opacity(0.94) : Color(red: 20 / 255, green: 20 / 255, blue: 19 / 255) }
+    var muted: Color { colorScheme == .dark ? .white.opacity(0.56) : Color(red: 20 / 255, green: 20 / 255, blue: 19 / 255).opacity(0.55) }
+    var accent: Color { Color(red: 224 / 255, green: 86 / 255, blue: 42 / 255) }
+    var steel: Color { Color(red: 86 / 255, green: 105 / 255, blue: 120 / 255) }
+    var progressTrack: Color { colorScheme == .dark ? .white.opacity(0.12) : Color.black.opacity(0.09) }
+    var shadow: Color { colorScheme == .dark ? .black.opacity(0.35) : .black.opacity(0.05) }
+}
+
+private extension Color {
+    static let campaignFabBackground = Color(red: 20 / 255, green: 20 / 255, blue: 19 / 255)
+    static let campaignFabForeground = Color.white
+    static let campaignFabDarkBackground = Color.white
+    static let campaignFabDarkForeground = Color(red: 20 / 255, green: 20 / 255, blue: 19 / 255)
+}
+
+#Preview("Empty") {
+    CampaignsView(store: Store(initialState: CampaignsFeature.State()) {
+        CampaignsFeature()
+    })
 }

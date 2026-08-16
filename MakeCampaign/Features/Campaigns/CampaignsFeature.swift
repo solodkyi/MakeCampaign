@@ -16,19 +16,42 @@ extension SharedKey where Self == FileStorageKey<IdentifiedArrayOf<Campaign>>.De
 
 @Reducer
 struct CampaignsFeature {
+    enum JarPresentation: Equatable {
+        case noLink
+        case loading
+        case failed
+        case loaded
+
+        var message: String {
+            switch self {
+            case .noLink:
+                "Банку не підключено"
+            case .loading:
+                "Оновлюємо дані…"
+            case .failed:
+                "Не вдалося оновити"
+            case .loaded:
+                ""
+            }
+        }
+    }
+
     @ObservableState
     struct State: Equatable {
         @Shared(.campaigns) var campaigns
-        @Presents var addCampaign: CampaignDetailsFeature.State?
+        var jarPresentations: [Campaign.ID: JarPresentation] = [:]
+
+        func jarPresentation(for campaign: Campaign) -> JarPresentation {
+            guard campaign.jar?.link != nil else { return .noLink }
+            return jarPresentations[campaign.id] ?? .loading
+        }
     }
     
     enum Action {
         case onViewInitialLoad
-        case createCampaignButtonTapped
-        case createCampaignPlaceholderButtonTapped
         case campaignSelected(Campaign.ID)
-        case cancelNewCampaignButtonTapped
-        case addCampaign(PresentationAction<CampaignDetailsFeature.Action>)
+        case editCampaign(Campaign.ID)
+        case deleteCampaignConfirmed(Campaign.ID)
         case onCampaignJarDetailsLoaded(Campaign.ID, JarDetails?)
         case delegate(Delegate)
         
@@ -45,6 +68,9 @@ struct CampaignsFeature {
         Reduce { state, action in
             switch action {
             case .onViewInitialLoad:
+                for campaign in state.campaigns where campaign.jar?.link != nil {
+                    state.jarPresentations[campaign.id] = .loading
+                }
     
                 return .run { [campaigns = state.campaigns] send in
                     let campaignsWithLinks = campaigns.filter { $0.jar?.link != nil }
@@ -69,25 +95,26 @@ struct CampaignsFeature {
                         }
                     }
                 }
-            case let .campaignSelected(id):
+            case let .campaignSelected(id), let .editCampaign(id):
                 return .send(.delegate(.onCampaignSelected(id)))
             case let .onCampaignJarDetailsLoaded(campaignId, jarDetails):
                 state.$campaigns.withLock {
                     $0[id: campaignId]?.jar?.details = jarDetails
+                    if jarDetails != nil {
+                        $0[id: campaignId]?.markUpdated()
+                    }
                 }
+                state.jarPresentations[campaignId] = jarDetails == nil ? .failed : .loaded
                 return .none
-            case .createCampaignButtonTapped, .createCampaignPlaceholderButtonTapped:
-                state.addCampaign = .init(campaign: Shared(value: .init(id: self.uuid())))
+            case let .deleteCampaignConfirmed(id):
+                state.$campaigns.withLock {
+                    $0.remove(id: id)
+                }
+                state.jarPresentations[id] = nil
                 return .none
-            case .addCampaign, .delegate:
-                return .none
-            case .cancelNewCampaignButtonTapped:
-                state.addCampaign = nil
+            case .delegate:
                 return .none
             }
-        }
-        .ifLet(\.$addCampaign, action: \.addCampaign) {
-            CampaignDetailsFeature()
         }
     }
 }

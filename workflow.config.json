@@ -83,6 +83,84 @@
           "env_from": []
         }
       ]
+    },
+    "features/campaigns-list-redesign": {
+      "workflow_id": "automatic-workflow-runner-v1",
+      "steps": [
+        {
+          "id": "ios-build",
+          "kind": "build",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-configuration",
+            "Debug",
+            "-destination",
+            "generic/platform=iOS",
+            "build"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "unit-tests",
+          "kind": "unit",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-destination",
+            "platform=iOS Simulator,id=E0ADA963-9530-4B55-B91A-173F0E893F13",
+            "test",
+            "-only-testing:MakeCampaignTests",
+            "-skipMacroValidation"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "ui-tests",
+          "kind": "integration",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-destination",
+            "platform=iOS Simulator,id=E0ADA963-9530-4B55-B91A-173F0E893F13",
+            "test",
+            "-only-testing:MakeCampaignUITests",
+            "-skipMacroValidation"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "diff-check",
+          "kind": "integration",
+          "policy": "git-diff",
+          "argv": [
+            "git",
+            "diff",
+            "--check"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 60,
+          "env_from": []
+        }
+      ]
     }
   }
 }

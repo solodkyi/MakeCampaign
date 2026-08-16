@@ -29,9 +29,8 @@ final class MakeCampaignUITests: XCTestCase {
         // Given: App launches with no campaigns
         
         // Then: Empty state UI elements should be visible
-        XCTAssertTrue(app.images["megaphone.fill"].exists, "Empty state icon should be visible")
-        XCTAssertTrue(app.staticTexts["Створіть свою першу обкладинку для збору коштів"].exists, "Empty state title should be visible")
-        XCTAssertTrue(app.staticTexts["Допомагайте тим, хто цього потребує"].exists, "Empty state subtitle should be visible")
+        XCTAssertTrue(app.staticTexts["Активних зборів\nще немає"].exists, "Empty state title should be visible")
+        XCTAssertTrue(app.staticTexts["Створіть обкладинку або імпортуйте дані з посилання на банку."].exists, "Empty state subtitle should be visible")
     }
     
     @MainActor
@@ -39,24 +38,22 @@ final class MakeCampaignUITests: XCTestCase {
         // Given: App is in empty state
         
         // Then: Call-to-action elements should be visible
-        XCTAssertTrue(app.staticTexts["Натисніть"].exists, "CTA text should be visible")
-        XCTAssertTrue(app.images["plus"].exists, "Plus icon should be visible")
-        XCTAssertTrue(app.staticTexts["щоб створити збір"].exists, "CTA instruction should be visible")
+        XCTAssertTrue(app.buttons["empty-create-campaign-button"].exists, "CTA button should be visible")
     }
     
     @MainActor
-    func testEmptyStatePlusButtonOpensCreateCampaignSheet() throws {
+    func testEmptyStateCreateButtonDoesNotStartCreation() throws {
         // Given: App is in empty state
-        let ctaButton = app.staticTexts.containing(.staticText, identifier: "Натисніть").element
+        let ctaButton = app.buttons["empty-create-campaign-button"]
         
         // When: User taps the call-to-action button
         if ctaButton.exists {
             ctaButton.tap()
         }
         
-        // Then: Create campaign sheet should appear
+        // Then: Creation is intentionally out of scope
         let navigationBar = app.navigationBars["Новий збір"]
-        XCTAssertTrue(navigationBar.waitForExistence(timeout: 2), "Create campaign sheet should be presented")
+        XCTAssertFalse(navigationBar.waitForExistence(timeout: 1), "Create campaign sheet should not be presented")
     }
     
     // MARK: - Floating Action Button Tests
@@ -66,32 +63,22 @@ final class MakeCampaignUITests: XCTestCase {
         // Given: App is launched
         
         // Then: Floating action button should be visible
-        let fabButton = app.buttons.matching(identifier: "plus").element(boundBy: 0)
+        let fabButton = app.buttons["create-campaign-button"]
         XCTAssertTrue(fabButton.exists, "Floating action button should be visible")
     }
     
     @MainActor
-    func testFloatingActionButtonOpensCreateCampaignSheet() throws {
+    func testFloatingActionButtonDoesNotStartCreation() throws {
         // Given: App is launched
-        let fabButtons = app.buttons.matching(NSPredicate(format: "identifier == 'plus'"))
-        
-        // Find the FAB (not the one in empty state)
-        var fabButton: XCUIElement?
-        for index in 0..<fabButtons.count {
-            let button = fabButtons.element(boundBy: index)
-            if button.frame.maxY > app.frame.height * 0.8 { // FAB is at the bottom
-                fabButton = button
-                break
-            }
-        }
+        let fabButton = app.buttons["create-campaign-button"]
         
         // When: User taps the FAB
-        if let fabButton = fabButton, fabButton.exists {
+        if fabButton.exists {
             fabButton.tap()
             
-            // Then: Create campaign sheet should appear
+            // Then: Creation is intentionally out of scope
             let navigationBar = app.navigationBars["Новий збір"]
-            XCTAssertTrue(navigationBar.waitForExistence(timeout: 2), "Create campaign sheet should be presented")
+            XCTAssertFalse(navigationBar.waitForExistence(timeout: 1), "Create campaign sheet should not be presented")
         }
     }
     
@@ -148,38 +135,19 @@ final class MakeCampaignUITests: XCTestCase {
         }
     }
     
-    // MARK: - Navigation Tests
-    
-    @MainActor
-    func testCreateCampaignSheetHasCorrectTitle() throws {
-        // Given: User opens create campaign sheet
-        let fabButtons = app.buttons.matching(NSPredicate(format: "identifier == 'plus'"))
-        if let fabButton = fabButtons.element(boundBy: fabButtons.count - 1).exists ? fabButtons.element(boundBy: fabButtons.count - 1) : nil {
-            fabButton.tap()
-        }
-        
-        // Then: Sheet should have correct navigation title
-        let navigationBar = app.navigationBars["Новий збір"]
-        XCTAssertTrue(navigationBar.waitForExistence(timeout: 2), "Navigation bar should show 'Новий збір' title")
-    }
-    
     // MARK: - Accessibility Tests
     
     @MainActor
     func testEmptyStateIsAccessible() throws {
         // Then: Empty state elements should be accessible
-        let emptyStateIcon = app.images["megaphone.fill"]
-        XCTAssertTrue(emptyStateIcon.exists)
-        
-        let titleText = app.staticTexts["Створіть свою першу обкладинку для збору коштів"]
+        let titleText = app.staticTexts["Активних зборів\nще немає"]
         XCTAssertTrue(titleText.exists)
     }
     
     @MainActor
     func testFloatingActionButtonIsAccessible() throws {
         // Then: FAB should be accessible
-        let fabButtons = app.buttons.matching(NSPredicate(format: "identifier == 'plus'"))
-        XCTAssertTrue(fabButtons.count > 0, "At least one plus button should exist")
+        XCTAssertTrue(app.buttons["create-campaign-button"].exists, "The create button should be accessible")
     }
     
     // MARK: - Performance Tests

@@ -11,6 +11,42 @@ import ComposableArchitecture
 
 @MainActor
 final class MakeCampaignTests: XCTestCase {
+
+    func test_campaign_persistsCreationAndUpdateTimestamps() throws {
+        let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let updatedAt = Date(timeIntervalSince1970: 1_700_000_100)
+        let campaign = Campaign(
+            id: .init(0),
+            purpose: "Аптечки",
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+
+        let decoded = try JSONDecoder().decode(Campaign.self, from: JSONEncoder().encode(campaign))
+
+        XCTAssertEqual(decoded.createdAt, createdAt)
+        XCTAssertEqual(decoded.updatedAt, updatedAt)
+    }
+
+    func test_campaignsList_jarPresentationProvidesApprovedMessages() {
+        XCTAssertEqual(CampaignsFeature.JarPresentation.noLink.message, "Банку не підключено")
+        XCTAssertEqual(CampaignsFeature.JarPresentation.loading.message, "Оновлюємо дані…")
+        XCTAssertEqual(CampaignsFeature.JarPresentation.failed.message, "Не вдалося оновити")
+    }
+
+    func test_campaignsList_deleteConfirmedRemovesTheCampaign() async {
+        let campaign = Campaign(id: .init(0), purpose: "Аптечки")
+        @Shared(.campaigns) var campaigns = [campaign]
+        let store = TestStore(initialState: CampaignsFeature.State()) {
+            CampaignsFeature()
+        }
+
+        await store.send(.deleteCampaignConfirmed(campaign.id)) {
+            $0.$campaigns.withLock {
+                _ = $0.remove(id: campaign.id)
+            }
+        }
+    }
     
     func test_campaignsList_initialState() async {
         let store = TestStore(

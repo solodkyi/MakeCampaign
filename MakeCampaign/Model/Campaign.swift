@@ -27,17 +27,59 @@ struct Campaign: Codable, Equatable, Identifiable {
     var purpose: String
     var target: Double?
     var jar: JarInfo?
+    var createdAt: Date
+    var updatedAt: Date
     
     private var rawTargetInput: String = ""
     private var rawJarLinkInput: String = ""
     
-    init(id: UUID, image: Image? = nil, template: Template? = nil, purpose: String = "", target: Double? = nil, jar: JarInfo? = nil) {
+    init(
+        id: UUID,
+        image: Image? = nil,
+        template: Template? = nil,
+        purpose: String = "",
+        target: Double? = nil,
+        jar: JarInfo? = nil,
+        createdAt: Date = .now,
+        updatedAt: Date = .now
+    ) {
         self.id = id
         self.image = image
         self.template = template
         self.purpose = purpose
         self.target = target
         self.jar = jar
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, image, template, purpose, target, jar, createdAt, updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        image = try values.decodeIfPresent(Image.self, forKey: .image)
+        template = try values.decodeIfPresent(Template.self, forKey: .template)
+        purpose = try values.decode(String.self, forKey: .purpose)
+        target = try values.decodeIfPresent(Double.self, forKey: .target)
+        jar = try values.decodeIfPresent(JarInfo.self, forKey: .jar)
+        let fallbackDate = Date.now
+        createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? fallbackDate
+        updatedAt = try values.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encodeIfPresent(image, forKey: .image)
+        try values.encodeIfPresent(template, forKey: .template)
+        try values.encode(purpose, forKey: .purpose)
+        try values.encodeIfPresent(target, forKey: .target)
+        try values.encodeIfPresent(jar, forKey: .jar)
+        try values.encode(createdAt, forKey: .createdAt)
+        try values.encode(updatedAt, forKey: .updatedAt)
     }
 }
 
@@ -48,6 +90,10 @@ extension Campaign {
         let progress = Progress(totalUnitCount: Int64(target * 100))
         progress.completedUnitCount = Int64(collected * 100)
         return progress
+    }
+
+    mutating func markUpdated() {
+        updatedAt = .now
     }
     
     var formattedTarget: String {
