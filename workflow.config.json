@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "artifact_root": ".workflow-runs",
+  "default_timeout_seconds": 1800,
+  "max_output_bytes_per_stream": 10485760,
+  "command_policies": [
+    {
+      "id": "python-unittest",
+      "argv_prefix": [
+        "python3",
+        "-m",
+        "unittest"
+      ]
+    },
+    {
+      "id": "git-diff",
+      "argv_prefix": [
+        "git",
+        "diff"
+      ]
+    },
+    {
+      "id": "xcodebuild",
+      "argv_prefix": [
+        "xcodebuild"
+      ]
+    }
+  ],
+  "scopes": {
+    "core/development-workflow-harness-redesign": {
+      "workflow_id": "automatic-workflow-runner-v1",
+      "steps": [
+        {
+          "id": "python-tests",
+          "kind": "unit",
+          "policy": "python-unittest",
+          "argv": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "Scripts/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 300,
+          "env_from": []
+        },
+        {
+          "id": "diff-check",
+          "kind": "integration",
+          "policy": "git-diff",
+          "argv": [
+            "git",
+            "diff",
+            "--check"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 60,
+          "env_from": []
+        }
+      ]
+    },
+    "components/robyzbir-design-system": {
+      "workflow_id": "automatic-workflow-runner-v1",
+      "steps": [
+        {
+          "id": "build",
+          "kind": "build",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-destination",
+            "platform=iOS Simulator,id=E0ADA963-9530-4B55-B91A-173F0E893F13",
+            "IPHONEOS_DEPLOYMENT_TARGET=26.0",
+            "-derivedDataPath",
+            "/private/tmp/makecampaign-designsystem-deriveddata-v2",
+            "build",
+            "-skipMacroValidation"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 900,
+          "env_from": []
+        },
+        {
+          "id": "unit-tests",
+          "kind": "unit",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-destination",
+            "platform=iOS Simulator,id=E0ADA963-9530-4B55-B91A-173F0E893F13",
+            "IPHONEOS_DEPLOYMENT_TARGET=26.0",
+            "-derivedDataPath",
+            "/private/tmp/makecampaign-designsystem-deriveddata-v2",
+            "test",
+            "-skipMacroValidation",
+            "-only-testing:MakeCampaignTests"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "ui-tests",
+          "kind": "simulator",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-destination",
+            "platform=iOS Simulator,id=E0ADA963-9530-4B55-B91A-173F0E893F13",
+            "IPHONEOS_DEPLOYMENT_TARGET=26.0",
+            "-derivedDataPath",
+            "/private/tmp/makecampaign-designsystem-deriveddata-v2",
+            "test",
+            "-skipMacroValidation",
+            "-only-testing:MakeCampaignUITests"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "diff-check",
+          "kind": "integration",
+          "policy": "git-diff",
+          "argv": [
+            "git",
+            "diff",
+            "--check"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 60,
+          "env_from": []
+        }
+      ]
+    }
+  }
+}

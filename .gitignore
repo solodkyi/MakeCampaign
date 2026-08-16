@@ -2,3 +2,10 @@ buildServer.json
 MakeCampaign.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 *.xcbkptlist
 *.mdc
+
+# Local agent workflow evidence: intentionally never committed.
+docs/
+.workflow-runs/
+.worktrees/
+__pycache__/
+*.pyc
