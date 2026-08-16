@@ -82,6 +82,8 @@
             "-destination",
             "platform=iOS Simulator,id=E0ADA963-9530-4B55-B91A-173F0E893F13",
             "IPHONEOS_DEPLOYMENT_TARGET=17.0",
+            "-derivedDataPath",
+            "/private/tmp/makecampaign-designsystem-deriveddata",
             "build",
             "-skipMacroValidation"
           ],
@@ -104,6 +106,8 @@
             "-destination",
             "platform=iOS Simulator,id=E0ADA963-9530-4B55-B91A-173F0E893F13",
             "IPHONEOS_DEPLOYMENT_TARGET=17.0",
+            "-derivedDataPath",
+            "/private/tmp/makecampaign-designsystem-deriveddata",
             "test",
             "-skipMacroValidation",
             "-only-testing:MakeCampaignTests"
@@ -127,6 +131,8 @@
             "-destination",
             "platform=iOS Simulator,id=E0ADA963-9530-4B55-B91A-173F0E893F13",
             "IPHONEOS_DEPLOYMENT_TARGET=17.0",
+            "-derivedDataPath",
+            "/private/tmp/makecampaign-designsystem-deriveddata",
             "test",
             "-skipMacroValidation",
             "-only-testing:MakeCampaignUITests"
