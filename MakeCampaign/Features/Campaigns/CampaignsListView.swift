@@ -65,49 +65,37 @@ private struct CampaignsList: View {
     let onDelete: (Campaign) -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Збори")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 10)
-            .foregroundStyle(palette.foreground)
-
-            List {
-                ForEach(campaigns) { campaign in
-                    CampaignRow(
-                        campaign: campaign,
-                        palette: palette,
-                        jarPresentation: presentation(campaign)
-                    ) {
-                        onEdit(campaign.id)
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button {
-                            onDelete(campaign)
-                        } label: {
-                            Label("Видалити", systemImage: "trash")
-                        }
-                        .tint(.red)
-
-                        Button {
-                            onEdit(campaign.id)
-                        } label: {
-                            Label("Змінити", systemImage: "pencil")
-                        }
-                        .tint(palette.steel)
-                    }
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(palette.app)
-                    .listRowInsets(.init(top: 0, leading: 20, bottom: 14, trailing: 20))
+        List {
+            ForEach(campaigns) { campaign in
+                CampaignRow(
+                    campaign: campaign,
+                    palette: palette,
+                    jarPresentation: presentation(campaign)
+                ) {
+                    onEdit(campaign.id)
                 }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        onDelete(campaign)
+                    } label: {
+                        Label("Видалити", systemImage: "trash")
+                    }
+                    .tint(.red)
+
+                    Button {
+                        onEdit(campaign.id)
+                    } label: {
+                        Label("Змінити", systemImage: "pencil")
+                    }
+                    .tint(palette.steel)
+                }
+                .listRowSeparator(.hidden)
+                .listRowBackground(palette.app)
+                .listRowInsets(.init(top: 0, leading: 20, bottom: 14, trailing: 20))
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 }
 
@@ -269,15 +257,6 @@ private struct CampaignsEmptyState: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("Збори")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .foregroundStyle(palette.foreground)
-
             Spacer()
 
             ZStack {
