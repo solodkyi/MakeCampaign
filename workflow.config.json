@@ -161,6 +161,85 @@
           "env_from": []
         }
       ]
+    },
+    "features/campaign-creation": {
+      "workflow_id": "automatic-workflow-runner-v1",
+      "steps": [
+        {
+          "id": "ios-build",
+          "kind": "build",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-configuration",
+            "Debug",
+            "-destination",
+            "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.1",
+            "build",
+            "-skipMacroValidation"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "unit-tests",
+          "kind": "unit",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-destination",
+            "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.1",
+            "test",
+            "-only-testing:MakeCampaignTests",
+            "-skipMacroValidation"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "ui-tests",
+          "kind": "simulator",
+          "policy": "xcodebuild",
+          "argv": [
+            "xcodebuild",
+            "-project",
+            "MakeCampaign.xcodeproj",
+            "-scheme",
+            "MakeCampaign",
+            "-destination",
+            "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.1",
+            "test",
+            "-only-testing:MakeCampaignUITests",
+            "-skipMacroValidation"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 1200,
+          "env_from": []
+        },
+        {
+          "id": "diff-check",
+          "kind": "integration",
+          "policy": "git-diff",
+          "argv": [
+            "git",
+            "diff",
+            "--check"
+          ],
+          "cwd": ".",
+          "timeout_seconds": 60,
+          "env_from": []
+        }
+      ]
     }
   }
 }
