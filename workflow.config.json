@@ -63,7 +63,8 @@
             "Debug",
             "-destination",
             "generic/platform=iOS",
-            "build"
+            "build",
+            "-skipMacroValidation"
           ],
           "cwd": ".",
           "timeout_seconds": 1200,
@@ -101,7 +102,8 @@
             "Debug",
             "-destination",
             "generic/platform=iOS",
-            "build"
+            "build",
+            "-skipMacroValidation"
           ],
           "cwd": ".",
           "timeout_seconds": 1200,

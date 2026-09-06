@@ -9,6 +9,20 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 class RepositoryWorkflowTests(unittest.TestCase):
+    def test_repository_xcode_workflows_skip_macro_validation(self):
+        config = load_config(REPOSITORY_ROOT / "workflow.config.json", REPOSITORY_ROOT)
+        xcode_steps = [
+            (scope_name, step)
+            for scope_name, scope in config.scopes.items()
+            for step in scope.steps
+            if step.argv and step.argv[0] == "xcodebuild"
+        ]
+
+        self.assertTrue(xcode_steps)
+        for scope_name, step in xcode_steps:
+            with self.subTest(scope=scope_name, step=step.identifier):
+                self.assertIn("-skipMacroValidation", step.argv)
+
     def test_repository_simulator_workflows_use_required_runtime(self):
         config = load_config(REPOSITORY_ROOT / "workflow.config.json", REPOSITORY_ROOT)
         simulator_destinations = [
@@ -49,6 +63,7 @@ class RepositoryWorkflowTests(unittest.TestCase):
                 "-destination",
                 "generic/platform=iOS",
                 "build",
+                "-skipMacroValidation",
             ),
             scope.steps[1].argv,
         )
