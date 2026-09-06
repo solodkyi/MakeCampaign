@@ -1,235 +1,119 @@
+//
+//  EmeraldBlackGradientTemplateView.swift
+//  MakeCampaign
+//
+
 import SwiftUI
 
+/// `linearEmeraldBlack_hexagonTrailing` — an instrument readout: near-black
+/// ground, a large hexagonal reticle centred behind the content, and the photo
+/// cut to a matching hexagon.
 struct EmeraldBlackGradientTemplateView: View {
     let purpose: String
     let goal: String?
-    
+
     var viewProvider: () -> AnyView
-    
+
     init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             let side = geometry.size.width
-            let imageSize = side * 0.58
-            let padding = side * 0.045
-            
-            let purposeFontSize = side * 0.048
-            let goalLabelFontSize = side * 0.052
-            let goalValueFontSize = side * 0.066
-            
-            ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 0/255, green: 150/255, blue: 136/255), // Teal/Emerald
-                        Color(red: 12/255, green: 12/255, blue: 12/255)    // Near black
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                
-                ZStack {
-                    viewProvider()
-                        .frame(width: imageSize, height: imageSize)
-                        .campaignPhotoFrame(
-                            Polygon(sides: 6)
-                        )
-                        .rotationEffect(.degrees(-8))
-                        .offset(x: side * 0.01, y: side * 0.02)
-                        .shadow(color: .black.opacity(0.45), radius: side * 0.018, x: side * 0.01, y: side * 0.01)
-                        .overlay(
-                            Polygon(sides: 6)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [Color.white.opacity(0.5), .clear],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: side * 0.004
-                                )
-                                .rotationEffect(.degrees(-8))
-                        )
-                    
-                    VStack {
-                        HStack {
-                            VStack(alignment: .leading, spacing: side * 0.008) {
-                                Text(purpose)
-                                    .campaignPosterElement(.campaignTitle)
-                                    .font(.custom("Roboto-Bold", size: purposeFontSize))
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.leading)
-                                    .lineLimit(nil)
-                                    .minimumScaleFactor(0.8)
-                            }
-                            .padding(padding * 0.8)
-                            .background(
-                                RoundedRectangle(cornerRadius: side * 0.02)
-                                    .fill(.black.opacity(0.55))
-                                    .rotationEffect(.degrees(-6))
-                            )
-                            .frame(maxWidth: side * 0.42, alignment: .leading)
-                            .rotationEffect(.degrees(6))
-                            .offset(x: side * 0.02, y: side * 0.0)
-                            
-                            Spacer()
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.top, padding)
-                    .padding(.leading, padding)
-                    
-                    if let goal {
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: side * 0.006) {
-                                    Text("ціль збору:")
-                                        .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                        .foregroundColor(.white)
-                                        .minimumScaleFactor(0.8)
-                                        .lineLimit(1)
-                                    
-                                    Text(goal)
-                                        .campaignPosterElement(.target)
-                                        .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                        .foregroundColor(.white)
-                                        .minimumScaleFactor(0.8)
-                                        .lineLimit(1)
-                                }
-                                .padding(padding * 0.8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: side * 0.02)
-                                        .fill(.black.opacity(0.55))
-                                        .rotationEffect(.degrees(-6))
-                                )
-                                .offset(x: side * 0.02, y: -side * 0.01)
-                            }
-                        }
-                        .padding(.bottom, padding)
-                        .padding(.trailing, padding)
-                    }
-                }
-                .frame(width: geometry.size.width, height: geometry.size.height)
-                .clipped()
+
+            VStack(alignment: .leading, spacing: 0) {
+                header(side: side)
+
+                PosterPhoto(PosterHexagon(), photo: viewProvider)
+                    .aspectRatio(0.92, contentMode: .fit)
+                    .frame(maxWidth: side * 0.52, maxHeight: side * 0.52)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(maxHeight: .infinity)
+                    .padding(.vertical, side * 0.035)
+
+                caption(side: side)
+            }
+            .padding(side * 0.06)
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .background {
+                Self.pitch.overlay { reticle(side: side) }
             }
         }
     }
+
+    private func reticle(side: CGFloat) -> some View {
+        PosterHexagon()
+            .fill(
+                RadialGradient(
+                    colors: [Self.neon.opacity(0.14), .clear],
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: side * 0.46 * 0.65
+                )
+            )
+            .overlay {
+                PosterHexagon()
+                    .stroke(Self.neon.opacity(0.35), lineWidth: side * 0.0025)
+            }
+            .frame(width: side * 0.92, height: side * 0.92)
+    }
+
+    private func header(side: CGFloat) -> some View {
+        let kickerSize = side * 0.022
+        let purposeSize = side * 0.052
+
+        return VStack(alignment: .leading, spacing: side * 0.014) {
+            Text("збір")
+                .font(PosterFont.plexMonoRegular.size(kickerSize))
+                .tracking(kickerSize * 0.34)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.neon)
+
+            Text(purpose)
+                .campaignPosterElement(.campaignTitle)
+                .font(PosterFont.oswaldMedium.size(purposeSize))
+                .lineSpacing(purposeSize * 0.1)
+                .foregroundStyle(Self.frost)
+                .multilineTextAlignment(.leading)
+                .minimumScaleFactor(0.6)
+                .frame(maxWidth: side * 0.66, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private func caption(side: CGFloat) -> some View {
+        if let goal {
+            let labelSize = side * 0.023
+
+            VStack(alignment: .leading, spacing: side * 0.008) {
+                Text("ціль збору:")
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.18)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.neon)
+
+                Text(goal)
+                    .campaignPosterElement(.target)
+                    .font(PosterFont.oswaldBold.size(side * 0.08))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+            .padding(.trailing, side * 0.26)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private static let pitch = Color(red: 4/255, green: 18/255, blue: 12/255)
+    private static let neon = Color(red: 29/255, green: 233/255, blue: 158/255)
+    private static let frost = Color(red: 234/255, green: 255/255, blue: 245/255)
 }
 
 #Preview {
-    ScrollView {
-        VStack(spacing: 20) {
-            VStack(spacing: 10) {
-                Text("Size: 1080/3 (360x360)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                EmeraldBlackGradientTemplateView(
-                    purpose: "Збір на прилади нічного бачення", goal: "900.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/3, height: 1080/3)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/4 (270x270)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                EmeraldBlackGradientTemplateView(
-                    purpose: "Збір на прилади нічного бачення", goal: "900.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/4, height: 1080/4)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/5 (216x216)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                EmeraldBlackGradientTemplateView(
-                    purpose: "Збір на прилади нічного бачення", goal: "900.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/5, height: 1080/5)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/6 (180x180)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                EmeraldBlackGradientTemplateView(
-                    purpose: "Збір на прилади нічного бачення", goal: "900.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/6, height: 1080/6)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/7 (154x154)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                EmeraldBlackGradientTemplateView(
-                    purpose: "Збір на прилади нічного бачення", goal: "900.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/7, height: 1080/7)
-            }
-        }
-        .padding()
+    PosterTemplatePreview { purpose, goal, photo in
+        EmeraldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
     }
 }
