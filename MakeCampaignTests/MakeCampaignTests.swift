@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import SwiftUI
 import ComposableArchitecture
 @testable import MakeCampaign
 
@@ -51,8 +52,8 @@ final class MakeCampaignTests: XCTestCase {
     func test_rbEditorTray_activeTabMatchesTheSelection() {
         enum Tab: Hashable { case photo, data }
 
-        XCTAssertTrue(RBEditorTray<Tab>.isActive(.data, selection: .data))
-        XCTAssertFalse(RBEditorTray<Tab>.isActive(.photo, selection: .data))
+        XCTAssertTrue(RBEditorTray<Tab, EmptyView>.isActive(.data, selection: .data))
+        XCTAssertFalse(RBEditorTray<Tab, EmptyView>.isActive(.photo, selection: .data))
     }
 
     func test_rbProgressBar_clampsValuesToUnitInterval() {
