@@ -43,6 +43,7 @@ struct BlueGradientTemplateView: View {
                 VStack(spacing: padding) {
                     Spacer()
                     Text(purpose)
+                        .campaignPosterElement(.campaignTitle)
                         .font(.custom("Roboto-Bold", size: purposeFontSize))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
@@ -53,7 +54,7 @@ struct BlueGradientTemplateView: View {
                                         
                     viewProvider()
                         .frame(width: imageSize, height: imageSize)
-                        .clipShape(RoundedRectangle(cornerRadius: side * 0.025))
+                        .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.025))
                         .overlay(
                             RoundedRectangle(cornerRadius: side * 0.025)
                                 .stroke(.white.opacity(0.3), lineWidth: side * 0.003)
@@ -70,6 +71,7 @@ struct BlueGradientTemplateView: View {
                                 .lineLimit(1)
                             
                             Text(goal)
+                                .campaignPosterElement(.target)
                                 .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                 .foregroundColor(.white)
                                 .minimumScaleFactor(0.8)

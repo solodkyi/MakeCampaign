@@ -124,9 +124,7 @@ final class MakeCampaignTests: XCTestCase {
         await store.skipReceivedActions()
         
         store.assert {
-            $0.path[id: 0, case: \.details]?.$campaign.withLock {
-                $0 = campaign
-            }
+            XCTAssertEqual($0.path[id: 0, case: \.editor]?.campaign, campaign)
             XCTAssertEqual($0.path.count, 1)
         }
     }
@@ -145,11 +143,10 @@ final class MakeCampaignTests: XCTestCase {
         
         store.exhaustivity = .off(showSkippedAssertions: false)
         await store.send(.campaignsList(.campaignSelected(campaign.id)))
-        await store.send(.path(.element(id: 0, action: .details(.onCampaignDeleteButtonTapped(campaign.id)))))
-        await store.send(.path(.element(id: 0, action: .details(.destination(.presented(.alert(.confirmDeleteCampaign)))))))
         await store.skipReceivedActions()
+        await store.send(.campaignsList(.deleteCampaignConfirmed(campaign.id)))
         store.assert {
-            XCTAssertEqual($0.path.count, 0)
+            XCTAssertEqual($0.path.count, 1)
             XCTAssertEqual($0.campaignsList.campaigns.count, 0)
         }
     }
@@ -164,6 +161,7 @@ final class MakeCampaignTests: XCTestCase {
               AppFeature()
             } withDependencies: {
               $0.continuousClock = ImmediateClock()
+              $0.date.now = campaign.updatedAt
             }
         store.exhaustivity = .off(showSkippedAssertions: false)
         await store.send(.campaignsList(.campaignSelected(campaign.id)))
@@ -172,9 +170,10 @@ final class MakeCampaignTests: XCTestCase {
         updatedCampaign.purpose = "updated campaign"
         updatedCampaign.target = 100_000
         
-        await store.send(\.path[id: 0].details.binding.campaign, updatedCampaign)
-        await store.send(\.path[id: 0].details.onSaveButtonTapped)
-        await store.skipReceivedActions()
+        await store.send(.path(.element(
+            id: 0,
+            action: .editor(.binding(.set(\.campaign, updatedCampaign)))
+        )))
 
         store.assert {
             XCTAssertEqual($0.campaignsList.campaigns.first, updatedCampaign)

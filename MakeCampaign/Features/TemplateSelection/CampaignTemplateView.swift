@@ -22,19 +22,86 @@ struct CampaignTemplateView: View {
         self.onImageTransformEnd = onImageTransformEnd
     }
     
+    @ViewBuilder
+    var body: some View {
+        if let image, isRepositioningEnabled {
+            InteractiveCampaignTemplateView(
+                campaign: campaign,
+                template: template,
+                image: image,
+                onImageTransformEnd: onImageTransformEnd
+            )
+        } else {
+            CampaignTemplateArtwork(campaign: campaign, template: template) {
+                staticContent()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func staticContent() -> some View {
+        if let image {
+            DisplayImageView(
+                image: image,
+                scale: campaign.imageScale,
+                offset: campaign.imageOffset,
+                referenceSize: campaign.imageReferenceSize,
+                contentMode: campaign.image?.contentMode ?? .fill
+            )
+        } else {
+            Color.white
+        }
+    }
+}
+
+private struct InteractiveCampaignTemplateView: View {
+    let campaign: Campaign
+    let template: Template
+    let image: UIImage
+    let onImageTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
+
+    @State private var interaction = CampaignPhotoInteractionState()
+
+    var body: some View {
+        CampaignTemplateArtwork(campaign: campaign, template: template) {
+            CampaignPosterPhotoPreview(
+                image: image,
+                initialOffset: campaign.imageOffset,
+                initialScale: campaign.imageScale,
+                referenceSize: campaign.imageReferenceSize,
+                contentMode: campaign.image?.contentMode ?? .fill,
+                allowsImageTransform: true,
+                interaction: interaction,
+                onTransformEnd: onImageTransformEnd
+            )
+        }
+        .campaignPhotoOverflowPreviewEnabled(true)
+        .campaignPhotoTransformIsActive(interaction.isActive)
+    }
+}
+
+struct CampaignTemplateArtwork<PhotoContent: View>: View {
+    let campaign: Campaign
+    let template: Template
+    private let photoContent: PhotoContent
+
+    init(
+        campaign: Campaign,
+        template: Template,
+        @ViewBuilder photoContent: () -> PhotoContent
+    ) {
+        self.campaign = campaign
+        self.template = template
+        self.photoContent = photoContent()
+    }
+
     var body: some View {
         templateView(forTemplate: template)
     }
-    
+
     @ViewBuilder
     private func templateView(forTemplate template: Template) -> some View {
-        
-        let purpose: String = {
-            if campaign.purpose.isEmpty {
-                return "Текст текст"
-            }
-            return campaign.purpose
-        }()
+        let purpose = campaign.posterPurpose
         
         let goal = campaign.target?.formattedAmount.appendingCurrency
         
@@ -105,30 +172,13 @@ struct CampaignTemplateView: View {
     
     @ViewBuilder
     private func content() -> some View {
-        if let image {
-            if isRepositioningEnabled {
-                GeometryReader { geometry in
-                    let initialOffset = campaign.imageOffset
-                    let initialScale = campaign.imageScale
-                    ImageTransformView(
-                        image: image,
-                        initialOffset: initialOffset,
-                        initialScale: initialScale,
-                        containerSize: geometry.size,
-                        onTransformEnd: onImageTransformEnd
-                    )
-                }
-            } else {
-                DisplayImageView(
-                    image: image,
-                    scale: campaign.imageScale,
-                    offset: campaign.imageOffset,
-                    referenceSize: campaign.imageReferenceSize
-                )
-            }
-        } else {
-            Color.white
-        }
+        photoContent.campaignPosterElement(.photo)
+    }
+}
+
+extension Campaign {
+    var posterPurpose: String {
+        purpose.isEmpty ? "Назва збору" : purpose
     }
 }
 
@@ -137,6 +187,8 @@ struct DisplayImageView: View {
     let scale: CGFloat
     let offset: CGSize
     let referenceSize: CGSize
+    let contentMode: Campaign.Image.ContentMode
+    var clipsToBounds = true
     
     var body: some View {
         GeometryReader { geometry in
@@ -160,27 +212,41 @@ struct DisplayImageView: View {
                 }
             }()
             
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .scaleEffect(max(0.1, scale))
-                .offset(scaledOffset)
-                .clipped()
-                .drawingGroup()
+            Group {
+                if contentMode == .fit {
+                    Image(uiImage: image).resizable().scaledToFit()
+                } else {
+                    Image(uiImage: image).resizable().scaledToFill()
+                }
+            }
+            .scaleEffect(max(0.1, scale))
+            .offset(scaledOffset)
+            .applyIf(clipsToBounds) { view in
+                view.clipped()
+            }
         }
     }
 }
 
 struct ImageTransformView: View {
+    private enum ActiveGesture: Hashable {
+        case drag
+        case magnification
+    }
+
     let image: UIImage
     let initialOffset: CGSize
     let initialScale: CGFloat
     let containerSize: CGSize
+    let contentMode: Campaign.Image.ContentMode
     let onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
+    let onTransformActivityChanged: ((Bool) -> Void)?
+    let onTransformChanged: ((CGFloat, CGSize, CGSize) -> Void)?
     
     @State private var offset: CGSize
     @State private var scale: CGFloat
     @State private var dragStartOffset: CGSize = .zero
+    @State private var activeGestures: Set<ActiveGesture> = []
     
     private var isRepositioningEnabled: Bool {
         onTransformEnd != nil
@@ -191,25 +257,34 @@ struct ImageTransformView: View {
         initialOffset: CGSize,
         initialScale: CGFloat,
         containerSize: CGSize,
-        onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)? = nil
+        contentMode: Campaign.Image.ContentMode = .fill,
+        onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)? = nil,
+        onTransformActivityChanged: ((Bool) -> Void)? = nil,
+        onTransformChanged: ((CGFloat, CGSize, CGSize) -> Void)? = nil
     ) {
         self.image = image
         self.initialOffset = initialOffset
         self.initialScale = initialScale
         self.containerSize = containerSize
+        self.contentMode = contentMode
         self.onTransformEnd = onTransformEnd
+        self.onTransformActivityChanged = onTransformActivityChanged
+        self.onTransformChanged = onTransformChanged
         _offset = State(initialValue: initialOffset)
         _scale = State(initialValue: initialScale)
     }
     
     var body: some View {
-        Image(uiImage: image)
-            .resizable()
-            .scaledToFill()
+        Group {
+            if contentMode == .fit {
+                Image(uiImage: image).resizable().scaledToFit()
+            } else {
+                Image(uiImage: image).resizable().scaledToFill()
+            }
+        }
             .scaleEffect(max(0.1, scale))
             .offset(offset)
             .clipped()
-            .drawingGroup()
             .onChange(of: initialOffset) { _, newOffset in
                 offset = newOffset
             }
@@ -221,30 +296,58 @@ struct ImageTransformView: View {
                     .gesture(
                         DragGesture()
                             .onChanged { gesture in
-                                offset = CGSize(
+                                begin(.drag)
+                                let newOffset = CGSize(
                                     width: dragStartOffset.width + gesture.translation.width,
                                     height: dragStartOffset.height + gesture.translation.height
                                 )
+                                offset = newOffset
+                                onTransformChanged?(scale, newOffset, containerSize)
                             }
                             .onEnded { _ in
                                 dragStartOffset = offset
                                 onTransformEnd?(scale, offset, containerSize)
+                                end(.drag)
                             }
                     )
                     .gesture(
                         MagnificationGesture()
                             .onChanged { value in
-                                scale = max(0.1, value)
+                                begin(.magnification)
+                                let newScale = max(0.1, value)
+                                scale = newScale
+                                onTransformChanged?(newScale, offset, containerSize)
                             }
                             .onEnded { value in
                                 scale = max(0.1, value)
+                                onTransformChanged?(scale, offset, containerSize)
                                 onTransformEnd?(scale, offset, containerSize)
+                                end(.magnification)
                             }
                     )
             }
             .onAppear {
                 dragStartOffset = initialOffset
             }
+            .onDisappear {
+                activeGestures.removeAll()
+                onTransformActivityChanged?(false)
+            }
+    }
+
+    private func begin(_ gesture: ActiveGesture) {
+        let wasInactive = activeGestures.isEmpty
+        activeGestures.insert(gesture)
+        if wasInactive {
+            onTransformActivityChanged?(true)
+        }
+    }
+
+    private func end(_ gesture: ActiveGesture) {
+        activeGestures.remove(gesture)
+        if activeGestures.isEmpty {
+            onTransformActivityChanged?(false)
+        }
     }
 }
 
@@ -281,4 +384,3 @@ extension View {
         )
     }
 } 
-

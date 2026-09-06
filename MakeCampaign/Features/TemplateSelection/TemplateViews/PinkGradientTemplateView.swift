@@ -45,10 +45,11 @@ struct PinkGradientTemplateView: View {
                 VStack(spacing: verticalSpacing) {
                     viewProvider()
                         .frame(width: imageWidth, height: imageHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: side * 0.02))
+                        .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.02))
                         .padding(.top, verticalSpacing)
                     
                     Text(purpose)
+                        .campaignPosterElement(.campaignTitle)
                         .font(.custom("Roboto-Bold", size: purposeFontSize))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
@@ -67,6 +68,7 @@ struct PinkGradientTemplateView: View {
                                 .lineLimit(1)
                             
                             Text(goal)
+                                .campaignPosterElement(.target)
                                 .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                 .foregroundColor(.white)
                                 .minimumScaleFactor(0.8)

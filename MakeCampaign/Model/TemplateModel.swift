@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-struct Template: Codable, Equatable, Identifiable {
+struct Template: Codable, Equatable, Identifiable, Sendable {
     let name: String
     let gradient: Gradient
     let imagePlacement: ImagePlacement
@@ -10,7 +10,7 @@ struct Template: Codable, Equatable, Identifiable {
         return "\(String(describing: gradient))_\(String(describing: imagePlacement))"
     }
     
-    enum Gradient: Codable, Equatable {
+    enum Gradient: Codable, Equatable, Sendable {
         case linearPurple
         case linearGreen
         case angularYellowBlue
@@ -28,7 +28,7 @@ struct Template: Codable, Equatable, Identifiable {
         case linearCoralTeal
     }
     
-    enum ImagePlacement: Codable, Equatable {
+    enum ImagePlacement: Codable, Equatable, Sendable {
         case topCenter
         case topToBottomTrailing
         case trailing

@@ -1,14 +1,22 @@
 import SwiftUI
 import ComposableArchitecture
+import Dependencies
 
 struct TemplateSelectionView: View {
     let store: StoreOf<TemplateSelectionFeature>
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.displayScale) private var displayScale
+    @Environment(\.locale) private var locale
+    @Dependency(\.campaignPosterPreviewAssetLoader) private var previewAssetLoader
+    @Dependency(\.campaignPosterThumbnailClient) private var thumbnailClient
+    @State private var previewAssetBuffer = CampaignPosterPreviewAssetBuffer()
+    @State private var templateThumbnailBatch: CampaignPosterThumbnailBatch?
     
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                if let imageData = store.campaign.image?.raw,
-                   let uiImage = UIImage(data: imageData) {
+                if let uiImage = currentPreviewAssets.photo {
                     if let selectedTemplate = store.selectedTemplate {
                         CampaignTemplateView(
                             campaign: store.campaign,
@@ -43,22 +51,8 @@ struct TemplateSelectionView: View {
                     .padding(.horizontal)
                     .padding(.top)
                 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
-                        ForEach(store.templates) { template in
-                            TemplateItemView(
-                                campaign: store.campaign,
-                                template: template,
-                                isSelected: store.selectedTemplateID == template.id)
-                            .onTapGesture {
-                                store.send(.templateSelected(template))
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-                .frame(height: 150)
-                
+                templateThumbnailStrip
+
                 Button {
                     store.send(.doneButtonTapped)
                 } label: {
@@ -80,21 +74,107 @@ struct TemplateSelectionView: View {
         .onAppear {
             store.send(.onAppear)
         }
+        .task(id: posterAssetInput) {
+            await preparePreviewAssets(for: posterAssetInput)
+        }
         .navigationTitle("Обрати шаблон")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private var templateThumbnailStrip: some View {
+        let currentRequests = templateThumbnailRequests
+        let refreshKeys = currentRequests.map(\.refreshKey)
+        if let requests = templateThumbnailBatch?.retainedRequests(
+            matching: currentRequests
+        ) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 16) {
+                    ForEach(requests, id: \.template.id) { request in
+                        let template = request.template
+                        TemplateItemView(
+                            request: request,
+                            isSelected: store.selectedTemplateID == template.id
+                        )
+                        .onTapGesture {
+                            store.send(.templateSelected(template))
+                        }
+                        .accessibilityIdentifier(
+                            "legacy-template-\(template.id)"
+                        )
+                        .accessibilityValue(
+                            store.selectedTemplateID == template.id
+                                ? "Вибрано"
+                                : ""
+                        )
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .frame(height: 150)
+            .accessibilityIdentifier("legacy-template-thumbnail-strip")
+        } else {
+            ProgressView("Готуємо шаблони…")
+                .frame(height: 150)
+                .frame(maxWidth: .infinity)
+                .task(id: refreshKeys) {
+                    templateThumbnailBatch = nil
+                    await thumbnailClient.prewarm(currentRequests)
+                    guard !Task.isCancelled else { return }
+                    templateThumbnailBatch = CampaignPosterThumbnailBatch(
+                        requests: currentRequests
+                    )
+                }
+        }
+    }
+
+    private var templateThumbnailRequests: [CampaignPosterThumbnailRequest] {
+        store.templates.map { template in
+            .templateSelection(
+                campaign: store.campaign,
+                template: template,
+                pointSize: CGSize(width: 120, height: 120),
+                displayScale: displayScale,
+                colorScheme: colorScheme,
+                locale: locale
+            )
+        }
+    }
+
+    private var posterAssetInput: CampaignPosterPreviewAssetInput {
+        CampaignPosterPreviewAssetInput(
+            photoData: store.campaign.image?.raw,
+            qrPayload: nil
+        )
+    }
+
+    private var currentPreviewAssets: CampaignPosterPreviewAssets {
+        previewAssetBuffer.assets
+    }
+
+    private func preparePreviewAssets(
+        for input: CampaignPosterPreviewAssetInput
+    ) async {
+        previewAssetBuffer.beginLoading(input)
+        do {
+            let assets = try await previewAssetLoader.load(input)
+            try Task.checkCancellation()
+            previewAssetBuffer.commit(assets, for: input)
+        } catch {
+            guard !Task.isCancelled else { return }
+        }
     }
 }
 
 struct TemplateItemView: View {
-    let campaign: Campaign
-    let template: Template
+    let request: CampaignPosterThumbnailRequest
     let isSelected: Bool
     
     var body: some View {
         VStack {
-            CampaignTemplateView(campaign: campaign, template: template)
+            CampaignPosterThumbnail(request: request)
                 .frame(width: 120, height: 120)
-            Text(template.name)
+            Text(request.template.name)
                 .fontWeight(.bold)
         }
         .background {

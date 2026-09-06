@@ -51,6 +51,7 @@ struct YellowBlueGradientTemplateView: View {
                                     .minimumScaleFactor(0.7)
                                     .lineLimit(1)
                                 Text(goal)
+                                    .campaignPosterElement(.target)
                                     .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                     .foregroundColor(.white)
                                     .minimumScaleFactor(0.7)
@@ -61,12 +62,12 @@ struct YellowBlueGradientTemplateView: View {
                         
                         viewProvider()
                             .frame(width: imageWidth, height: imageHeight)
-                            .clipped()
-                            .cornerRadius(side * 0.02)
+                            .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.02))
                     }
                     .padding(.top, verticalPadding)
                     
                     Text(purpose)
+                        .campaignPosterElement(.campaignTitle)
                         .font(.custom("Roboto-Bold", size: purposeFontSize))
                         .foregroundColor(.white)
                         .lineLimit(3)
@@ -192,4 +193,3 @@ struct YellowBlueGradientTemplateView: View {
         .padding()
     }
 }
-

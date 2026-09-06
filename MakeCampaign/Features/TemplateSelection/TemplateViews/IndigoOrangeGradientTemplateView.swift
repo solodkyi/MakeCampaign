@@ -37,6 +37,7 @@ struct IndigoOrangeGradientTemplateView: View {
                 VStack(spacing: padding) {
                     HStack {
                         Text(purpose)
+                            .campaignPosterElement(.campaignTitle)
                             .font(.custom("Roboto-Bold", size: purposeFontSize))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.leading)
@@ -58,7 +59,7 @@ struct IndigoOrangeGradientTemplateView: View {
                         Spacer()
                         viewProvider()
                             .frame(width: imageSize, height: imageSize)
-                            .clipShape(RoundedRectangle(cornerRadius: side * 0.04))
+                            .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.04))
                             .overlay(
                                 RoundedRectangle(cornerRadius: side * 0.04)
                                     .stroke(.white.opacity(0.25), lineWidth: side * 0.004)
@@ -76,6 +77,7 @@ struct IndigoOrangeGradientTemplateView: View {
                                     .minimumScaleFactor(0.8)
                                     .lineLimit(1)
                                 Text(goal)
+                                    .campaignPosterElement(.target)
                                     .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                     .foregroundColor(.white)
                                     .minimumScaleFactor(0.8)
@@ -211,5 +213,3 @@ struct IndigoOrangeGradientTemplateView: View {
     }
 }
 #endif
-
-

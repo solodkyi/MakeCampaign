@@ -17,19 +17,39 @@ struct CampaignsView: View {
         ZStack(alignment: .bottomTrailing) {
             palette.app.ignoresSafeArea()
 
-            if store.state.campaigns.isEmpty {
-                CampaignsEmptyState(palette: palette)
-            } else {
-                CampaignsList(
-                    campaigns: store.state.campaigns.elements,
-                    palette: palette,
-                    presentation: store.state.jarPresentation(for:),
-                    onEdit: { store.send(.editCampaign($0)) },
-                    onDelete: { campaignPendingDeletion = $0 }
-                )
+            VStack(spacing: 8) {
+                Picker("Розділ зборів", selection: Binding(
+                    get: { store.selectedSection },
+                    set: { store.send(.sectionSelected($0)) }
+                )) {
+                    ForEach(CampaignsFeature.Section.allCases) { section in
+                        Text(section.title).tag(section)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 20)
+                .accessibilityIdentifier("campaign-section-picker")
+
+                if store.visibleCampaigns.isEmpty {
+                    CampaignsEmptyState(
+                        isDrafts: store.selectedSection == .drafts,
+                        palette: palette,
+                        onCreate: { store.send(.createCampaignTapped) }
+                    )
+                } else {
+                    CampaignsList(
+                        campaigns: store.visibleCampaigns,
+                        palette: palette,
+                        presentation: store.state.jarPresentation(for:),
+                        onEdit: { store.send(.editCampaign($0)) },
+                        onDelete: { campaignPendingDeletion = $0 }
+                    )
+                }
             }
 
-            CreateCampaignButton()
+            CreateCampaignButton {
+                store.send(.createCampaignTapped)
+            }
                 .padding(.trailing, 22)
                 .padding(.bottom, 26)
         }
@@ -253,7 +273,9 @@ private struct UnavailableJarDetails: View {
 }
 
 private struct CampaignsEmptyState: View {
+    let isDrafts: Bool
     let palette: CampaignsPalette
+    let onCreate: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -276,20 +298,20 @@ private struct CampaignsEmptyState: View {
                     .rotationEffect(.degrees(-90))
             }
 
-            Text("Активних зборів\nще немає")
+            Text(isDrafts ? "Чернеток ще немає" : "Активних зборів\nще немає")
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(palette.foreground)
                 .padding(.top, 26)
 
-            Text("Створіть обкладинку або імпортуйте дані з посилання на банку.")
+            Text(isDrafts ? "Незавершені постери з’являться тут автоматично." : "Створіть обкладинку та додайте дані збору.")
                 .font(.system(size: 14))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(palette.muted)
                 .padding(.top, 10)
                 .padding(.horizontal, 34)
 
-            Button("Створити збір") {}
+            Button("Створити збір", action: onCreate)
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, minHeight: 56)
@@ -304,10 +326,11 @@ private struct CampaignsEmptyState: View {
 }
 
 private struct CreateCampaignButton: View {
+    let action: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        Button(action: {}) {
+        Button(action: action) {
             Image(systemName: "plus")
                 .font(.system(size: 26, weight: .medium))
                 .frame(width: 58, height: 58)
@@ -345,8 +368,116 @@ private extension Color {
     static let campaignFabDarkForeground = Color(red: 20 / 255, green: 20 / 255, blue: 19 / 255)
 }
 
+private struct CampaignsListPreviewScreen: View {
+    let campaigns: [Campaign]
+    let presentations: [Campaign.ID: CampaignsFeature.JarPresentation]
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let palette = CampaignsPalette(colorScheme: colorScheme)
+
+        ZStack(alignment: .bottomTrailing) {
+            palette.app.ignoresSafeArea()
+
+            if campaigns.isEmpty {
+                CampaignsEmptyState(isDrafts: false, palette: palette, onCreate: {})
+            } else {
+                CampaignsList(
+                    campaigns: campaigns,
+                    palette: palette,
+                    presentation: { presentations[$0.id] ?? .noLink },
+                    onEdit: { _ in },
+                    onDelete: { _ in }
+                )
+            }
+
+            CreateCampaignButton(action: {})
+                .padding(.trailing, 22)
+                .padding(.bottom, 26)
+        }
+    }
+}
+
+private enum CampaignsListPreviewData {
+    static let updatedAt = Date(timeIntervalSinceReferenceDate: 768_355_200)
+
+    static let noJar = Campaign(
+        id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
+        purpose: "Допомога для підрозділу",
+        target: 50_000,
+        updatedAt: updatedAt
+    )
+
+    static let refreshing = Campaign(
+        id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
+        purpose: "Збір на автівку",
+        target: 120_000,
+        jar: .init(link: URL(string: "https://send.monobank.ua/jar/refreshing")!),
+        updatedAt: updatedAt
+    )
+
+    static let failed = Campaign(
+        id: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!,
+        purpose: "Тепловізор для бригади",
+        target: 75_000,
+        jar: .init(link: URL(string: "https://send.monobank.ua/jar/failed")!),
+        updatedAt: updatedAt
+    )
+
+    static let loaded = Campaign(
+        id: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!,
+        purpose: "Дрони для захисників",
+        target: 100_000,
+        jar: .init(
+            link: URL(string: "https://send.monobank.ua/jar/loaded")!,
+            details: .init(jarAmount: 67_500_00, jarStatus: "ACTIVE")
+        ),
+        updatedAt: updatedAt
+    )
+
+    static let allCampaigns = [noJar, refreshing, failed, loaded]
+
+    static let presentations: [Campaign.ID: CampaignsFeature.JarPresentation] = [
+        refreshing.id: .loading,
+        failed.id: .failed,
+        loaded.id: .loaded
+    ]
+}
+
 #Preview("Empty") {
-    CampaignsView(store: Store(initialState: CampaignsFeature.State()) {
-        CampaignsFeature()
-    })
+    CampaignsListPreviewScreen(campaigns: [], presentations: [:])
+}
+
+#Preview("Jar not linked") {
+    CampaignsListPreviewScreen(campaigns: [CampaignsListPreviewData.noJar], presentations: [:])
+}
+
+#Preview("Jar refreshing") {
+    CampaignsListPreviewScreen(
+        campaigns: [CampaignsListPreviewData.refreshing],
+        presentations: [CampaignsListPreviewData.refreshing.id: .loading]
+    )
+}
+
+#Preview("Jar refresh failed") {
+    CampaignsListPreviewScreen(
+        campaigns: [CampaignsListPreviewData.failed],
+        presentations: [CampaignsListPreviewData.failed.id: .failed]
+    )
+}
+
+#Preview("Jar progress") {
+    CampaignsListPreviewScreen(
+        campaigns: [CampaignsListPreviewData.loaded],
+        presentations: [CampaignsListPreviewData.loaded.id: .loaded]
+    )
+}
+
+#Preview("All states — dark") {
+    CampaignsListPreviewScreen(
+        campaigns: CampaignsListPreviewData.allCampaigns,
+        presentations: CampaignsListPreviewData.presentations
+    )
+    .preferredColorScheme(.dark)
 }

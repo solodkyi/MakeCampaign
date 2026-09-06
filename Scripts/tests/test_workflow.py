@@ -9,6 +9,24 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 class RepositoryWorkflowTests(unittest.TestCase):
+    def test_repository_simulator_workflows_use_required_runtime(self):
+        config = load_config(REPOSITORY_ROOT / "workflow.config.json", REPOSITORY_ROOT)
+        simulator_destinations = [
+            step.argv[step.argv.index("-destination") + 1]
+            for scope in config.scopes.values()
+            for step in scope.steps
+            if "-destination" in step.argv
+            and step.argv[step.argv.index("-destination") + 1].startswith(
+                "platform=iOS Simulator"
+            )
+        ]
+
+        self.assertTrue(simulator_destinations)
+        self.assertEqual(
+            {"platform=iOS Simulator,name=iPhone 17 Pro,OS=26.3.1"},
+            set(simulator_destinations),
+        )
+
     def test_repository_configuration_defines_fully_automatic_harness_scope(self):
         config = load_config(REPOSITORY_ROOT / "workflow.config.json", REPOSITORY_ROOT)
         scope = config.scopes["core/development-workflow-harness-redesign"]

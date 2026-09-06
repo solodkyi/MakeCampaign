@@ -46,6 +46,7 @@ struct GreenGradientTemplateView: View {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: spacing) {
                             Text(purpose)
+                                .campaignPosterElement(.campaignTitle)
                                 .font(.custom("Roboto-Bold", size: purposeFontSize))
                                 .minimumScaleFactor(0.8)
                                 .foregroundColor(.white)
@@ -59,6 +60,7 @@ struct GreenGradientTemplateView: View {
                                     .lineLimit(1)
                                     .foregroundColor(.white)
                                 Text(goal)
+                                    .campaignPosterElement(.target)
                                     .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                     .minimumScaleFactor(0.8)
                                     .lineLimit(1)
@@ -73,7 +75,7 @@ struct GreenGradientTemplateView: View {
                                         
                     viewProvider()
                         .frame(width: side * 0.35, height: side)
-                        .clipped()
+                        .campaignPhotoFrame(Rectangle())
                         .padding(.horizontal, imageInset)
                         
                 }

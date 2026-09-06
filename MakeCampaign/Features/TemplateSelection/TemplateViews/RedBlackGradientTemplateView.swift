@@ -44,6 +44,7 @@ struct RedBlackGradientTemplateView: View {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading) {
                         Text(purpose)
+                            .campaignPosterElement(.campaignTitle)
                             .multilineTextAlignment(.leading)
                             .font(.custom("Roboto-Bold", size: purposeFontSize))
                             .foregroundColor(.white)
@@ -55,7 +56,7 @@ struct RedBlackGradientTemplateView: View {
                         VStack(alignment: .trailing) {
                             viewProvider()
                                 .frame(width: imageWidth, height: imageHeight)
-                                .clipped()
+                                .campaignPhotoFrame(Rectangle())
                             Spacer()
                             
                             if let goal {
@@ -67,6 +68,7 @@ struct RedBlackGradientTemplateView: View {
                                         .minimumScaleFactor(0.8)
                                     
                                     Text(goal)
+                                        .campaignPosterElement(.target)
                                         .font(.custom("Roboto-Bold", size: goalFontSize))
                                         .lineLimit(1)
                                         .foregroundColor(.white)
@@ -269,4 +271,3 @@ struct ImageTransformPreview: View {
             }
     }
 }
-

@@ -39,7 +39,7 @@ struct CyanMagentaGradientTemplateView: View {
                     // Image positioned diagonally with rotation and rounded rectangle clipping
                     viewProvider()
                         .frame(width: imageWidth, height: imageHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: side * 0.03))
+                        .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.03))
                         .rotationEffect(.degrees(-12))
                         .offset(x: side * 0.08, y: side * 0.12)
                         .shadow(color: .black.opacity(0.4), radius: side * 0.015, x: side * 0.008, y: side * 0.008)
@@ -50,6 +50,7 @@ struct CyanMagentaGradientTemplateView: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: side * 0.008) {
                                 Text(purpose)
+                                    .campaignPosterElement(.campaignTitle)
                                     .font(.custom("Roboto-Bold", size: purposeFontSize))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.trailing)
@@ -77,6 +78,7 @@ struct CyanMagentaGradientTemplateView: View {
                                         .lineLimit(1)
                                     
                                     Text(goal)
+                                        .campaignPosterElement(.target)
                                         .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                         .foregroundColor(.white)
                                         .minimumScaleFactor(0.8)
@@ -210,4 +212,4 @@ struct CyanMagentaGradientTemplateView: View {
         }
         .padding()
     }
-} 
+}

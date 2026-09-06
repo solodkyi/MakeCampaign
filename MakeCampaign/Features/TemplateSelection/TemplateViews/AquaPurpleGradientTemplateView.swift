@@ -38,7 +38,7 @@ struct AquaPurpleGradientTemplateView: View {
                 ZStack {
                     viewProvider()
                         .frame(width: imageWidth, height: imageHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: side * 0.03))
+                        .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.03))
                         .rotationEffect(.degrees(10))
                         .offset(x: -side * 0.08, y: side * 0.12)
                         .shadow(color: .black.opacity(0.4), radius: side * 0.015, x: side * 0.008, y: side * 0.008)
@@ -47,6 +47,7 @@ struct AquaPurpleGradientTemplateView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: side * 0.008) {
                                 Text(purpose)
+                                    .campaignPosterElement(.campaignTitle)
                                     .font(.custom("Roboto-Bold", size: purposeFontSize))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
@@ -76,6 +77,7 @@ struct AquaPurpleGradientTemplateView: View {
                                         .lineLimit(1)
                                     
                                     Text(goal)
+                                        .campaignPosterElement(.target)
                                         .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                         .foregroundColor(.white)
                                         .minimumScaleFactor(0.8)
@@ -208,5 +210,3 @@ struct AquaPurpleGradientTemplateView: View {
         .padding()
     }
 }
-
-

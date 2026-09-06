@@ -47,10 +47,9 @@ struct TealPurpleGradientTemplateView: View {
                         // Image content that can be repositioned within the circular mask
                         viewProvider()
                             .frame(width: imageSize * 1.5, height: imageSize * 1.5) // Larger frame for repositioning
-                            .clipped()
                     }
                     .frame(width: imageSize, height: imageSize)
-                    .clipShape(Circle())
+                    .campaignPhotoFrame(Circle())
                     .rotationEffect(.degrees(15))
                     .offset(x: side * 0.15, y: -side * 0.1)
                     .shadow(color: .black.opacity(0.3), radius: side * 0.01, x: side * 0.005, y: side * 0.005)
@@ -60,6 +59,7 @@ struct TealPurpleGradientTemplateView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: side * 0.01) {
                                 Text(purpose)
+                                    .campaignPosterElement(.campaignTitle)
                                     .font(.custom("Roboto-Bold", size: purposeFontSize))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
@@ -90,6 +90,7 @@ struct TealPurpleGradientTemplateView: View {
                                         .lineLimit(1)
                                     
                                     Text(goal)
+                                        .campaignPosterElement(.target)
                                         .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                         .foregroundColor(.white)
                                         .minimumScaleFactor(0.8)

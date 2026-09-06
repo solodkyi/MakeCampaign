@@ -38,10 +38,9 @@ struct MintIndigoGradientTemplateView: View {
                     ZStack {
                         viewProvider()
                             .frame(width: imageSize * 1.5, height: imageSize * 1.5)
-                            .clipped()
                     }
                     .frame(width: imageSize, height: imageSize)
-                    .clipShape(Circle())
+                    .campaignPhotoFrame(Circle())
                     .rotationEffect(.degrees(-12))
                     .offset(x: -side * 0.15, y: -side * 0.08)
                     .shadow(color: .black.opacity(0.3), radius: side * 0.01, x: side * 0.005, y: side * 0.005)
@@ -51,6 +50,7 @@ struct MintIndigoGradientTemplateView: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: side * 0.01) {
                                 Text(purpose)
+                                    .campaignPosterElement(.campaignTitle)
                                     .font(.custom("Roboto-Bold", size: purposeFontSize))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.trailing)
@@ -77,6 +77,7 @@ struct MintIndigoGradientTemplateView: View {
                                         .lineLimit(1)
                                     
                                     Text(goal)
+                                        .campaignPosterElement(.target)
                                         .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                         .foregroundColor(.white)
                                         .minimumScaleFactor(0.8)
@@ -211,5 +212,3 @@ struct MintIndigoGradientTemplateView: View {
         .padding()
     }
 }
-
-

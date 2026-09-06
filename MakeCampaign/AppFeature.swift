@@ -10,6 +10,9 @@ import ComposableArchitecture
 
 @Reducer
 struct AppFeature {
+    @Dependency(\.uuid) var uuid
+    @Dependency(\.date.now) var now
+
     @ObservableState
     struct State: Equatable {
         var path = StackState<Path.State>()
@@ -24,6 +27,7 @@ struct AppFeature {
     @Reducer(state: .equatable)
     enum Path {
         case details(CampaignDetailsFeature)
+        case editor(CampaignCreationFeature)
     }
         
     var body: some ReducerOf<Self> {
@@ -36,11 +40,27 @@ struct AppFeature {
         Reduce { state, action in
             switch action {
             case .path: return .none
+            case .campaignsList(.createCampaignTapped):
+                state.path.append(.editor(.init(
+                    campaign: Campaign(
+                        id: uuid(),
+                        status: .draft,
+                        createdAt: now,
+                        updatedAt: now
+                    ),
+                    campaigns: state.campaignsList.$campaigns,
+                    isNew: true
+                )))
+                return .none
             case let .campaignsList(.delegate(.onCampaignSelected(campaignId))):
-                guard let campaign = Shared(state.campaignsList.$campaigns[id: campaignId]) else {
+                guard let campaign = state.campaignsList.campaigns[id: campaignId] else {
                     return .none
                 }
-                state.path.append(.details(.init(campaign: campaign, isEditing: true)))
+                state.path.append(.editor(.init(
+                    campaign: campaign,
+                    campaigns: state.campaignsList.$campaigns,
+                    isNew: false
+                )))
                 
                 return .none
                 default: return .none

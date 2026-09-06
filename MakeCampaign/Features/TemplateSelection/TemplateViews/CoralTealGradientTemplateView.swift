@@ -37,7 +37,7 @@ struct CoralTealGradientTemplateView: View {
                     HStack {
                         viewProvider()
                             .frame(width: imageSize, height: imageSize)
-                            .clipShape(RoundedRectangle(cornerRadius: side * 0.035))
+                            .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.035))
                             .overlay(
                                 RoundedRectangle(cornerRadius: side * 0.035)
                                     .stroke(.white.opacity(0.25), lineWidth: side * 0.004)
@@ -54,6 +54,7 @@ struct CoralTealGradientTemplateView: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: side * 0.008) {
                                 Text(purpose)
+                                    .campaignPosterElement(.campaignTitle)
                                     .font(.custom("Roboto-Bold", size: purposeFontSize))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.trailing)
@@ -80,6 +81,7 @@ struct CoralTealGradientTemplateView: View {
                                         .minimumScaleFactor(0.8)
                                         .lineLimit(1)
                                     Text(goal)
+                                        .campaignPosterElement(.target)
                                         .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                         .foregroundColor(.white)
                                         .minimumScaleFactor(0.8)
@@ -213,5 +215,3 @@ struct CoralTealGradientTemplateView: View {
         .padding()
     }
 }
-
-

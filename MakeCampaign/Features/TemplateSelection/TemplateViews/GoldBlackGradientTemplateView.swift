@@ -37,7 +37,7 @@ struct GoldBlackGradientTemplateView: View {
                     // Hexagonal image positioned centrally with slight offset and rotation
                     viewProvider()
                         .frame(width: imageSize, height: imageSize)
-                        .clipShape(
+                        .campaignPhotoFrame(
                             Polygon(sides: 6)
                         )
                         .rotationEffect(.degrees(8))
@@ -61,6 +61,7 @@ struct GoldBlackGradientTemplateView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: side * 0.008) {
                                 Text(purpose)
+                                    .campaignPosterElement(.campaignTitle)
                                     .font(.custom("Roboto-Bold", size: purposeFontSize))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
@@ -98,6 +99,7 @@ struct GoldBlackGradientTemplateView: View {
                                         .lineLimit(1)
                                     
                                     Text(goal)
+                                        .campaignPosterElement(.target)
                                         .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                         .foregroundColor(.white)
                                         .minimumScaleFactor(0.8)
@@ -263,4 +265,4 @@ struct Polygon: Shape {
         }
         .padding()
     }
-} 
+}

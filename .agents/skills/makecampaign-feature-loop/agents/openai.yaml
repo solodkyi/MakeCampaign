@@ -1,0 +1,7 @@
+interface:
+  display_name: "MakeCampaign Feature Loop"
+  short_description: "Run a feature from brief to verified handoff"
+  default_prompt: "Use $makecampaign-feature-loop to deliver this MakeCampaign change from my full explanation through verified implementation and manual checks."
+
+policy:
+  allow_implicit_invocation: false

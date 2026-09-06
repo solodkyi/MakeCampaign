@@ -48,12 +48,13 @@ struct PurpleGradientTemplateView: View {
                     
                     viewProvider()
                         .frame(width: imageWidth, height: imageHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: side * 0.02))
+                        .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.02))
                     
                     Spacer().frame(height: purposeTopPadding)
                     
                     HStack {
                         Text(purpose)
+                            .campaignPosterElement(.campaignTitle)
                             .multilineTextAlignment(.center)
                             .font(.custom("Roboto-Bold", size: purposeFontSize))
                             .foregroundColor(.white)
@@ -70,6 +71,7 @@ struct PurpleGradientTemplateView: View {
                         HStack {
                             Spacer()
                             Text("Ціль: \(goal)")
+                                .campaignPosterElement(.target)
                                 .font(.custom("Roboto-Bold", size: goalFontSize))
                                 .multilineTextAlignment(.trailing)
                                 .minimumScaleFactor(0.8)

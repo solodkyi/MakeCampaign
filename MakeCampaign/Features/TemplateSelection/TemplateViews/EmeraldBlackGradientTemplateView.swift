@@ -35,7 +35,7 @@ struct EmeraldBlackGradientTemplateView: View {
                 ZStack {
                     viewProvider()
                         .frame(width: imageSize, height: imageSize)
-                        .clipShape(
+                        .campaignPhotoFrame(
                             Polygon(sides: 6)
                         )
                         .rotationEffect(.degrees(-8))
@@ -58,6 +58,7 @@ struct EmeraldBlackGradientTemplateView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: side * 0.008) {
                                 Text(purpose)
+                                    .campaignPosterElement(.campaignTitle)
                                     .font(.custom("Roboto-Bold", size: purposeFontSize))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
@@ -95,6 +96,7 @@ struct EmeraldBlackGradientTemplateView: View {
                                         .lineLimit(1)
                                     
                                     Text(goal)
+                                        .campaignPosterElement(.target)
                                         .font(.custom("Roboto-Bold", size: goalValueFontSize))
                                         .foregroundColor(.white)
                                         .minimumScaleFactor(0.8)
@@ -231,5 +233,3 @@ struct EmeraldBlackGradientTemplateView: View {
         .padding()
     }
 }
-
-

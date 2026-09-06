@@ -48,7 +48,7 @@ struct SilverBlueTemplateView: View {
                         Spacer()
                         viewProvider()
                             .frame(width: imageWidth, height: imageHeight)
-                            .clipped()
+                            .campaignPhotoFrame(Rectangle())
                             .padding(.top, verticalPadding)
                     }
                     .padding(.leading, 3*horizontalPadding)
@@ -58,11 +58,13 @@ struct SilverBlueTemplateView: View {
                     VStack(alignment: .trailing, spacing: bottomTextSpacing) {
                         if let goal {
                             Text("Збір на \(goal)")
+                                .campaignPosterElement(.target)
                                 .font(.custom("Roboto-Bold", size: goalFontSize))
                                 .foregroundColor(.white)
                                 .minimumScaleFactor(0.8)
                         }
                         Text(purpose)
+                            .campaignPosterElement(.campaignTitle)
                             .multilineTextAlignment(.trailing)
                             .font(.custom("Roboto-Bold", size: purposeFontSize))
                             .minimumScaleFactor(0.8)
