@@ -1,215 +1,110 @@
-import SwiftUI
-import UIKit
+//
+//  IndigoOrangeGradientTemplateView.swift
+//  MakeCampaign
+//
 
+import SwiftUI
+
+/// `linearIndigoOrange_trailing` — flat orange ground, the photo cut to an arch
+/// rising off the trailing edge, and the campaign data on an indigo panel.
+///
+/// The arch is a half-width radius on the top corners only, so it stays a true
+/// semicircle whatever the poster ratio.
 struct IndigoOrangeGradientTemplateView: View {
     let purpose: String
     let goal: String?
-    
+
     var viewProvider: () -> AnyView
-    
+
     init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             let side = geometry.size.width
-            let imageSize = side * 0.56
-            let padding = side * 0.045
-            
-            let purposeFontSize = side * 0.05
-            let goalLabelFontSize = side * 0.052
-            let goalValueFontSize = side * 0.066
-            
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(red: 63/255, green: 81/255, blue: 181/255),   // Indigo 500
-                        Color(red: 255/255, green: 152/255, blue: 0/255)     // Orange 600
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                VStack(spacing: padding) {
-                    HStack {
-                        Text(purpose)
-                            .campaignPosterElement(.campaignTitle)
-                            .font(.custom("Roboto-Bold", size: purposeFontSize))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.8)
-                            .padding(padding * 0.8)
-                            .background(
-                                RoundedRectangle(cornerRadius: side * 0.02)
-                                    .fill(Color.white.opacity(0.1))
-                            )
-                        Spacer()
-                    }
-                    .padding(.horizontal, padding)
-                    .padding(.top, padding)
-                    
-                    Spacer(minLength: 0)
-                    
-                    HStack {
-                        Spacer()
-                        viewProvider()
-                            .frame(width: imageSize, height: imageSize)
-                            .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.04))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: side * 0.04)
-                                    .stroke(.white.opacity(0.25), lineWidth: side * 0.004)
-                            )
-                            .shadow(color: .black.opacity(0.3), radius: side * 0.015, x: 0, y: side * 0.01)
-                            .padding(.trailing, padding)
-                    }
-                    
-                    if let goal {
-                        HStack {
-                            VStack(alignment: .leading, spacing: side * 0.006) {
-                                Text("ціль збору:")
-                                    .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                    .foregroundColor(.white)
-                                    .minimumScaleFactor(0.8)
-                                    .lineLimit(1)
-                                Text(goal)
-                                    .campaignPosterElement(.target)
-                                    .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                    .foregroundColor(.white)
-                                    .minimumScaleFactor(0.8)
-                                    .lineLimit(1)
-                            }
-                            .padding(padding * 0.8)
-                            .background(
-                                RoundedRectangle(cornerRadius: side * 0.04)
-                                    .stroke(.white.opacity(0.25), lineWidth: side * 0.004)
-                            )
-                            .padding(.leading, padding)
-                            Spacer()
-                        }
-                        .padding(.bottom, padding)
-                    }
-                }
-                .frame(width: geometry.size.width, height: geometry.size.height)
+            let photoWidth = side * 0.68
+
+            VStack(alignment: .leading, spacing: side * 0.035) {
+                kicker(side: side)
+
+                PosterPhoto(UnevenRoundedRectangle( topLeadingRadius: photoWidth / 2, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: photoWidth / 2 ), photo: viewProvider)
+                    .frame(width: photoWidth)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(maxHeight: .infinity)
+
+                panel(side: side)
             }
+            .padding(side * 0.06)
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .background(Self.tangerine)
         }
     }
+
+    private func kicker(side: CGFloat) -> some View {
+        let size = side * 0.023
+
+        return Text("збір")
+            .font(PosterFont.plexMonoRegular.size(size))
+            .tracking(size * 0.32)
+            .textCase(.uppercase)
+            .foregroundStyle(Self.indigo)
+    }
+
+    private func panel(side: CGFloat) -> some View {
+        let purposeSize = side * 0.05
+
+        return VStack(alignment: .leading, spacing: side * 0.02) {
+            Text(purpose)
+                .campaignPosterElement(.campaignTitle)
+                .font(PosterFont.oswaldSemiBold.size(purposeSize))
+                .lineSpacing(purposeSize * 0.08)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.leading)
+                .minimumScaleFactor(0.6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let goal {
+                let labelSize = side * 0.022
+
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
+                    Text("ціль збору:")
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.16)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.apricot)
+
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.066))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                .padding(.top, side * 0.02)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(.white.opacity(0.4))
+                        .frame(height: side * 0.002)
+                }
+            }
+        }
+        .padding(.horizontal, side * 0.034)
+        .padding(.vertical, side * 0.03)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Self.indigo)
+    }
+
+    private static let tangerine = Color(red: 239/255, green: 115/255, blue: 38/255)
+    private static let indigo = Color(red: 36/255, green: 33/255, blue: 94/255)
+    private static let apricot = Color(red: 255/255, green: 179/255, blue: 122/255)
 }
 
-#if DEBUG
 #Preview {
-    ScrollView {
-        VStack(spacing: 20) {
-            VStack(spacing: 10) {
-                Text("Size: 1080/3 (360x360)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                IndigoOrangeGradientTemplateView(
-                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/3, height: 1080/3)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/4 (270x270)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                IndigoOrangeGradientTemplateView(
-                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/4, height: 1080/4)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/5 (216x216)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                IndigoOrangeGradientTemplateView(
-                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/5, height: 1080/5)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/6 (180x180)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                IndigoOrangeGradientTemplateView(
-                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/6, height: 1080/6)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/7 (154x154)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                IndigoOrangeGradientTemplateView(
-                    purpose: "Підтримка захисників України", goal: "1.200.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/7, height: 1080/7)
-            }
-        }
-        .padding()
+    PosterTemplatePreview { purpose, goal, photo in
+        IndigoOrangeGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
     }
 }
-#endif
