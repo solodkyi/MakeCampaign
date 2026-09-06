@@ -217,6 +217,7 @@
 			packageReferences = (
 				13C0C9042DE8773400EE8E0E /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
 				13F9A0012E00000000AB0001 /* XCRemoteSwiftPackageReference "swift-perception" */,
+				13F9A0022E00000000AB0002 /* XCRemoteSwiftPackageReference "swift-syntax" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 13E237002DC3DAC400571CE6 /* Products */;
@@ -635,7 +636,15 @@
 			repositoryURL = "https://github.com/pointfreeco/swift-perception";
 			requirement = {
 				kind = exactVersion;
-				version = 1.4.1;
+				version = 2.0.11;
+			};
+		};
+		13F9A0022E00000000AB0002 /* XCRemoteSwiftPackageReference "swift-syntax" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/swiftlang/swift-syntax";
+			requirement = {
+				kind = exactVersion;
+				version = 601.0.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
