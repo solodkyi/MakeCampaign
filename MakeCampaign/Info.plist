@@ -7,6 +7,16 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>Roboto-Bold.ttf</string>
+		<string>Oswald-Regular.ttf</string>
+		<string>Oswald-Medium.ttf</string>
+		<string>Oswald-SemiBold.ttf</string>
+		<string>Oswald-Bold.ttf</string>
+		<string>PlayfairDisplay-Bold.ttf</string>
+		<string>PlayfairDisplay-ExtraBold.ttf</string>
+		<string>PlayfairDisplay-BoldItalic.ttf</string>
+		<string>IBMPlexMono-Regular.ttf</string>
+		<string>IBMPlexMono-Medium.ttf</string>
+		<string>IBMPlexMono-SemiBold.ttf</string>
 	</array>
 </dict>
 </plist>
