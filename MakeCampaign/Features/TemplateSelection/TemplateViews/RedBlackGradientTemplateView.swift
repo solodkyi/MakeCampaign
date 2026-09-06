@@ -2,272 +2,119 @@
 //  RedBlackGradientTemplateView.swift
 //  MakeCampaign
 //
-//  Created by Andrii Solodkyi on 5/20/25.
-//
 
 import SwiftUI
 
+/// `radialRedBlack_topToEdge` — the photo runs to the top edge under a red
+/// halftone screen, with an oversized goal figure leading the block beneath it.
+///
+/// Here the goal is set above the title: the figure is the loudest element in
+/// the composition and the title reads as its caption.
 struct RedBlackGradientTemplateView: View {
-    let goal: String?
     let purpose: String
+    let goal: String?
+
     var viewProvider: () -> AnyView
-    
+
     init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
-            let side = geometry.size.width // Use full width instead of minimum
-            let verticalPadding = side * 0.06
-            let horizontalPadding = side * 0.05
-            let imageWidth = side * 432 / 1080
-            let imageHeight = side * 728 / 1080
-            
-            let purposeFontSize = side * 0.06
-            let goalFontSize = side * 0.08
-            
-            ZStack {
-                RadialGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: Color(hex: "#E73535"), location: 0),
-                        .init(color: Color(hex: "#0C0C0C"), location: 1)
-                    ]),
-                    center: UnitPoint(x: 0.89, y: 0.23),
-                    startRadius: 0,
-                    endRadius: side * 1.5
-                )
-                .ignoresSafeArea()
-                
-                HStack(spacing: 0) {
-                    VStack(alignment: .leading) {
-                        Text(purpose)
-                            .campaignPosterElement(.campaignTitle)
-                            .multilineTextAlignment(.leading)
-                            .font(.custom("Roboto-Bold", size: purposeFontSize))
-                            .foregroundColor(.white)
-                            .minimumScaleFactor(0.8)
-                            .lineLimit(nil)
-                            .padding(horizontalPadding)
-                    }
-  
-                        VStack(alignment: .trailing) {
-                            viewProvider()
-                                .frame(width: imageWidth, height: imageHeight)
-                                .campaignPhotoFrame(Rectangle())
-                            Spacer()
-                            
-                            if let goal {
-                                VStack(alignment: .trailing, spacing: 5) {
-                                    Text("ціль збору:")
-                                        .font(.custom("Roboto-Bold", size: goalFontSize))
-                                        .lineLimit(1)
-                                        .foregroundColor(.white)
-                                        .minimumScaleFactor(0.8)
-                                    
-                                    Text(goal)
-                                        .campaignPosterElement(.target)
-                                        .font(.custom("Roboto-Bold", size: goalFontSize))
-                                        .lineLimit(1)
-                                        .foregroundColor(.white)
-                                        .minimumScaleFactor(0.8)
-                                }
-                                .padding(.bottom, verticalPadding)
-                            }
-                    }
-                        .padding(.trailing, horizontalPadding*2)
-                }
+            let side = geometry.size.width
+
+            VStack(alignment: .leading, spacing: 0) {
+                PosterPhoto(Rectangle(), photo: viewProvider)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .overlay { halftone(side: side) }
+
+                caption(side: side)
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .background(Self.soot)
         }
     }
+
+    /// The dot screen laid over the photo. Pitch scales with the poster so the
+    /// texture reads the same from thumbnail to export.
+    private func halftone(side: CGFloat) -> some View {
+        let pitch = side * 0.024
+        let radius = pitch * 0.11
+
+        return Canvas { context, size in
+            var y = pitch / 2
+            while y < size.height + pitch {
+                var x = pitch / 2
+                while x < size.width + pitch {
+                    context.fill(
+                        Path(
+                            ellipseIn: CGRect(
+                                x: x - radius, y: y - radius,
+                                width: radius * 2, height: radius * 2
+                            )
+                        ),
+                        with: .color(Self.crimson)
+                    )
+                    x += pitch
+                }
+                y += pitch
+            }
+        }
+        .opacity(0.55)
+        .allowsHitTesting(false)
+    }
+
+    private func caption(side: CGFloat) -> some View {
+        let purposeSize = side * 0.044
+
+        return VStack(alignment: .leading, spacing: side * 0.024) {
+            if let goal {
+                let labelSize = side * 0.023
+
+                VStack(alignment: .leading, spacing: side * 0.006) {
+                    Text("ціль збору:")
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.2)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.flare)
+
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.1))
+                        .foregroundStyle(Self.crimson)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
+
+            Text(purpose)
+                .campaignPosterElement(.campaignTitle)
+                .font(PosterFont.oswaldRegular.size(purposeSize))
+                .tracking(purposeSize * 0.04)
+                .lineSpacing(purposeSize * 0.16)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.bone)
+                .multilineTextAlignment(.leading)
+                .minimumScaleFactor(0.6)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, side * 0.06)
+        .padding(.trailing, side * 0.3)
+        .padding(.top, side * 0.05)
+        .padding(.bottom, side * 0.06)
+    }
+
+    private static let soot = Color(red: 12/255, green: 10/255, blue: 10/255)
+    private static let crimson = Color(red: 200/255, green: 32/255, blue: 44/255)
+    private static let flare = Color(red: 255/255, green: 90/255, blue: 90/255)
+    private static let bone = Color(red: 242/255, green: 239/255, blue: 233/255)
 }
 
 #Preview {
-    ScrollView {
-        VStack(spacing: 20) {
-            VStack(spacing: 10) {
-                Text("Size: 1080/3 (360x360)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                RedBlackGradientTemplateView(
-                    purpose: "текст текст текст текст",
-                    goal: "000.000"
-                ) {
-                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
-                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
-                        
-                        return AnyView(
-                            ImageTransformPreview(
-                                image: uiImage,
-                                initialOffset: initialOffset,
-                                initialScale: initialScale
-                            )
-                        )
-                    } else {
-                        return AnyView(Rectangle().fill(Color.red))
-                    }
-                }
-                .frame(width: 1080/3, height: 1080/3)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/4 (270x270)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                RedBlackGradientTemplateView(
-                    purpose: "текст текст текст текст",
-                    goal: "000.000"
-                ) {
-                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
-                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
-                        
-                        return AnyView(
-                            ImageTransformPreview(
-                                image: uiImage,
-                                initialOffset: initialOffset,
-                                initialScale: initialScale
-                            )
-                        )
-                    } else {
-                        return AnyView(Rectangle().fill(Color.red))
-                    }
-                }
-                .frame(width: 1080/4, height: 1080/4)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/5 (216x216)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                RedBlackGradientTemplateView(
-                    purpose: "текст текст текст текст",
-                    goal: "000.000"
-                ) {
-                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
-                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
-                        
-                        return AnyView(
-                            ImageTransformPreview(
-                                image: uiImage,
-                                initialOffset: initialOffset,
-                                initialScale: initialScale
-                            )
-                        )
-                    } else {
-                        return AnyView(Rectangle().fill(Color.red))
-                    }
-                }
-                .frame(width: 1080/5, height: 1080/5)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/6 (180x180)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                RedBlackGradientTemplateView(
-                    purpose: "текст текст текст текст",
-                    goal: "000.000"
-                ) {
-                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
-                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
-                        
-                        return AnyView(
-                            ImageTransformPreview(
-                                image: uiImage,
-                                initialOffset: initialOffset,
-                                initialScale: initialScale
-                            )
-                        )
-                    } else {
-                        return AnyView(Rectangle().fill(Color.red))
-                    }
-                }
-                .frame(width: 1080/6, height: 1080/6)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/7 (154x154)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                RedBlackGradientTemplateView(
-                    purpose: "текст текст текст текст",
-                    goal: "000.000"
-                ) {
-                    if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                        let initialOffset = Campaign.mock1.image?.offset ?? .zero
-                        let initialScale = Campaign.mock1.image?.scale ?? 1.0
-                        
-                        return AnyView(
-                            ImageTransformPreview(
-                                image: uiImage,
-                                initialOffset: initialOffset,
-                                initialScale: initialScale
-                            )
-                        )
-                    } else {
-                        return AnyView(Rectangle().fill(Color.red))
-                    }
-                }
-                .frame(width: 1080/7, height: 1080/7)
-            }
-        }
-        .padding()
-    }
-}
-
-struct ImageTransformPreview: View {
-    let image: UIImage
-    
-    @State private var offset: CGSize
-    @State private var scale: CGFloat
-    @State private var dragStartOffset: CGSize = .zero
-    
-    init(image: UIImage, initialOffset: CGSize, initialScale: CGFloat) {
-        self.image = image
-        _offset = State(initialValue: initialOffset)
-        _scale = State(initialValue: initialScale)
-    }
-    
-    var body: some View {
-        Image(uiImage: image)
-            .resizable()
-            .scaledToFill()
-            .scaleEffect(scale)
-            .offset(offset)
-            .gesture(
-                DragGesture()
-                    .onChanged { gesture in
-                        offset = CGSize(
-                            width: dragStartOffset.width + gesture.translation.width,
-                            height: dragStartOffset.height + gesture.translation.height
-                        )
-                    }
-                    .onEnded { _ in
-                        dragStartOffset = offset
-                    }
-            )
-            .gesture(
-                MagnificationGesture()
-                    .onChanged { value in
-                        scale = value
-                    }
-                    .onEnded { value in
-                        scale = max(1.0, value)
-                    }
-            )
-            .onAppear {
-                dragStartOffset = offset
-            }
+    PosterTemplatePreview { purpose, goal, photo in
+        RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
     }
 }
