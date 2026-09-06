@@ -238,25 +238,50 @@ struct ImageTransformView: View {
     let initialOffset: CGSize
     let initialScale: CGFloat
     let containerSize: CGSize
+    let referenceSize: CGSize
     let contentMode: Campaign.Image.ContentMode
     let onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
     let onTransformActivityChanged: ((Bool) -> Void)?
     let onTransformChanged: ((CGFloat, CGSize, CGSize) -> Void)?
-    
+
     @State private var offset: CGSize
     @State private var scale: CGFloat
     @State private var dragStartOffset: CGSize = .zero
     @State private var activeGestures: Set<ActiveGesture> = []
-    
+
     private var isRepositioningEnabled: Bool {
         onTransformEnd != nil
     }
-    
+
+    /// `initialOffset` is stored against the container it was captured in, which
+    /// is what `referenceSize` records. Displaying it in a container of another
+    /// size means scaling it back into that container's coordinate space — the
+    /// same conversion `DisplayImageView` performs. Applying it raw makes the
+    /// editor and the exported artwork disagree about where the photo sits
+    /// wherever the photo frame is not the size the offset was recorded against.
+    private static func scaledOffset(
+        _ offset: CGSize,
+        from referenceSize: CGSize,
+        to containerSize: CGSize
+    ) -> CGSize {
+        guard referenceSize.width > 0, referenceSize.height > 0 else { return offset }
+
+        return CGSize(
+            width: offset.width / referenceSize.width * containerSize.width,
+            height: offset.height / referenceSize.height * containerSize.height
+        )
+    }
+
+    private var resolvedInitialOffset: CGSize {
+        Self.scaledOffset(initialOffset, from: referenceSize, to: containerSize)
+    }
+
     init(
         image: UIImage,
         initialOffset: CGSize,
         initialScale: CGFloat,
         containerSize: CGSize,
+        referenceSize: CGSize = .zero,
         contentMode: Campaign.Image.ContentMode = .fill,
         onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)? = nil,
         onTransformActivityChanged: ((Bool) -> Void)? = nil,
@@ -266,11 +291,16 @@ struct ImageTransformView: View {
         self.initialOffset = initialOffset
         self.initialScale = initialScale
         self.containerSize = containerSize
+        self.referenceSize = referenceSize
         self.contentMode = contentMode
         self.onTransformEnd = onTransformEnd
         self.onTransformActivityChanged = onTransformActivityChanged
         self.onTransformChanged = onTransformChanged
-        _offset = State(initialValue: initialOffset)
+        _offset = State(
+            initialValue: Self.scaledOffset(
+                initialOffset, from: referenceSize, to: containerSize
+            )
+        )
         _scale = State(initialValue: initialScale)
     }
     
@@ -285,8 +315,8 @@ struct ImageTransformView: View {
             .scaleEffect(max(0.1, scale))
             .offset(offset)
             .clipped()
-            .onChange(of: initialOffset) { _, newOffset in
-                offset = newOffset
+            .onChange(of: initialOffset) { _, _ in
+                offset = resolvedInitialOffset
             }
             .onChange(of: initialScale) { _, newScale in
                 scale = max(0.1, newScale)
@@ -327,7 +357,7 @@ struct ImageTransformView: View {
                     )
             }
             .onAppear {
-                dragStartOffset = initialOffset
+                dragStartOffset = resolvedInitialOffset
             }
             .onDisappear {
                 activeGestures.removeAll()

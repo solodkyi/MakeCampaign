@@ -293,6 +293,7 @@ struct CampaignPosterPhotoPreview: View {
                     initialOffset: initialOffset,
                     initialScale: initialScale,
                     containerSize: geometry.size,
+                    referenceSize: referenceSize,
                     contentMode: contentMode,
                     onTransformEnd: onTransformEnd,
                     onTransformActivityChanged: { isActive in

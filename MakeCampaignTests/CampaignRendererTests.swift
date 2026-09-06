@@ -368,6 +368,43 @@ struct CampaignRendererTests {
         expectPixelsEqual(preview, artwork)
     }
 
+    @Test("Interactive resting preview matches exported artwork when the photo frame differs from the reference size")
+    func interactiveRestingPreviewMatchesExportedArtworkAcrossReferenceSizes() throws {
+        // The offset is stored against the container it was captured in. Here that
+        // container is deliberately not the size the template lays the photo out
+        // at, which is the ordinary case: thumbnails, exports and any template
+        // whose photo frame is not exactly half the poster width all hit it.
+        var campaign = try validCampaign(format: .portrait)
+        campaign.image?.scale = 1.4
+        campaign.image?.offset = CGSize(width: 9, height: -6)
+        campaign.image?.referenceSize = CGSize(width: 60, height: 60)
+        let assets = previewAssets(for: campaign)
+        let photo = try #require(assets.photo)
+        let preview = try renderRGBA(
+            CampaignPosterView(
+                campaign: campaign,
+                assets: assets,
+                allowsImageTransform: true,
+                onImageTransformEnd: { _, _, _ in }
+            ),
+            size: CGSize(width: 192, height: 240)
+        )
+        let artwork = try renderRGBA(
+            CampaignPosterArtwork(campaign: campaign, qrCode: assets.qrCode) {
+                DisplayImageView(
+                    image: photo,
+                    scale: campaign.imageScale,
+                    offset: campaign.imageOffset,
+                    referenceSize: campaign.imageReferenceSize,
+                    contentMode: campaign.image?.contentMode ?? .fill
+                )
+            },
+            size: CGSize(width: 192, height: 240)
+        )
+
+        expectPixelsEqual(preview, artwork)
+    }
+
     @Test("Pipeline prepares and snapshots exactly once")
     func pipelineRunsEachStageOnce() async throws {
         let campaign = try validCampaign()
