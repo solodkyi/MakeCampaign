@@ -85,12 +85,11 @@ struct BlueGradientTemplateView: View {
         let purposeSize = side * 0.046
 
         VStack(spacing: side * 0.02) {
-            Text(purpose)
+            Text(purpose.uppercased())
                 .campaignPosterElement(.campaignTitle)
                 .font(PosterFont.oswaldRegular.size(purposeSize))
                 .tracking(purposeSize * 0.02)
                 .lineSpacing(purposeSize * 0.16)
-                .textCase(.uppercase)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.6)

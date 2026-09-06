@@ -78,11 +78,10 @@ struct CyanMagentaGradientTemplateView: View {
                 .textCase(.uppercase)
                 .foregroundStyle(Self.magentaInk)
 
-            Text(purpose)
+            Text(purpose.uppercased())
                 .campaignPosterElement(.campaignTitle)
                 .font(PosterFont.oswaldSemiBold.size(purposeSize))
                 .lineSpacing(purposeSize * 0.04)
-                .textCase(.uppercase)
                 .foregroundStyle(Self.charcoal)
                 .multilineTextAlignment(.leading)
                 .minimumScaleFactor(0.6)

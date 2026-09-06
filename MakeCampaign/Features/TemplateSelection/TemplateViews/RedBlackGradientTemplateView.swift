@@ -90,12 +90,11 @@ struct RedBlackGradientTemplateView: View {
                 }
             }
 
-            Text(purpose)
+            Text(purpose.uppercased())
                 .campaignPosterElement(.campaignTitle)
                 .font(PosterFont.oswaldRegular.size(purposeSize))
                 .tracking(purposeSize * 0.04)
                 .lineSpacing(purposeSize * 0.16)
-                .textCase(.uppercase)
                 .foregroundStyle(Self.bone)
                 .multilineTextAlignment(.leading)
                 .minimumScaleFactor(0.6)

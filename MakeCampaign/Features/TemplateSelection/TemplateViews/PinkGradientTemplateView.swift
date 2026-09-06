@@ -74,11 +74,10 @@ struct PinkGradientTemplateView: View {
         let purposeSize = side * 0.05
 
         return VStack(alignment: .leading, spacing: side * 0.026) {
-            Text(purpose)
+            Text(purpose.uppercased())
                 .campaignPosterElement(.campaignTitle)
                 .font(PosterFont.oswaldSemiBold.size(purposeSize))
                 .lineSpacing(purposeSize * 0.1)
-                .textCase(.uppercase)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.leading)
                 .minimumScaleFactor(0.6)

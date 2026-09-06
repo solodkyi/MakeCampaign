@@ -44,11 +44,10 @@ struct CoralTealGradientTemplateView: View {
 
     private func copy(side: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: side * 0.03) {
-            Text(purpose)
+            Text(purpose.uppercased())
                 .campaignPosterElement(.campaignTitle)
                 .font(PosterFont.oswaldBold.size(side * 0.066))
                 .lineSpacing(side * 0.066 * 0.02)
-                .textCase(.uppercase)
                 .foregroundStyle(Self.ember)
                 .multilineTextAlignment(.leading)
                 .minimumScaleFactor(0.6)

@@ -28,11 +28,10 @@ struct YellowBlueGradientTemplateView: View {
             let side = geometry.size.width
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(purpose)
+                Text(purpose.uppercased())
                     .campaignPosterElement(.campaignTitle)
                     .font(PosterFont.oswaldBold.size(side * 0.068))
                     .lineSpacing(side * 0.068 * 0.02)
-                    .textCase(.uppercase)
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.leading)
                     .minimumScaleFactor(0.6)
