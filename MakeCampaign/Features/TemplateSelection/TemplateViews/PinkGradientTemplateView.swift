@@ -2,195 +2,126 @@
 //  PinkGradientTemplateView.swift
 //  MakeCampaign
 //
-//  Created by Andrii Solodkyi on 5/19/25.
-//
 
 import SwiftUI
 
+/// `pinkAngular_topCenter` — a polaroid tilted on a swept pink ground, with the
+/// title on a black slug and the goal in a yellow capsule.
+///
+/// The card, the slug and the capsule are each rotated by a different small
+/// amount; matching them would read as a mistake rather than a collage.
 struct PinkGradientTemplateView: View {
     let purpose: String
     let goal: String?
-    
+
     var viewProvider: () -> AnyView
-    
+
     init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
-            let side = geometry.size.width // Use full width instead of minimum
-            let imageHeight = side * 0.45
-            let imageWidth = side * 0.8
-            let horizontalPadding = side * 0.06
-            let verticalSpacing = side * 0.03
-            
-            let purposeFontSize = side * 0.055
-            let goalLabelFontSize = side * 0.06
-            let goalValueFontSize = side * 0.075
-            
-            ZStack {
-                AngularGradient(
-                    stops: [
-                        Gradient.Stop(color: Color(red: 255/255, green: 20/255, blue: 147/255), location: 0.0), // #FF1493 (Deep Pink)
-                        Gradient.Stop(color: Color(red: 199/255, green: 21/255, blue: 133/255), location: 0.4), // #C71585 (Medium Violet Red)
-                        Gradient.Stop(color: Color(red: 255/255, green: 192/255, blue: 203/255), location: 1.0)  // #FFC0CB (Pink)
-                    ],
-                    center: .bottomLeading,
-                    angle: .degrees(45)
-                )
-                
-                VStack(spacing: verticalSpacing) {
-                    viewProvider()
-                        .frame(width: imageWidth, height: imageHeight)
-                        .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.02))
-                        .padding(.top, verticalSpacing)
-                    
-                    Text(purpose)
-                        .campaignPosterElement(.campaignTitle)
-                        .font(.custom("Roboto-Bold", size: purposeFontSize))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(nil)
-                        .minimumScaleFactor(0.8)
-                        .padding(.horizontal, horizontalPadding)
-                    
-                    Spacer()
-                    
-                    if let goal {
-                        VStack(spacing: side * 0.008) {
-                            Text("ціль збору:")
-                                .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                .foregroundColor(.white)
-                                .minimumScaleFactor(0.8)
-                                .lineLimit(1)
-                            
-                            Text(goal)
-                                .campaignPosterElement(.target)
-                                .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                .foregroundColor(.white)
-                                .minimumScaleFactor(0.8)
-                                .lineLimit(1)
-                        }
-                        .padding(.bottom, verticalSpacing)
-                    }
+            let side = geometry.size.width
+
+            VStack(alignment: .leading, spacing: 0) {
+                polaroid(side: side)
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: .infinity)
+                    .padding(.bottom, side * 0.04)
+
+                caption(side: side)
+            }
+            .padding(side * 0.06)
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .background(background)
+        }
+    }
+
+    private var background: some View {
+        AngularGradient(
+            stops: [
+                .init(color: Self.hot, location: 0),
+                .init(color: Self.blush, location: 120.0 / 360.0),
+                .init(color: Self.wine, location: 300.0 / 360.0),
+                .init(color: Self.hot, location: 1),
+            ],
+            center: UnitPoint(x: 0.7, y: 0.2),
+            angle: .degrees(40)
+        )
+    }
+
+    private func polaroid(side: CGFloat) -> some View {
+        PosterPhoto(Rectangle(), photo: viewProvider)
+            .padding(.horizontal, side * 0.02)
+            .padding(.top, side * 0.02)
+            .padding(.bottom, side * 0.06)
+            .background(.white)
+            .aspectRatio(1.0, contentMode: .fit)
+                    .frame(maxWidth: side * 0.66, maxHeight: side * 0.66)
+            .rotationEffect(.degrees(-4))
+            .shadow(
+                color: Color(red: 60/255, green: 5/255, blue: 30/255).opacity(0.35),
+                radius: side * 0.05,
+                x: 0,
+                y: side * 0.02
+            )
+    }
+
+    private func caption(side: CGFloat) -> some View {
+        let purposeSize = side * 0.05
+
+        return VStack(alignment: .leading, spacing: side * 0.026) {
+            Text(purpose)
+                .campaignPosterElement(.campaignTitle)
+                .font(PosterFont.oswaldSemiBold.size(purposeSize))
+                .lineSpacing(purposeSize * 0.1)
+                .textCase(.uppercase)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.leading)
+                .minimumScaleFactor(0.6)
+                .padding(.horizontal, side * 0.03)
+                .padding(.vertical, side * 0.02)
+                .background(Self.tar)
+                .frame(maxWidth: side * 0.84, alignment: .leading)
+                .rotationEffect(.degrees(-1.5))
+
+            if let goal {
+                let labelSize = side * 0.022
+
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
+                    Text("ціль збору:")
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.14)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.amberInk)
+
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.064))
+                        .foregroundStyle(Self.tar)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                 }
-                .frame(width: geometry.size.width, height: geometry.size.height)
+                .padding(.horizontal, side * 0.03)
+                .padding(.vertical, side * 0.02)
+                .background(Self.lemon, in: Capsule())
             }
         }
     }
+
+    private static let hot = Color(red: 255/255, green: 79/255, blue: 147/255)
+    private static let blush = Color(red: 255/255, green: 138/255, blue: 184/255)
+    private static let wine = Color(red: 109/255, green: 11/255, blue: 56/255)
+    private static let tar = Color(red: 23/255, green: 2/255, blue: 12/255)
+    private static let lemon = Color(red: 255/255, green: 225/255, blue: 79/255)
+    private static let amberInk = Color(red: 109/255, green: 59/255, blue: 0/255)
 }
 
 #Preview {
-    ScrollView {
-        VStack(spacing: 20) {
-            VStack(spacing: 10) {
-                Text("Size: 1080/3 (360x360)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                PinkGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/3, height: 1080/3)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/4 (270x270)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                PinkGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/4, height: 1080/4)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/5 (216x216)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                PinkGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/5, height: 1080/5)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/6 (180x180)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                PinkGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/6, height: 1080/6)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/7 (154x154)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                PinkGradientTemplateView(
-                    purpose: "Для забезпечення 5 ОМБр важливою технікою", goal: "600.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/7, height: 1080/7)
-            }
-        }
-        .padding()
+    PosterTemplatePreview { purpose, goal, photo in
+        PinkGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
     }
-} 
+}
