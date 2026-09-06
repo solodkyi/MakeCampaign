@@ -1,217 +1,104 @@
+//
+//  CoralTealGradientTemplateView.swift
+//  MakeCampaign
+//
+
 import SwiftUI
 
+/// `linearCoralTeal_trailing` — flat coral ground with a deep teal disc pushed
+/// off the trailing edge, and the photo cut to an arch that opens toward it.
 struct CoralTealGradientTemplateView: View {
     let purpose: String
     let goal: String?
-    
+
     var viewProvider: () -> AnyView
-    
+
     init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
         self.purpose = purpose
         self.goal = goal
         self.viewProvider = { AnyView(viewProvider()) }
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             let side = geometry.size.width
-            let imageSize = side * 0.52
-            let padding = side * 0.045
-            
-            let purposeFontSize = side * 0.05
-            let goalLabelFontSize = side * 0.053
-            let goalValueFontSize = side * 0.068
-            
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(red: 255/255, green: 127/255, blue: 80/255),   // Coral
-                        Color(red: 0/255, green: 128/255, blue: 128/255)     // Teal
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                
-                ZStack {
-                    // Rounded image at leading side
-                    HStack {
-                        viewProvider()
-                            .frame(width: imageSize, height: imageSize)
-                            .campaignPhotoFrame(RoundedRectangle(cornerRadius: side * 0.035))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: side * 0.035)
-                                    .stroke(.white.opacity(0.25), lineWidth: side * 0.004)
-                            )
-                            .shadow(color: .black.opacity(0.25), radius: side * 0.012, x: 0, y: side * 0.006)
-                        
-                        Spacer()
-                    }
-                    .padding(.leading, padding)
-                    
-                    // Purpose and goal stacked on trailing side
-                    VStack {
-                        HStack {
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: side * 0.008) {
-                                Text(purpose)
-                                    .campaignPosterElement(.campaignTitle)
-                                    .font(.custom("Roboto-Bold", size: purposeFontSize))
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.trailing)
-                                    .lineLimit(nil)
-                                    .minimumScaleFactor(0.8)
-                                    .padding(padding * 0.8)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: side * 0.02)
-                                            .fill(.black.opacity(0.35))
-                                    )
-                                    .frame(maxWidth: side * 0.52, alignment: .trailing)
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        if let goal {
-                            HStack {
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: side * 0.006) {
-                                    Text("ціль збору:")
-                                        .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                        .foregroundColor(.white)
-                                        .minimumScaleFactor(0.8)
-                                        .lineLimit(1)
-                                    Text(goal)
-                                        .campaignPosterElement(.target)
-                                        .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                        .foregroundColor(.white)
-                                        .minimumScaleFactor(0.8)
-                                        .lineLimit(1)
-                                }
-                                .padding(padding * 0.8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: side * 0.02)
-                                        .fill(.black.opacity(0.35))
-                                )
-                                .padding(.trailing, padding)
-                            }
-                        }
-                    }
-                    .padding(padding)
+
+            HStack(spacing: 0) {
+                copy(side: side)
+                    .frame(width: geometry.size.width * 0.54, alignment: .leading)
+
+                photo(side: side, height: geometry.size.height)
+                    .frame(width: geometry.size.width * 0.46)
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .background {
+                Self.coral.overlay(alignment: .trailing) {
+                    Circle()
+                        .fill(Self.teal)
+                        .frame(width: side * 0.76, height: side * 0.76)
+                        .offset(x: side * 0.14)
                 }
-                .frame(width: geometry.size.width, height: geometry.size.height)
             }
         }
     }
+
+    private func copy(side: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: side * 0.03) {
+            Text(purpose)
+                .campaignPosterElement(.campaignTitle)
+                .font(PosterFont.oswaldBold.size(side * 0.066))
+                .lineSpacing(side * 0.066 * 0.02)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.ember)
+                .multilineTextAlignment(.leading)
+                .minimumScaleFactor(0.6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Spacer(minLength: 0)
+
+            if let goal {
+                let labelSize = side * 0.022
+
+                VStack(alignment: .leading, spacing: side * 0.006) {
+                    Text("ціль збору:")
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.2)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.rust)
+
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.08))
+                        .foregroundStyle(Self.shell)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
+        }
+        .padding(.leading, side * 0.06)
+        .padding(.trailing, side * 0.04)
+        .padding(.vertical, side * 0.06)
+    }
+
+    private func photo(side: CGFloat, height: CGFloat) -> some View {
+        let boxWidth = side * 0.46 - side * 0.06
+        let boxHeight = height - side * 0.16
+        let radius = min(boxWidth, boxHeight) / 2
+
+        return PosterPhoto(UnevenRoundedRectangle( topLeadingRadius: radius, bottomLeadingRadius: radius, bottomTrailingRadius: 0, topTrailingRadius: 0 ), photo: viewProvider)
+            .padding(.trailing, side * 0.06)
+            .padding(.vertical, side * 0.08)
+    }
+
+    private static let coral = Color(red: 255/255, green: 106/255, blue: 77/255)
+    private static let teal = Color(red: 13/255, green: 95/255, blue: 99/255)
+    private static let ember = Color(red: 42/255, green: 11/255, blue: 5/255)
+    private static let rust = Color(red: 93/255, green: 26/255, blue: 13/255)
+    private static let shell = Color(red: 255/255, green: 246/255, blue: 240/255)
 }
 
 #Preview {
-    ScrollView {
-        VStack(spacing: 20) {
-            VStack(spacing: 10) {
-                Text("Size: 1080/3 (360x360)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                CoralTealGradientTemplateView(
-                    purpose: "Комунікації та зв'язок", goal: "750.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/3, height: 1080/3)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/4 (270x270)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                CoralTealGradientTemplateView(
-                    purpose: "Комунікації та зв'язок", goal: "750.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/4, height: 1080/4)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/5 (216x216)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                CoralTealGradientTemplateView(
-                    purpose: "Комунікації та зв'язок", goal: "750.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/5, height: 1080/5)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/6 (180x180)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                CoralTealGradientTemplateView(
-                    purpose: "Комунікації та зв'язок", goal: "750.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/6, height: 1080/6)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/7 (154x154)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                CoralTealGradientTemplateView(
-                    purpose: "Комунікації та зв'язок", goal: "750.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/7, height: 1080/7)
-            }
-        }
-        .padding()
+    PosterTemplatePreview { purpose, goal, photo in
+        CoralTealGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
     }
 }
