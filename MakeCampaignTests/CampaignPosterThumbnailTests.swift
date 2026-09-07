@@ -247,6 +247,34 @@ struct CampaignPosterThumbnailTests {
         }
     }
 
+    @Test("Campaign row thumbnails render the composed poster instead of the source photo")
+    func campaignRowThumbnailMatchesPoster() async throws {
+        var campaign = try visualCampaign()
+        campaign.posterFormat = .story
+        campaign.showsQRCode = true
+        let assets = visualAssets(for: campaign)
+        let request = try #require(
+            CampaignRowPosterThumbnailRequest.make(
+                campaign: campaign,
+                assets: assets,
+                containerSize: CGSize(width: 104, height: 104),
+                displayScale: 3,
+                colorScheme: .light,
+                locale: Locale(identifier: "uk_UA")
+            )
+        )
+
+        let thumbnail = try await CampaignPosterThumbnailStore().image(for: request)
+        let expected = try render(
+            CampaignPosterView(campaign: campaign, assets: assets),
+            request: request
+        )
+
+        expectNoDifference(request.composition, .poster)
+        expectNoDifference(request.pointSize, CGSize(width: 58.5, height: 104))
+        expectPixelsEqual(thumbnail, expected)
+    }
+
     @Test("Template-only thumbnails preserve the legacy white-photo tiles")
     func templateOnlyThumbnailsMatchLegacyTiles() async throws {
         let campaign = try visualCampaign()

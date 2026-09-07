@@ -35,6 +35,29 @@ struct CampaignCreationModelTests {
         expectNoDifference(state.selectedTab, .template)
     }
 
+    @Test("Bank tab uses bank-facing copy")
+    func bankTabCopy() {
+        expectNoDifference(
+            CampaignCreationFeature.State.Tab.qr.title,
+            "Банка"
+        )
+    }
+
+    @Test("Opening the editor disables a previously enabled QR code")
+    func editorDisablesQRCode() {
+        let state = CampaignCreationFeature.State(
+            campaign: Campaign(
+                id: UUID(0),
+                status: .draft,
+                showsQRCode: true
+            ),
+            isNew: false
+        )
+
+        #expect(state.campaign.showsQRCode == false)
+        #expect(state.initialCampaign.showsQRCode == false)
+    }
+
     @Test("Poster purpose uses meaningful copy when the campaign is blank")
     func posterPurposeCopy() {
         var campaign = Campaign(id: UUID(0), status: .draft)
@@ -375,32 +398,12 @@ struct CampaignCreationReducerTests {
         }
         store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.exportButtonTapped)
+        await store.send(.shareButtonTapped)
         #expect(store.state.validation.title != nil)
         #expect(store.state.validation.photo != nil)
         #expect(store.state.validation.template != nil)
         #expect(store.state.isRendering == false)
-    }
-
-    @Test("Export options are presented before poster rendering")
-    func presentsExportOptions() async {
-        @Shared(value: []) var campaigns: IdentifiedArrayOf<Campaign>
-        let store = TestStore(
-            initialState: CampaignCreationFeature.State(
-                campaign: Campaign(id: UUID(0), status: .draft),
-                campaigns: $campaigns,
-                isNew: true
-            )
-        ) {
-            CampaignCreationFeature()
-        }
-
-        await store.send(.exportOptionsButtonTapped) {
-            $0.isExportPresented = true
-        }
-        await store.send(.exportSheetDismissed) {
-            $0.isExportPresented = false
-        }
+        #expect(store.state.exportNotice?.id == .validationFailed)
     }
 
     @Test("Photo processing failure keeps the previous campaign intact")
@@ -573,8 +576,53 @@ struct CampaignCreationReducerTests {
         #expect(store.state.photoPhase == .idle)
     }
 
-    @Test("Successful render promotes the draft and prepares sharing")
-    func successfulRenderPromotesDraft() async throws {
+    @Test("Saving renders the poster into the photo library without sharing")
+    func saveRendersIntoPhotoLibrary() async throws {
+        @Shared(value: []) var campaigns: IdentifiedArrayOf<Campaign>
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
+            UIColor.orange.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        }
+        let campaign = Campaign(
+            id: UUID(0),
+            image: .init(raw: try #require(image.pngData())),
+            template: try #require(Template.list.first),
+            purpose: "Аптечки",
+            status: .draft
+        )
+        let savedImage = LockIsolated<UIImage?>(nil)
+        let store = TestStore(
+            initialState: CampaignCreationFeature.State(
+                campaign: campaign,
+                campaigns: $campaigns,
+                isNew: true
+            )
+        ) {
+            CampaignCreationFeature()
+        } withDependencies: {
+            $0.campaignRenderer = CampaignRenderer(render: { _ in image })
+            $0.photoLibrarySaver = .init(
+                saveImage: { image in
+                    savedImage.withValue { $0 = image }
+                },
+                requestPermission: { .authorized }
+            )
+            $0.date.now = Date(timeIntervalSince1970: 1_800_000_000)
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+
+        await store.send(.saveButtonTapped)
+        await store.skipReceivedActions()
+
+        #expect(savedImage.value != nil)
+        expectNoDifference(store.state.campaign.status, .active)
+        expectNoDifference(campaigns.first?.status, .active)
+        #expect(store.state.exportNotice?.id == .saved)
+        #expect(store.state.presentation == nil)
+    }
+
+    @Test("Sharing promotes the draft and presents the system share sheet")
+    func successfulSharePromotesDraft() async throws {
         @Shared(value: []) var campaigns: IdentifiedArrayOf<Campaign>
         let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
             UIColor.orange.setFill()
@@ -602,15 +650,13 @@ struct CampaignCreationReducerTests {
         }
         store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.exportButtonTapped)
+        await store.send(.shareButtonTapped)
         await store.skipReceivedActions()
         expectNoDifference(store.state.campaign.status, .active)
         expectNoDifference(campaigns.first?.status, .active)
         #expect(store.state.sharePayload?.pngData.isEmpty == false)
-
-        await store.send(.presentationDismissed)
         guard case .share = store.state.presentation else {
-            Issue.record("Expected system sharing only after the export sheet finished dismissing")
+            Issue.record("Expected system sharing after rendering")
             return
         }
     }
@@ -641,10 +687,10 @@ struct CampaignCreationReducerTests {
         }
         store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.exportButtonTapped)
+        await store.send(.shareButtonTapped)
         await store.skipReceivedActions()
         expectNoDifference(store.state.campaign.status, .draft)
-        #expect(store.state.renderError != nil)
+        #expect(store.state.exportNotice?.id == .renderFailed)
         #expect(store.state.sharePayload == nil)
     }
 }
@@ -652,17 +698,15 @@ struct CampaignCreationReducerTests {
 @MainActor
 @Suite("Campaign creation routing")
 struct CampaignCreationRoutingTests {
-    @Test("Campaign list separates active campaigns from drafts")
-    func listSections() {
+    @Test("Campaign list shows active campaigns and drafts together")
+    func unifiedList() {
         @Shared(value: [
             Campaign(id: UUID(0), purpose: "Активний", status: .active),
             Campaign(id: UUID(1), purpose: "Чернетка", status: .draft),
         ]) var campaigns: IdentifiedArrayOf<Campaign>
-        var state = CampaignsFeature.State(campaigns: $campaigns)
+        let state = CampaignsFeature.State(campaigns: $campaigns)
 
-        expectNoDifference(state.visibleCampaigns.map(\.purpose), ["Активний"])
-        state.selectedSection = .drafts
-        expectNoDifference(state.visibleCampaigns.map(\.purpose), ["Чернетка"])
+        expectNoDifference(state.visibleCampaigns.map(\.purpose), ["Активний", "Чернетка"])
     }
 
     @Test("Create intent opens a deterministic untouched editor")

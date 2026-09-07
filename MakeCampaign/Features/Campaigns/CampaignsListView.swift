@@ -17,34 +17,19 @@ struct CampaignsView: View {
         ZStack(alignment: .bottomTrailing) {
             palette.app.ignoresSafeArea()
 
-            VStack(spacing: 8) {
-                Picker("Розділ зборів", selection: Binding(
-                    get: { store.selectedSection },
-                    set: { store.send(.sectionSelected($0)) }
-                )) {
-                    ForEach(CampaignsFeature.Section.allCases) { section in
-                        Text(section.title).tag(section)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 20)
-                .accessibilityIdentifier("campaign-section-picker")
-
-                if store.visibleCampaigns.isEmpty {
-                    CampaignsEmptyState(
-                        isDrafts: store.selectedSection == .drafts,
-                        palette: palette,
-                        onCreate: { store.send(.createCampaignTapped) }
-                    )
-                } else {
-                    CampaignsList(
-                        campaigns: store.visibleCampaigns,
-                        palette: palette,
-                        presentation: store.state.jarPresentation(for:),
-                        onEdit: { store.send(.editCampaign($0)) },
-                        onDelete: { campaignPendingDeletion = $0 }
-                    )
-                }
+            if store.visibleCampaigns.isEmpty {
+                CampaignsEmptyState(
+                    palette: palette,
+                    onCreate: { store.send(.createCampaignTapped) }
+                )
+            } else {
+                CampaignsList(
+                    campaigns: store.visibleCampaigns,
+                    palette: palette,
+                    presentation: store.state.jarPresentation(for:),
+                    onEdit: { store.send(.editCampaign($0)) },
+                    onDelete: { campaignPendingDeletion = $0 }
+                )
             }
 
             CreateCampaignButton {
@@ -158,27 +143,57 @@ private struct CampaignRow: View {
 }
 
 private struct CampaignThumbnail: View {
+    private static let size = CGSize(width: 104, height: 104)
+
     let campaign: Campaign
     let palette: CampaignsPalette
 
+    @Dependency(\.campaignPosterPreviewAssetLoader) private var previewAssetLoader
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.displayScale) private var displayScale
+    @Environment(\.locale) private var locale
+    @State private var previewAssetBuffer = CampaignPosterPreviewAssetBuffer()
+
     var body: some View {
-        Group {
-            if let imageData = campaign.image?.raw, let image = UIImage(data: imageData) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
+        ZStack {
+            palette.field
+
+            if let request = CampaignRowPosterThumbnailRequest.make(
+                campaign: campaign,
+                assets: previewAssetBuffer.assets,
+                containerSize: Self.size,
+                displayScale: displayScale,
+                colorScheme: colorScheme,
+                locale: locale
+            ) {
+                CampaignPosterThumbnail(request: request)
+                    .frame(
+                        width: request.pointSize.width,
+                        height: request.pointSize.height
+                    )
             } else {
-                ZStack {
-                    palette.field
-                    Image(systemName: "photo")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundStyle(palette.muted)
-                }
+                Image(systemName: "rectangle.portrait.on.rectangle.portrait")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(palette.muted)
             }
         }
-        .frame(width: 104, height: 104)
+        .frame(width: Self.size.width, height: Self.size.height)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .accessibilityHidden(true)
+        .task(id: assetInput) {
+            previewAssetBuffer.beginLoading(assetInput)
+            do {
+                let assets = try await previewAssetLoader.load(assetInput)
+                try Task.checkCancellation()
+                previewAssetBuffer.commit(assets, for: assetInput)
+            } catch {
+                guard !Task.isCancelled else { return }
+            }
+        }
+    }
+
+    private var assetInput: CampaignPosterPreviewAssetInput {
+        CampaignPosterPreviewAssetInput(campaign: campaign)
     }
 }
 
@@ -273,7 +288,6 @@ private struct UnavailableJarDetails: View {
 }
 
 private struct CampaignsEmptyState: View {
-    let isDrafts: Bool
     let palette: CampaignsPalette
     let onCreate: () -> Void
 
@@ -298,13 +312,13 @@ private struct CampaignsEmptyState: View {
                     .rotationEffect(.degrees(-90))
             }
 
-            Text(isDrafts ? "Чернеток ще немає" : "Активних зборів\nще немає")
+            Text("Зборів ще немає")
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(palette.foreground)
                 .padding(.top, 26)
 
-            Text(isDrafts ? "Незавершені постери з’являться тут автоматично." : "Створіть обкладинку та додайте дані збору.")
+            Text("Створіть обкладинку та додайте дані збору.")
                 .font(.system(size: 14))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(palette.muted)
@@ -381,7 +395,7 @@ private struct CampaignsListPreviewScreen: View {
             palette.app.ignoresSafeArea()
 
             if campaigns.isEmpty {
-                CampaignsEmptyState(isDrafts: false, palette: palette, onCreate: {})
+                CampaignsEmptyState(palette: palette, onCreate: {})
             } else {
                 CampaignsList(
                     campaigns: campaigns,

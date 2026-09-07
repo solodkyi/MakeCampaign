@@ -330,7 +330,7 @@ struct CampaignPosterPlaceholder: View {
         VStack(spacing: 12) {
             Image(systemName: "photo.badge.plus")
                 .font(.system(size: 42, weight: .light))
-            Text(campaign.purpose.isEmpty ? "Ваш постер з’явиться тут" : campaign.purpose)
+            Text(campaign.purpose.isEmpty ? "Фото" : campaign.purpose)
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 28)

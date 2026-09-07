@@ -30,8 +30,16 @@ final class MakeCampaignUITests: XCTestCase {
         // Given: App launches with no campaigns
         
         // Then: Empty state UI elements should be visible
-        XCTAssertTrue(app.staticTexts["Активних зборів\nще немає"].exists, "Empty state title should be visible")
+        XCTAssertTrue(app.staticTexts["Зборів ще немає"].exists, "Empty state title should be visible")
         XCTAssertTrue(app.staticTexts["Створіть обкладинку та додайте дані збору."].exists, "Empty state subtitle should be visible")
+    }
+
+    @MainActor
+    func testCampaignListHasNoStatusSectionSelector() throws {
+        XCTAssertFalse(
+            app.segmentedControls["campaign-section-picker"].exists,
+            "All campaigns should be shown in one list without a status selector"
+        )
     }
     
     @MainActor
@@ -392,7 +400,7 @@ final class MakeCampaignUITests: XCTestCase {
         launchSeededEditor()
         app.buttons["editor-tab-template"].tap()
 
-        for element in ["photo", "campaign-title", "target", "qr"] {
+        for element in ["photo", "campaign-title", "target"] {
             XCTAssertEqual(
                 app.descendants(matching: .any)
                     .matching(identifier: "poster-element-\(element)")
@@ -601,26 +609,30 @@ final class MakeCampaignUITests: XCTestCase {
     }
 
     @MainActor
-    func testPosterQRTapSelectsQRAndOpensQRTab() throws {
+    func testBankTabHidesQRCodeControls() throws {
         launchSeededEditor()
 
-        let qr = posterElement("qr")
-        XCTAssertTrue(qr.waitForExistence(timeout: 2))
-        qr.tap()
+        let bankTab = app.buttons["editor-tab-qr"]
+        XCTAssertTrue(bankTab.waitForExistence(timeout: 2))
+        XCTAssertTrue(bankTab.label.contains("Банка"))
+        bankTab.tap()
 
-        XCTAssertTrue(app.switches["campaign-qr-toggle"].waitForExistence(timeout: 2))
-        XCTAssertEqual(qr.value as? String, "Вибрано")
+        XCTAssertTrue(app.textFields["campaign-jar-link-field"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.switches["campaign-qr-toggle"].exists)
+        XCTAssertFalse(posterElement("qr").exists)
+        keepScreenshot(named: "Campaign Editor - Bank")
+    }
 
-        app.buttons["editor-tab-photo"].tap()
-        XCTAssertTrue(
-            app.descendants(matching: .any)["campaign-inline-photo-picker"]
-                .waitForExistence(timeout: 4)
-        )
-        qr.doubleTap()
+    @MainActor
+    func testBankURLUsesOptionalPlainTextPlaceholder() throws {
+        app.buttons["empty-create-campaign-button"].tap()
+        XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
 
-        XCTAssertTrue(app.switches["campaign-qr-toggle"].waitForExistence(timeout: 2))
-        XCTAssertEqual(qr.value as? String, "Вибрано")
-        keepScreenshot(named: "Campaign Editor - Selected Poster QR")
+        app.buttons["editor-tab-qr"].tap()
+        let bankURL = app.textFields["campaign-jar-link-field"]
+        XCTAssertTrue(bankURL.waitForExistence(timeout: 2))
+        XCTAssertEqual(bankURL.value as? String, "URL Банки (не обов'язково)")
+        XCTAssertFalse(app.switches["campaign-qr-toggle"].exists)
     }
 
     @MainActor
@@ -628,10 +640,21 @@ final class MakeCampaignUITests: XCTestCase {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
         app.buttons["export-options-button"].tap()
-        let export = app.buttons["save-and-share-button"]
-        XCTAssertTrue(export.waitForExistence(timeout: 2))
-        export.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["campaign-validation-summary"].waitForExistence(timeout: 2))
+        let share = app.buttons["Поділитися"]
+        XCTAssertTrue(share.waitForExistence(timeout: 2))
+        share.tap()
+        XCTAssertTrue(app.alerts["Щоб створити постер"].waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testExportOptionsSeparateSavingAndSharing() throws {
+        launchSeededEditor()
+
+        app.buttons["export-options-button"].tap()
+
+        XCTAssertTrue(app.buttons["Зберегти у Фото"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["Поділитися"].exists)
+        XCTAssertFalse(app.buttons["save-and-share-button"].exists)
     }
 
     @MainActor
@@ -643,6 +666,7 @@ final class MakeCampaignUITests: XCTestCase {
         let placeholder = app.staticTexts["campaign-poster-placeholder"]
         XCTAssertTrue(poster.waitForExistence(timeout: 2))
         XCTAssertTrue(placeholder.waitForExistence(timeout: 2))
+        XCTAssertEqual(placeholder.label, "Фото")
         XCTAssertLessThan(abs(placeholder.frame.midY - poster.frame.midY), poster.frame.height * 0.12)
     }
 
@@ -681,23 +705,15 @@ final class MakeCampaignUITests: XCTestCase {
         keepScreenshot(named: "Campaign Editor - Data")
 
         app.buttons["editor-tab-qr"].tap()
-        XCTAssertTrue(app.switches["campaign-qr-toggle"].waitForExistence(timeout: 2))
-        keepScreenshot(named: "Campaign Editor - QR")
+        XCTAssertTrue(app.textFields["campaign-jar-link-field"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.switches["campaign-qr-toggle"].exists)
+        keepScreenshot(named: "Campaign Editor - Bank")
 
         app.buttons["export-options-button"].tap()
-        XCTAssertTrue(app.staticTexts["Експортувати обкладинку"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.buttons["export-format-square"].exists)
-        XCTAssertTrue(app.buttons["export-format-portrait"].exists)
-        XCTAssertTrue(app.buttons["export-format-story"].exists)
-        let exportSheet = app.scrollViews["campaign-export-sheet"]
-        XCTAssertTrue(exportSheet.exists)
-        XCTAssertGreaterThan(
-            app.staticTexts["Експортувати обкладинку"].frame.minY,
-            exportSheet.frame.minY + 18
-        )
-        keepScreenshot(named: "Campaign Editor - Export")
-
-        app.buttons["save-and-share-button"].tap()
+        let share = app.buttons["Поділитися"]
+        XCTAssertTrue(share.waitForExistence(timeout: 2))
+        keepScreenshot(named: "Campaign Editor - Export Menu")
+        share.tap()
         let shareAction = app.cells.matching(
             NSPredicate(
                 format: "label IN %@",
@@ -726,6 +742,32 @@ final class MakeCampaignUITests: XCTestCase {
                 NSPredicate(format: "identifier BEGINSWITH 'campaign-poster-thumbnail-'")
             ).firstMatch.waitForExistence(timeout: 4)
         )
+    }
+
+    @MainActor
+    func testTemplateStripReturnsToTheSelectedTemplate() throws {
+        launchSeededEditor()
+        let strip = app.scrollViews["campaign-template-thumbnail-strip"]
+        XCTAssertTrue(strip.waitForExistence(timeout: 2))
+
+        let lastTemplate = app.buttons["template-linearCoralTeal_trailing"]
+        for _ in 0..<8 where !lastTemplate.isHittable {
+            strip.swipeLeft(velocity: .fast)
+        }
+        XCTAssertTrue(lastTemplate.isHittable)
+        lastTemplate.tap()
+        XCTAssertEqual(lastTemplate.value as? String, "Вибрано")
+
+        app.buttons["editor-tab-photo"].tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["campaign-inline-photo-picker"]
+                .waitForExistence(timeout: 4)
+        )
+        app.buttons["editor-tab-template"].tap()
+
+        XCTAssertTrue(lastTemplate.waitForExistence(timeout: 2))
+        XCTAssertTrue(lastTemplate.isHittable)
+        XCTAssertEqual(lastTemplate.value as? String, "Вибрано")
     }
 
     @MainActor
@@ -887,7 +929,7 @@ final class MakeCampaignUITests: XCTestCase {
     @MainActor
     func testEmptyStateIsAccessible() throws {
         // Then: Empty state elements should be accessible
-        let titleText = app.staticTexts["Активних зборів\nще немає"]
+        let titleText = app.staticTexts["Зборів ще немає"]
         XCTAssertTrue(titleText.exists)
     }
     

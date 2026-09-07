@@ -66,13 +66,24 @@ struct CampaignCreationView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    store.send(.exportOptionsButtonTapped)
+                Menu {
+                    Button {
+                        store.send(.saveButtonTapped)
+                    } label: {
+                        Label("Зберегти у Фото", systemImage: "square.and.arrow.down")
+                    }
+
+                    Button {
+                        store.send(.shareButtonTapped)
+                    } label: {
+                        Label("Поділитися", systemImage: "square.and.arrow.up")
+                    }
                 } label: {
                     Image(systemName: "ellipsis")
                 }
                 .accessibilityLabel("Експортувати постер")
                 .accessibilityIdentifier("export-options-button")
+                .disabled(store.isRendering)
             }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -86,14 +97,17 @@ struct CampaignCreationView: View {
             store.send(.presentationDismissed)
         }) { presentation in
             switch presentation {
-            case .export:
-                exportSheet
-                    .presentationDetents([.medium])
-                    .presentationDragIndicator(.visible)
             case let .share(payload):
                 CampaignShareSheet(payload: payload)
                     .accessibilityIdentifier("campaign-system-share")
             }
+        }
+        .alert(item: $store.exportNotice) { notice in
+            Alert(
+                title: Text(notice.title),
+                message: notice.message.map(Text.init),
+                dismissButton: .default(Text("Гаразд"))
+            )
         }
         .task(id: posterAssetInput) {
             await preparePreviewAssets(for: posterAssetInput)
@@ -408,45 +422,54 @@ struct CampaignCreationView: View {
         if let requests = templateThumbnailBatch?.retainedRequests(
             matching: currentRequests
         ) {
-            ScrollView(.horizontal) {
-                LazyHStack(spacing: 10) {
-                    ForEach(requests, id: \.template.id) { request in
-                        let template = request.template
-                        Button {
-                            store.send(.templateSelected(template))
-                        } label: {
-                            VStack(alignment: .leading, spacing: 7) {
-                                CampaignPosterThumbnail(request: request)
-                                    .frame(width: 84, height: 84)
-                                Text(template.name)
-                                    .font(.caption2.weight(.semibold))
-                                    .lineLimit(1)
-                                    .frame(width: 84, alignment: .leading)
-                            }
-                            .padding(6)
-                            .background(
-                                store.campaign.template?.id == template.id ? accent.opacity(0.14) : fieldBackground,
-                                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            )
-                            .overlay {
-                                if store.campaign.template?.id == template.id {
-                                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                        .stroke(accent, lineWidth: 2)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 10) {
+                        ForEach(requests, id: \.template.id) { request in
+                            let template = request.template
+                            Button {
+                                store.send(.templateSelected(template))
+                            } label: {
+                                VStack(alignment: .leading, spacing: 7) {
+                                    CampaignPosterThumbnail(request: request)
+                                        .frame(width: 84, height: 84)
+                                    Text(template.name)
+                                        .font(.caption2.weight(.semibold))
+                                        .lineLimit(1)
+                                        .frame(width: 84, alignment: .leading)
+                                }
+                                .padding(6)
+                                .background(
+                                    store.campaign.template?.id == template.id ? accent.opacity(0.14) : fieldBackground,
+                                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                )
+                                .overlay {
+                                    if store.campaign.template?.id == template.id {
+                                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                            .stroke(accent, lineWidth: 2)
+                                    }
                                 }
                             }
+                            .id(template.id)
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("template-\(template.id)")
+                            .accessibilityValue(
+                                store.campaign.template?.id == template.id
+                                    ? "Вибрано"
+                                    : ""
+                            )
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("template-\(template.id)")
-                        .accessibilityValue(
-                            store.campaign.template?.id == template.id
-                                ? "Вибрано"
-                                : ""
-                        )
                     }
                 }
+                .scrollIndicators(.hidden)
+                .accessibilityIdentifier("campaign-template-thumbnail-strip")
+                .onAppear {
+                    scrollToSelectedTemplate(using: proxy, animated: false)
+                }
+                .onChange(of: store.campaign.template?.id) { _, _ in
+                    scrollToSelectedTemplate(using: proxy, animated: true)
+                }
             }
-            .scrollIndicators(.hidden)
-            .accessibilityIdentifier("campaign-template-thumbnail-strip")
         } else {
             HStack(spacing: 8) {
                 ProgressView()
@@ -482,123 +505,35 @@ struct CampaignCreationView: View {
         }
     }
 
+    private func scrollToSelectedTemplate(
+        using proxy: ScrollViewProxy,
+        animated: Bool
+    ) {
+        guard let templateID = store.campaign.template?.id else { return }
+        if animated {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                proxy.scrollTo(templateID, anchor: .center)
+            }
+        } else {
+            proxy.scrollTo(templateID, anchor: .center)
+        }
+    }
+
     private var qrPanel: some View {
         VStack(alignment: .leading, spacing: 13) {
             labelledField("Посилання на банку", error: store.validation.qrLink) {
-                TextField("https://send.monobank.ua/jar/…", text: $store.campaign.jarURLString)
+                TextField("URL Банки (не обов'язково)", text: $store.campaign.jarURLString)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .accessibilityIdentifier("campaign-jar-link-field")
             }
-            Toggle(isOn: $store.campaign.showsQRCode) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Показувати QR").font(.subheadline.weight(.semibold))
-                    Text("На постері та в експорті")
-                        .font(.caption2)
-                        .foregroundStyle(secondaryText)
-                }
-            }
-            .tint(accent)
-            .accessibilityIdentifier("campaign-qr-toggle")
             labelledField("Підпис", error: nil) {
                 TextField("Підтримайте збір", text: $store.campaign.shareCaption, axis: .vertical)
                     .lineLimit(2...4)
                     .accessibilityIdentifier("campaign-caption-field")
             }
         }
-    }
-
-    private var exportSheet: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("Експортувати обкладинку")
-                    .font(.title2.bold())
-
-                HStack(spacing: 9) {
-                    exportFormatOption(.square, title: "1080×1080", subtitle: "Допис")
-                    exportFormatOption(.portrait, title: "1080×1350", subtitle: "Портрет")
-                    exportFormatOption(.story, title: "1080×1920", subtitle: "Історія")
-                }
-
-                Text("Обкладинка збереже якість фото, ціль і QR-код банки.")
-                    .font(.footnote)
-                    .foregroundStyle(secondaryText)
-
-                validationSummary
-
-                Button {
-                    store.send(.exportButtonTapped)
-                } label: {
-                    HStack(spacing: 10) {
-                        if store.isRendering { ProgressView().tint(.white) }
-                        Image(systemName: "square.and.arrow.up")
-                        Text(store.isRendering ? "Створюємо постер…" : "Зберегти й поширити")
-                    }
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 56)
-                    .background(accent, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-                }
-                .disabled(store.isRendering)
-                .accessibilityIdentifier("save-and-share-button")
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 24)
-            .padding(.bottom, 24)
-        }
-        .scrollIndicators(.hidden)
-        .accessibilityIdentifier("campaign-export-sheet")
-    }
-
-    @ViewBuilder
-    private var validationSummary: some View {
-        let messages = [
-            store.validation.title,
-            store.validation.photo,
-            store.validation.template,
-            store.validation.qrLink,
-        ].compactMap { $0 }
-        if !messages.isEmpty {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Щоб створити постер:").font(.subheadline.bold())
-                ForEach(messages, id: \.self) { message in
-                    Text("• \(message)").font(.subheadline)
-                }
-            }
-            .foregroundStyle(.red)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityIdentifier("campaign-validation-summary")
-        } else if let error = store.renderError {
-            errorText(error).accessibilityIdentifier("campaign-render-error")
-        }
-    }
-
-    private func exportFormatOption(
-        _ format: Campaign.PosterFormat,
-        title: String,
-        subtitle: String
-    ) -> some View {
-        Button {
-            store.send(.binding(.set(\.campaign.posterFormat, format)))
-        } label: {
-            VStack(spacing: 6) {
-                Text(title).font(.caption2.monospaced().weight(.bold))
-                Text(subtitle).font(.caption2)
-            }
-            .foregroundStyle(store.campaign.posterFormat == format ? primaryText : secondaryText)
-            .frame(maxWidth: .infinity, minHeight: 70)
-            .background(
-                store.campaign.posterFormat == format ? accent.opacity(0.13) : fieldBackground,
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(store.campaign.posterFormat == format ? accent : .clear, lineWidth: 2)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("export-format-\(format.rawValue)")
     }
 
     private func loadSelectedPhoto() async {
@@ -934,7 +869,7 @@ private struct CampaignTargetTextField: UIViewRepresentable {
         inputToolbar.sizeToFit()
         let doneButton = UIBarButtonItem(
             title: "Готово",
-            style: .done,
+            style: .prominent,
             target: context.coordinator,
             action: #selector(Coordinator.submit)
         )

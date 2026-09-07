@@ -107,6 +107,33 @@ struct CampaignPosterThumbnailRequest: @unchecked Sendable {
     }
 }
 
+enum CampaignRowPosterThumbnailRequest {
+    static func make(
+        campaign: Campaign,
+        assets: CampaignPosterPreviewAssets,
+        containerSize: CGSize,
+        displayScale: CGFloat,
+        colorScheme: ColorScheme,
+        locale: Locale
+    ) -> CampaignPosterThumbnailRequest? {
+        guard let template = campaign.template else { return nil }
+
+        return CampaignPosterThumbnailRequest(
+            campaign: campaign,
+            template: template,
+            composition: .poster,
+            assets: assets,
+            pointSize: CampaignPosterLayout.previewSize(
+                for: campaign.posterFormat,
+                in: containerSize
+            ),
+            displayScale: displayScale,
+            colorScheme: colorScheme,
+            locale: locale
+        )
+    }
+}
+
 struct CampaignPosterThumbnailBatch {
     let requests: [CampaignPosterThumbnailRequest]
     private let refreshKeys: [CampaignPosterThumbnailRefreshKey]
