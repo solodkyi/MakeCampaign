@@ -750,8 +750,13 @@ final class MakeCampaignUITests: XCTestCase {
         let strip = app.scrollViews["campaign-template-thumbnail-strip"]
         XCTAssertTrue(strip.waitForExistence(timeout: 2))
 
-        let lastTemplate = app.buttons["template-b_linearCoralTeal_trailing"]
-        for _ in 0..<8 where !lastTemplate.isHittable {
+        // Deliberately the final entry in Template.list: this loop only ever
+        // swipes one way, so a target anywhere else can be scrolled straight
+        // past and never come back into view. The end of the strip is also the
+        // furthest the selection can be from where it starts, which is the
+        // scroll position this test is about restoring.
+        let lastTemplate = app.buttons["template-a_linearCoralTeal_trailing"]
+        for _ in 0..<24 where !lastTemplate.isHittable {
             strip.swipeLeft(velocity: .fast)
         }
         XCTAssertTrue(lastTemplate.isHittable)
