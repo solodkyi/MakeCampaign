@@ -222,7 +222,12 @@ extension Template {
         .init(name: "A2", series: .a, gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
         .init(name: "A3", series: .a, gradient: .linearPurple, imagePlacement: .topCenter),
         .init(name: "A4", series: .a, gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
-        .init(name: "A5", series: .a, gradient: .pinkAngular, imagePlacement: .topCenter)
+        .init(name: "A5", series: .a, gradient: .pinkAngular, imagePlacement: .topCenter),
+        .init(name: "A6", series: .a, gradient: .tealPurpleRadial, imagePlacement: .roundedTrailing),
+        .init(name: "A7", series: .a, gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
+        .init(name: "A8", series: .a, gradient: .angularYellowBlue, imagePlacement: .trailing),
+        .init(name: "A9", series: .a, gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
+        .init(name: "A10", series: .a, gradient: .radialRedBlack, imagePlacement: .topToEdge)
     ]
 }
 
