@@ -37,3 +37,28 @@ struct PosterRule: Shape {
         return path
     }
 }
+
+/// A banner with a chevron bitten out of one or both vertical edges.
+struct PosterNotchedBanner: Shape {
+    var notch: CGFloat
+    var notchesLeading = false
+    var notchesTrailing = true
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        if notchesTrailing {
+            path.addLine(to: CGPoint(x: rect.maxX - notch, y: rect.midY))
+        }
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        if notchesLeading {
+            path.addLine(to: CGPoint(x: rect.minX + notch, y: rect.midY))
+        }
+        path.closeSubpath()
+
+        return path
+    }
+}

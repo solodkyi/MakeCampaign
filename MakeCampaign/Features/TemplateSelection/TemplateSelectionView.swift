@@ -217,7 +217,8 @@ extension Template {
         .init(name: "12", series: .b, gradient: .linearEmeraldBlack, imagePlacement: .hexagonTrailing),
         .init(name: "13", series: .b, gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
         .init(name: "14", series: .b, gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
-        .init(name: "15", series: .b, gradient: .linearCoralTeal, imagePlacement: .trailing)
+        .init(name: "15", series: .b, gradient: .linearCoralTeal, imagePlacement: .trailing),
+        .init(name: "A1", series: .a, gradient: .blueLinear, imagePlacement: .center)
     ]
 }
 

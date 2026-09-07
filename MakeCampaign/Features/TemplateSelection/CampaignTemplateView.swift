@@ -193,6 +193,10 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
         goal: String?
     ) -> some View {
         switch (template.gradient, template.imagePlacement) {
+        case (.blueLinear, .center):
+            PosterA01TemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
         default: EmptyView()
         }
     }
