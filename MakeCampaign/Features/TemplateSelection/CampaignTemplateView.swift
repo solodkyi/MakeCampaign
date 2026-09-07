@@ -102,9 +102,24 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
     @ViewBuilder
     private func templateView(forTemplate template: Template) -> some View {
         let purpose = campaign.posterPurpose
-        
+
         let goal = campaign.target?.formattedAmount.appendingCurrency
-        
+
+        switch template.series {
+        case .b:
+            seriesB(template, purpose: purpose, goal: goal)
+        case .a:
+            seriesA(template, purpose: purpose, goal: goal)
+        }
+    }
+
+    /// Набір B — свіжий погляд.
+    @ViewBuilder
+    private func seriesB(
+        _ template: Template,
+        purpose: String,
+        goal: String?
+    ) -> some View {
         switch (template.gradient, template.imagePlacement) {
         case (.linearPurple, .topCenter):
             PurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
@@ -169,7 +184,19 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
         default: EmptyView()
         }
     }
-    
+
+    /// Набір A — перша ітерація.
+    @ViewBuilder
+    private func seriesA(
+        _ template: Template,
+        purpose: String,
+        goal: String?
+    ) -> some View {
+        switch (template.gradient, template.imagePlacement) {
+        default: EmptyView()
+        }
+    }
+
     @ViewBuilder
     private func content() -> some View {
         photoContent.campaignPosterElement(.photo)

@@ -750,7 +750,7 @@ final class MakeCampaignUITests: XCTestCase {
         let strip = app.scrollViews["campaign-template-thumbnail-strip"]
         XCTAssertTrue(strip.waitForExistence(timeout: 2))
 
-        let lastTemplate = app.buttons["template-linearCoralTeal_trailing"]
+        let lastTemplate = app.buttons["template-b_linearCoralTeal_trailing"]
         for _ in 0..<8 where !lastTemplate.isHittable {
             strip.swipeLeft(velocity: .fast)
         }

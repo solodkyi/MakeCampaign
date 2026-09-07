@@ -203,21 +203,21 @@ struct TemplateItemView: View {
 
 extension Template {
     static let list: IdentifiedArrayOf<Template> = [
-        .init(name: "1", gradient: .blueLinear, imagePlacement: .center),
-        .init(name: "2", gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
-        .init(name: "3", gradient: .linearPurple, imagePlacement: .topCenter),
-        .init(name: "4", gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
-        .init(name: "5", gradient: .pinkAngular, imagePlacement: .topCenter),
-        .init(name: "6", gradient: .tealPurpleRadial, imagePlacement: .roundedTrailing),
-        .init(name: "7", gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
-        .init(name: "8", gradient: .angularYellowBlue, imagePlacement: .trailing),
-        .init(name: "9", gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
-        .init(name: "10", gradient: .radialRedBlack, imagePlacement: .topToEdge),
-        .init(name: "11", gradient: .linearIndigoOrange, imagePlacement: .trailing),
-        .init(name: "12", gradient: .linearEmeraldBlack, imagePlacement: .hexagonTrailing),
-        .init(name: "13", gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
-        .init(name: "14", gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
-        .init(name: "15", gradient: .linearCoralTeal, imagePlacement: .trailing)
+        .init(name: "1", series: .b, gradient: .blueLinear, imagePlacement: .center),
+        .init(name: "2", series: .b, gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
+        .init(name: "3", series: .b, gradient: .linearPurple, imagePlacement: .topCenter),
+        .init(name: "4", series: .b, gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
+        .init(name: "5", series: .b, gradient: .pinkAngular, imagePlacement: .topCenter),
+        .init(name: "6", series: .b, gradient: .tealPurpleRadial, imagePlacement: .roundedTrailing),
+        .init(name: "7", series: .b, gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
+        .init(name: "8", series: .b, gradient: .angularYellowBlue, imagePlacement: .trailing),
+        .init(name: "9", series: .b, gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
+        .init(name: "10", series: .b, gradient: .radialRedBlack, imagePlacement: .topToEdge),
+        .init(name: "11", series: .b, gradient: .linearIndigoOrange, imagePlacement: .trailing),
+        .init(name: "12", series: .b, gradient: .linearEmeraldBlack, imagePlacement: .hexagonTrailing),
+        .init(name: "13", series: .b, gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
+        .init(name: "14", series: .b, gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
+        .init(name: "15", series: .b, gradient: .linearCoralTeal, imagePlacement: .trailing)
     ]
 }
 
