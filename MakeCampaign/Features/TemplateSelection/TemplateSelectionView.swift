@@ -227,7 +227,12 @@ extension Template {
         .init(name: "A7", series: .a, gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
         .init(name: "A8", series: .a, gradient: .angularYellowBlue, imagePlacement: .trailing),
         .init(name: "A9", series: .a, gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
-        .init(name: "A10", series: .a, gradient: .radialRedBlack, imagePlacement: .topToEdge)
+        .init(name: "A10", series: .a, gradient: .radialRedBlack, imagePlacement: .topToEdge),
+        .init(name: "A11", series: .a, gradient: .linearIndigoOrange, imagePlacement: .trailing),
+        .init(name: "A12", series: .a, gradient: .linearEmeraldBlack, imagePlacement: .hexagonTrailing),
+        .init(name: "A13", series: .a, gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
+        .init(name: "A14", series: .a, gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
+        .init(name: "A15", series: .a, gradient: .linearCoralTeal, imagePlacement: .trailing)
     ]
 }
 
