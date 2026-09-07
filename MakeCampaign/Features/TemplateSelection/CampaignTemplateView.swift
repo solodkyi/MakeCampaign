@@ -197,6 +197,22 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
             PosterA01TemplateView(purpose: purpose, goal: goal, viewProvider: {
                 content()
             })
+        case (.cyanMagentaRadial, .squareTrailing):
+            PosterA02TemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.linearPurple, .topCenter):
+            PosterA03TemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.goldBlackLinear, .hexagonTrailing):
+            PosterA04TemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
+        case (.pinkAngular, .topCenter):
+            PosterA05TemplateView(purpose: purpose, goal: goal, viewProvider: {
+                content()
+            })
         default: EmptyView()
         }
     }

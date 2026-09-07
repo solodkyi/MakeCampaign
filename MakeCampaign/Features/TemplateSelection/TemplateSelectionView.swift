@@ -218,7 +218,11 @@ extension Template {
         .init(name: "13", series: .b, gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
         .init(name: "14", series: .b, gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
         .init(name: "15", series: .b, gradient: .linearCoralTeal, imagePlacement: .trailing),
-        .init(name: "A1", series: .a, gradient: .blueLinear, imagePlacement: .center)
+        .init(name: "A1", series: .a, gradient: .blueLinear, imagePlacement: .center),
+        .init(name: "A2", series: .a, gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
+        .init(name: "A3", series: .a, gradient: .linearPurple, imagePlacement: .topCenter),
+        .init(name: "A4", series: .a, gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
+        .init(name: "A5", series: .a, gradient: .pinkAngular, imagePlacement: .topCenter)
     ]
 }
 
