@@ -245,7 +245,7 @@ private struct CampaignFundingSummary: View {
                 VStack(alignment: .leading, spacing: 0) {
                     CollectedAmount(
                         collected: collected,
-                        target: campaign.target,
+                        target: campaign.effectiveTarget,
                         palette: palette
                     )
 
@@ -267,8 +267,8 @@ private struct CampaignFundingSummary: View {
         case .loading, .failed:
             awaitingJar(message: presentation.message)
         case .noLink:
-            if let target = campaign.target {
-                TargetAmount(target: target, palette: palette)
+            if let target = campaign.effectiveTarget {
+                TargetAmount(target: target, label: campaign.targetLabel, palette: palette)
             }
         }
     }
@@ -277,8 +277,8 @@ private struct CampaignFundingSummary: View {
     /// банки й коли збір востаннє оновлювався.
     private func awaitingJar(message: String) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            if let target = campaign.target {
-                TargetAmount(target: target, palette: palette)
+            if let target = campaign.effectiveTarget {
+                TargetAmount(target: target, label: campaign.targetLabel, palette: palette)
             }
 
             Text(message)
@@ -324,11 +324,12 @@ private struct CollectedAmount: View {
 /// Ціль без банки — єдина сума, яку збір знає, тож вона й стоїть великою.
 private struct TargetAmount: View {
     let target: Double
+    let label: String
     let palette: CampaignsPalette
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("Ціль")
+            Text(label)
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .tracking(1)
                 .textCase(.uppercase)

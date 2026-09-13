@@ -422,6 +422,25 @@ struct CampaignFundingTests {
         #expect(funding.goal == 50_000.formattedAmount.appendingCurrency)
         #expect(funding.supportingGoal == nil)
     }
+
+    @Test("The list names a supporting jar's figure as the author's own")
+    func listLabelsASupportingJarsFigure() {
+        let supporting = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000D001")!,
+            target: 1_000_000,
+            isSupportingJar: true,
+            personalTarget: 50_000
+        )
+        let ordinary = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000D002")!,
+            target: 200_000
+        )
+
+        #expect(supporting.targetLabel == "Моя ціль")
+        #expect(supporting.effectiveTarget == 50_000)
+        #expect(ordinary.targetLabel == "Ціль")
+        #expect(ordinary.effectiveTarget == 200_000)
+    }
 }
 
 @Suite("Template catalogue")

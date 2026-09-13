@@ -211,6 +211,11 @@ extension Campaign {
         isSupportingJar ? personalTarget : target
     }
 
+    /// Як назвати суму, якою міряють збір: у допоміжної банки вона своя.
+    var targetLabel: String {
+        isSupportingJar && personalTarget != nil ? "Моя ціль" : "Ціль"
+    }
+
     /// Частка досягнутої цілі від нуля до одиниці.
     ///
     /// Плакат ніколи не малює смужку, довшу за доріжку, тож частка обрізана
