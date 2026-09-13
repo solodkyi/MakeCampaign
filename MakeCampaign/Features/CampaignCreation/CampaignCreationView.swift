@@ -580,7 +580,10 @@ struct CampaignCreationView: View {
             }
         }
         .onAppear {
+            // Вкладка приймає обидві цілі, тож підхоплюємо кожен відкладений
+            // фокус, який тут живе, — інакше «Моя ціль» ніколи б не спрацювала.
             activatePendingInputFocus(matching: .target)
+            activatePendingInputFocus(matching: .personalTarget)
         }
     }
 
@@ -615,7 +618,12 @@ struct CampaignCreationView: View {
             store.send(.tabSelected(.photo))
 
         case .campaignTitle, .target:
-            let input: EditorInput = element == .campaignTitle ? .campaignTitle : .target
+            // `.target` на плакаті — це провідна цифра, а в допоміжної банки
+            // нею є власна ціль автора. Тож і фокус має падати на «Моя ціль»,
+            // а не на «Ціль збору», якої торкались зовсім не тут.
+            let input: EditorInput = element == .campaignTitle
+                ? .campaignTitle
+                : (store.campaign.leadsWithPersonalTarget ? .personalTarget : .target)
             if activatesInput {
                 pendingInputFocus = input
             } else {
