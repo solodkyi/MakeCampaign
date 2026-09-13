@@ -359,6 +359,69 @@ struct CampaignFundingTests {
         #expect(campaign.personalTarget == 50_000)
         #expect(campaign.formattedPersonalTarget == 50_000.formattedAmount)
     }
+
+    @Test("An ordinary campaign keeps the plain goal label")
+    func ordinaryCampaignKeepsThePlainLabel() {
+        let funding = CampaignPosterFunding(
+            campaign: Campaign(
+                id: UUID(uuidString: "00000000-0000-0000-0000-00000000B001")!,
+                target: 200_000
+            )
+        )
+
+        #expect(funding.goalLabel == "ціль збору:")
+        #expect(funding.supportingGoal == nil)
+        #expect(funding.goal == 200_000.formattedAmount.appendingCurrency)
+    }
+
+    @Test("A supporting jar leads with the personal goal and names the general one")
+    func supportingJarLeadsWithThePersonalGoal() {
+        let funding = CampaignPosterFunding(
+            campaign: Campaign(
+                id: UUID(uuidString: "00000000-0000-0000-0000-00000000B002")!,
+                target: 1_000_000,
+                isSupportingJar: true,
+                personalTarget: 50_000
+            )
+        )
+
+        #expect(funding.goalLabel == "моя ціль:")
+        #expect(funding.goal == 50_000.formattedAmount.appendingCurrency)
+        #expect(
+            funding.supportingGoal
+                == "із загальної цілі \(1_000_000.formattedAmount.appendingCurrency)"
+        )
+    }
+
+    @Test("A supporting jar without a personal goal reads as an ordinary collection")
+    func supportingJarWithoutPersonalGoalFallsBack() {
+        let funding = CampaignPosterFunding(
+            campaign: Campaign(
+                id: UUID(uuidString: "00000000-0000-0000-0000-00000000B003")!,
+                target: 1_000_000,
+                isSupportingJar: true
+            )
+        )
+
+        #expect(funding.goalLabel == "ціль збору:")
+        #expect(funding.goal == 1_000_000.formattedAmount.appendingCurrency)
+        #expect(funding.supportingGoal == nil)
+    }
+
+    @Test("A supporting jar without a general goal shows no second line")
+    func supportingJarWithoutGeneralGoalShowsNoSecondLine() {
+        let funding = CampaignPosterFunding(
+            campaign: Campaign(
+                id: UUID(uuidString: "00000000-0000-0000-0000-00000000B004")!,
+                isSupportingJar: true,
+                personalTarget: 50_000
+            )
+        )
+
+        #expect(funding.goalLabel == "моя ціль:")
+        #expect(funding.goal == 50_000.formattedAmount.appendingCurrency)
+        #expect(funding.supportingGoal == nil)
+    }
 }
 
 @Suite("Template catalogue")

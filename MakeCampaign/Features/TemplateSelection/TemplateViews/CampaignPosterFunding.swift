@@ -9,6 +9,13 @@ struct CampaignPosterFunding: Equatable, Sendable {
     /// Відформатована ціль збору, якщо її задано.
     let goal: String?
 
+    /// Підпис над сумою. Допоміжна банка веде власною ціллю, тож і назвати її
+    /// треба інакше, ніж звичайний збір.
+    let goalLabel: String
+
+    /// Загальна ціль чужої збірки — рядок під сумою, лише в допоміжної банки.
+    let supportingGoal: String?
+
     /// Відформатована зібрана сума. Є лише тоді, коли банку підключено
     /// й дані вже прийшли.
     let collected: String?
@@ -22,18 +29,56 @@ struct CampaignPosterFunding: Equatable, Sendable {
 
     /// Плакат без жодних сум — так виглядає чернетка, у якій ще нічого не
     /// заповнили.
-    static let none = Self(goal: nil, collected: nil, fraction: nil, isFinished: false)
+    static let none = Self(
+        goal: nil,
+        goalLabel: Self.collectionGoalLabel,
+        supportingGoal: nil,
+        collected: nil,
+        fraction: nil,
+        isFinished: false
+    )
 
     init(goal: String?, collected: String?, fraction: Double?, isFinished: Bool) {
+        self.init(
+            goal: goal,
+            goalLabel: Self.collectionGoalLabel,
+            supportingGoal: nil,
+            collected: collected,
+            fraction: fraction,
+            isFinished: isFinished
+        )
+    }
+
+    init(
+        goal: String?,
+        goalLabel: String,
+        supportingGoal: String?,
+        collected: String?,
+        fraction: Double?,
+        isFinished: Bool
+    ) {
         self.goal = goal
+        self.goalLabel = goalLabel
+        self.supportingGoal = supportingGoal
         self.collected = collected
         self.fraction = fraction
         self.isFinished = isFinished
     }
 
     init(campaign: Campaign) {
+        // Веде та ціль, якою міряють збір. Допоміжна банка без власної цілі
+        // ще нічим не відрізняється від звичайного збору, тож так і виглядає.
+        let leadsWithPersonalGoal = campaign.isSupportingJar && campaign.personalTarget != nil
+        let leadingGoal = leadsWithPersonalGoal ? campaign.personalTarget : campaign.target
+
         self.init(
-            goal: campaign.target?.formattedAmount.appendingCurrency,
+            goal: leadingGoal?.formattedAmount.appendingCurrency,
+            goalLabel: leadsWithPersonalGoal
+                ? Self.personalGoalLabel
+                : Self.collectionGoalLabel,
+            supportingGoal: leadsWithPersonalGoal
+                ? campaign.target.map { "із загальної цілі \($0.formattedAmount.appendingCurrency)" }
+                : nil,
             collected: campaign.collected?.formattedAmount.appendingCurrency,
             fraction: campaign.fundedFraction,
             isFinished: campaign.isFinished
@@ -42,6 +87,12 @@ struct CampaignPosterFunding: Equatable, Sendable {
 
     /// Підпис, який шаблон ставить над завершеним збором.
     static let finishedLabel = "Зібрано!"
+
+    /// Підпис звичайного збору.
+    static let collectionGoalLabel = "ціль збору:"
+
+    /// Підпис допоміжної банки.
+    static let personalGoalLabel = "моя ціль:"
 
     /// Смужку поступу видно лише в незавершеному зборі: у завершеному її місце
     /// займає власний фінальний підпис шаблону.
