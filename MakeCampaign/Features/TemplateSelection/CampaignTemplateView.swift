@@ -83,15 +83,20 @@ private struct InteractiveCampaignTemplateView: View {
 struct CampaignTemplateArtwork<PhotoContent: View>: View {
     let campaign: Campaign
     let template: Template
+    /// Тести малюють окремі грошові стани, яких збір виразити не може, —
+    /// тоді стан передають напряму.
+    let funding: CampaignPosterFunding?
     private let photoContent: PhotoContent
 
     init(
         campaign: Campaign,
         template: Template,
+        funding: CampaignPosterFunding? = nil,
         @ViewBuilder photoContent: () -> PhotoContent
     ) {
         self.campaign = campaign
         self.template = template
+        self.funding = funding
         self.photoContent = photoContent()
     }
 
@@ -103,7 +108,7 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
     private func templateView(forTemplate template: Template) -> some View {
         let purpose = campaign.posterPurpose
 
-        let funding = CampaignPosterFunding(campaign: campaign)
+        let funding = self.funding ?? CampaignPosterFunding(campaign: campaign)
 
         switch template.series {
         case .b:

@@ -108,7 +108,7 @@ struct GreenGradientTemplateView: View {
         return VStack(alignment: .leading, spacing: side * 0.008) {
             Spacer(minLength: 0)
 
-            Text("ціль збору:")
+            Text(funding.goalLabel)
                 .font(PosterFont.plexMonoRegular.size(labelSize))
                 .tracking(labelSize * 0.16)
                 .textCase(.uppercase)

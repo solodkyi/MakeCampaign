@@ -104,6 +104,38 @@ struct CampaignPosterFundingRenderTests {
         }
     }
 
+    @Test("Every template draws the label the funding state gives it")
+    func everyTemplateHonoursTheGoalLabel() throws {
+        // Той самий шаблон із тією ж сумою, але іншим підписом, мусить дати
+        // інший плакат — інакше підпис у ньому зашитий намертво.
+        let collection = CampaignPosterFunding(
+            goal: "50 000 грн.",
+            goalLabel: CampaignPosterFunding.collectionGoalLabel,
+            supportingGoal: nil,
+            collected: nil,
+            fraction: nil,
+            isFinished: false
+        )
+        let personal = CampaignPosterFunding(
+            goal: "50 000 грн.",
+            goalLabel: CampaignPosterFunding.personalGoalLabel,
+            supportingGoal: nil,
+            collected: nil,
+            fraction: nil,
+            isFinished: false
+        )
+
+        for template in Self.everyTemplate {
+            let plain = try #require(Self.render(template: template, funding: collection)?.pngData())
+            let labelled = try #require(Self.render(template: template, funding: personal)?.pngData())
+
+            #expect(
+                plain != labelled,
+                "Шаблон \(template.id) не бере підпис цілі зі стану збору"
+            )
+        }
+    }
+
     private static func render(
         template: Template,
         funding: CampaignPosterFunding
@@ -132,7 +164,8 @@ private struct CampaignTemplateArtworkProbe: View {
     var body: some View {
         CampaignTemplateArtwork(
             campaign: campaign,
-            template: template
+            template: template,
+            funding: funding
         ) {
             Image(uiImage: photo)
                 .resizable()

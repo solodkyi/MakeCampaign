@@ -91,7 +91,7 @@ struct YellowBlueGradientTemplateView: View {
         let labelSize = side * 0.031
 
         return VStack(alignment: .leading, spacing: side * 0.006) {
-            Text("ціль збору:")
+            Text(funding.goalLabel)
                 .font(PosterFont.plexMonoRegular.size(labelSize))
                 .tracking(labelSize * 0.18)
                 .textCase(.uppercase)

@@ -30,7 +30,7 @@ struct PosterA02TemplateView: View {
             let labelSize = side * 0.031
 
             VStack(alignment: .leading, spacing: 0) {
-                Text("ціль збору:")
+                Text(funding.goalLabel)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
                     .tracking(labelSize * 0.3)
                     .textCase(.uppercase)

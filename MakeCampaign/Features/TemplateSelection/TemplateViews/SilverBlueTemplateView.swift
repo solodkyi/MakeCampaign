@@ -97,7 +97,7 @@ struct SilverBlueTemplateView: View {
 
         return ruled(side: side) {
             VStack(spacing: side * 0.018) {
-                row(label: "ціль збору:", labelSize: labelSize, side: side) {
+                row(label: funding.goalLabel, labelSize: labelSize, side: side) {
                     Text(goal)
                         .campaignPosterElement(.target)
                         .font(PosterFont.plexMonoSemiBold.size(side * 0.056))

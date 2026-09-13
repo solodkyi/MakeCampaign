@@ -107,7 +107,7 @@ struct PosterA04TemplateView: View {
 
         return VStack(spacing: side * 0.018) {
             HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
-                Text("ціль збору:")
+                Text(funding.goalLabel)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
                     .tracking(labelSize * 0.14)
                     .textCase(.uppercase)

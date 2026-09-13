@@ -119,7 +119,7 @@ struct CyanMagentaGradientTemplateView: View {
 
         return VStack(alignment: .leading, spacing: side * 0.026) {
             HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
-                Text("ціль збору:")
+                Text(funding.goalLabel)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
                     .tracking(labelSize * 0.16)
                     .textCase(.uppercase)

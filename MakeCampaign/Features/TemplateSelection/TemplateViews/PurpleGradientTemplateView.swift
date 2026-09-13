@@ -82,7 +82,7 @@ struct PurpleGradientTemplateView: View {
 
         return VStack(alignment: .leading, spacing: side * 0.026) {
             HStack(alignment: .firstTextBaseline, spacing: side * 0.03) {
-                Text("ціль збору:")
+                Text(funding.goalLabel)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
                     .tracking(labelSize * 0.2)
                     .textCase(.uppercase)

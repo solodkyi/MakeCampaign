@@ -113,7 +113,7 @@ struct BlueGradientTemplateView: View {
         let labelSize = side * 0.028
 
         return VStack(spacing: side * 0.004) {
-            label("ціль збору:", size: labelSize)
+            label(funding.goalLabel, size: labelSize)
 
             Text(goal)
                 .campaignPosterElement(.target)

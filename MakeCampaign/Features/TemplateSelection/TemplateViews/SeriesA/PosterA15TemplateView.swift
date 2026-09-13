@@ -85,7 +85,7 @@ struct PosterA15TemplateView: View {
         let labelSize = side * 0.030
 
         return VStack(alignment: .leading, spacing: side * 0.014) {
-            Text("ціль збору:")
+            Text(funding.goalLabel)
                 .font(PosterFont.plexMonoRegular.size(labelSize))
                 .tracking(labelSize * 0.16)
                 .textCase(.uppercase)
