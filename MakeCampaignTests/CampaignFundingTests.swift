@@ -238,6 +238,127 @@ struct CampaignFundingTests {
 
         #expect(key(closed: false) != key(closed: true))
     }
+
+    // MARK: - Supporting jars
+
+    @Test("A supporting jar measures progress against the personal target")
+    func supportingJarMeasuresAgainstThePersonalTarget() {
+        let campaign = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000A001")!,
+            target: 1_000_000,
+            isSupportingJar: true,
+            personalTarget: 50_000,
+            jar: Campaign.JarInfo(
+                link: URL(string: "https://send.monobank.ua/jar/probe")!,
+                details: JarDetails(jarAmount: 25_000_00, jarStatus: "ACTIVE")
+            )
+        )
+
+        #expect(campaign.effectiveTarget == 50_000)
+        #expect(campaign.fundedFraction == 0.5)
+        #expect(!campaign.hasReachedTarget)
+        #expect(!campaign.isFinished)
+    }
+
+    @Test("A supporting jar finishes on its own target, not the general one")
+    func supportingJarFinishesOnItsOwnTarget() {
+        let campaign = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000A002")!,
+            target: 1_000_000,
+            isSupportingJar: true,
+            personalTarget: 50_000,
+            jar: Campaign.JarInfo(
+                link: URL(string: "https://send.monobank.ua/jar/probe")!,
+                details: JarDetails(jarAmount: 50_000_00, jarStatus: "ACTIVE")
+            )
+        )
+
+        #expect(campaign.hasReachedTarget)
+        #expect(campaign.isFinished)
+    }
+
+    @Test("An ordinary campaign still measures against its own target")
+    func ordinaryCampaignKeepsItsTarget() {
+        let campaign = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000A003")!,
+            target: 200_000,
+            jar: Campaign.JarInfo(
+                link: URL(string: "https://send.monobank.ua/jar/probe")!,
+                details: JarDetails(jarAmount: 50_000_00, jarStatus: "ACTIVE")
+            )
+        )
+
+        #expect(campaign.effectiveTarget == 200_000)
+        #expect(campaign.fundedFraction == 0.25)
+    }
+
+    @Test("A supporting jar without its own target has no denominator")
+    func supportingJarWithoutPersonalTargetHasNoFraction() {
+        let campaign = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000A004")!,
+            target: 1_000_000,
+            isSupportingJar: true,
+            jar: Campaign.JarInfo(
+                link: URL(string: "https://send.monobank.ua/jar/probe")!,
+                details: JarDetails(jarAmount: 25_000_00, jarStatus: "ACTIVE")
+            )
+        )
+
+        #expect(campaign.effectiveTarget == nil)
+        #expect(campaign.fundedFraction == nil)
+    }
+
+    @Test("Campaigns saved before supporting jars decode with the switch off")
+    func legacyCampaignsDecodeWithTheSwitchOff() throws {
+        let json = """
+        {
+            "id": "00000000-0000-0000-0000-00000000A005",
+            "purpose": "Збір на пікап",
+            "target": 200000,
+            "status": "active",
+            "posterFormat": "square",
+            "showsQRCode": false,
+            "shareCaption": "",
+            "isClosedByAuthor": false
+        }
+        """.data(using: .utf8)!
+
+        let campaign = try JSONDecoder().decode(Campaign.self, from: json)
+
+        #expect(!campaign.isSupportingJar)
+        #expect(campaign.personalTarget == nil)
+        #expect(campaign.effectiveTarget == 200_000)
+    }
+
+    @Test("A supporting jar survives a round trip")
+    func supportingJarRoundTrips() throws {
+        let campaign = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000A006")!,
+            target: 1_000_000,
+            isSupportingJar: true,
+            personalTarget: 50_000
+        )
+
+        let data = try JSONEncoder().encode(campaign)
+        let decoded = try JSONDecoder().decode(Campaign.self, from: data)
+
+        #expect(decoded.isSupportingJar)
+        #expect(decoded.personalTarget == 50_000)
+    }
+
+    @Test("The personal target field formats like the general one")
+    func personalTargetFormatsLikeTheGeneralOne() {
+        var campaign = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000A007")!
+        )
+
+        #expect(campaign.formattedPersonalTarget.isEmpty)
+
+        campaign.formattedPersonalTarget = "50000"
+
+        #expect(campaign.personalTarget == 50_000)
+        #expect(campaign.formattedPersonalTarget == 50_000.formattedAmount)
+    }
 }
 
 @Suite("Template catalogue")
