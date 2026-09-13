@@ -13,6 +13,12 @@ struct CampaignPosterThumbnailKey: Hashable, Sendable {
     let composition: CampaignPosterThumbnailComposition
     let purpose: String
     let target: Double?
+    /// Допоміжна банка малює на плакаті інший підпис і додатковий рядок під
+    /// сумою, тож ключ мусить це бачити — інакше кеш віддасть стару картинку
+    /// відразу після перемикання.
+    let isSupportingJar: Bool
+    /// Власна ціль автора: провідна цифра плаката, коли її задано.
+    let personalTarget: Double?
     let collected: Double?
     let isFinished: Bool
     let imageScale: CGFloat
@@ -32,6 +38,12 @@ struct CampaignPosterThumbnailRefreshKey: Hashable, Sendable {
     let composition: CampaignPosterThumbnailComposition
     let purpose: String
     let target: Double?
+    /// Допоміжна банка малює на плакаті інший підпис і додатковий рядок під
+    /// сумою, тож ключ мусить це бачити — інакше кеш віддасть стару картинку
+    /// відразу після перемикання.
+    let isSupportingJar: Bool
+    /// Власна ціль автора: провідна цифра плаката, коли її задано.
+    let personalTarget: Double?
     let collected: Double?
     let isFinished: Bool
     let contentMode: String
@@ -59,6 +71,8 @@ struct CampaignPosterThumbnailRequest: @unchecked Sendable {
             composition: composition,
             purpose: campaign.purpose,
             target: campaign.target,
+            isSupportingJar: campaign.isSupportingJar,
+            personalTarget: campaign.personalTarget,
             collected: campaign.collected,
             isFinished: campaign.isFinished,
             imageScale: campaign.imageScale,
@@ -81,6 +95,8 @@ struct CampaignPosterThumbnailRequest: @unchecked Sendable {
             composition: composition,
             purpose: campaign.purpose,
             target: campaign.target,
+            isSupportingJar: campaign.isSupportingJar,
+            personalTarget: campaign.personalTarget,
             collected: campaign.collected,
             isFinished: campaign.isFinished,
             contentMode: campaign.image?.contentMode.rawValue

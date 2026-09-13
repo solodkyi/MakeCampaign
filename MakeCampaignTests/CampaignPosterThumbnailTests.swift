@@ -59,6 +59,33 @@ struct CampaignPosterThumbnailTests {
         }
     }
 
+    @Test("A supporting jar's own target changes both thumbnail keys")
+    func supportingJarTargetsChangeKey() throws {
+        // Плакат допоміжної банки малює власну ціль і рядок про загальну, тож
+        // ключ мусить розрізняти ці стани — інакше після перемикання кеш
+        // віддасть стару картинку зі старою цифрою.
+        let original = try makeRequest()
+
+        var supporting = original.campaign
+        supporting.isSupportingJar = true
+        let flipped = try makeRequest(campaign: supporting)
+
+        var withPersonalTarget = supporting
+        withPersonalTarget.personalTarget = 5_000
+        let personal = try makeRequest(campaign: withPersonalTarget)
+
+        var withOtherPersonalTarget = supporting
+        withOtherPersonalTarget.personalTarget = 7_000
+        let otherPersonal = try makeRequest(campaign: withOtherPersonalTarget)
+
+        #expect(flipped.key != original.key)
+        #expect(flipped.refreshKey != original.refreshKey)
+        #expect(personal.key != flipped.key)
+        #expect(personal.refreshKey != flipped.refreshKey)
+        #expect(otherPersonal.key != personal.key)
+        #expect(otherPersonal.refreshKey != personal.refreshKey)
+    }
+
     @Test("Selection and nonvisual campaign state do not invalidate a candidate tile")
     func nonvisualInputsKeepKey() throws {
         let candidate = try #require(Template.list.first)
