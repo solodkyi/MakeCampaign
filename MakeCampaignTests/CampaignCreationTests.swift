@@ -363,6 +363,53 @@ struct CampaignCreationModelTests {
             expectNoDifference(rendered.size, format.pixelSize)
         }
     }
+
+    @Test("A supporting jar needs both targets")
+    func supportingJarNeedsBothTargets() {
+        let campaign = Campaign.validDraft(isSupportingJar: true)
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.generalTarget == "Вкажіть загальну ціль збору.")
+        #expect(validation.personalTarget == "Вкажіть свою ціль.")
+        #expect(!validation.isValid)
+    }
+
+    @Test("My goal may not exceed the general one")
+    func personalTargetMayNotExceedTheGeneralOne() {
+        var campaign = Campaign.validDraft(isSupportingJar: true)
+        campaign.target = 1_000_000
+        campaign.personalTarget = 2_000_000
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.personalTarget == "Моя ціль не може бути більшою за загальну ціль.")
+        #expect(!validation.isValid)
+    }
+
+    @Test("Equal targets are allowed")
+    func equalTargetsAreAllowed() {
+        var campaign = Campaign.validDraft(isSupportingJar: true)
+        campaign.target = 1_000_000
+        campaign.personalTarget = 1_000_000
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.personalTarget == nil)
+        #expect(validation.generalTarget == nil)
+    }
+
+    @Test("An ordinary campaign ignores the personal target entirely")
+    func ordinaryCampaignIgnoresThePersonalTarget() {
+        var campaign = Campaign.validDraft(isSupportingJar: false)
+        campaign.target = nil
+        campaign.personalTarget = 2_000_000
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.generalTarget == nil)
+        #expect(validation.personalTarget == nil)
+    }
 }
 
 private func centerRGBA(of image: UIImage) throws -> [UInt8] {
@@ -764,4 +811,26 @@ struct CampaignCreationRoutingTests {
         #expect(store.state.path[id: 0, case: \.editor]?.campaign.status == .draft)
         #expect(campaigns.isEmpty)
     }
+}
+
+extension Campaign {
+    /// Збір, у якому все інше вже правильне: тести цілей мають падати саме
+    /// на цілях, а не на відсутньому фото чи шаблоні.
+    static func validDraft(isSupportingJar: Bool) -> Campaign {
+        Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000C001")!,
+            image: Campaign.Image(raw: onePixelPNG),
+            template: Template.list[0],
+            purpose: "Збір на пікап",
+            target: nil,
+            isSupportingJar: isSupportingJar
+        )
+    }
+
+    private static let onePixelPNG: Data = {
+        UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1)).pngData { context in
+            UIColor.systemTeal.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
+        }
+    }()
 }

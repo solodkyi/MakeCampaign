@@ -43,10 +43,13 @@ struct CampaignCreationFeature {
             var title: String?
             var photo: String?
             var template: String?
+            var generalTarget: String?
+            var personalTarget: String?
             var qrLink: String?
 
             var isValid: Bool {
-                title == nil && photo == nil && template == nil && qrLink == nil
+                title == nil && photo == nil && template == nil
+                    && generalTarget == nil && personalTarget == nil && qrLink == nil
             }
         }
 
@@ -340,6 +343,8 @@ struct CampaignCreationFeature {
             validation.title,
             validation.photo,
             validation.template,
+            validation.generalTarget,
+            validation.personalTarget,
             validation.qrLink,
         ]
         .compactMap { $0 }
@@ -352,7 +357,7 @@ struct CampaignCreationFeature {
         )
     }
 
-    private func validation(for campaign: Campaign) -> State.Validation {
+    func validation(for campaign: Campaign) -> State.Validation {
         var validation = State.Validation()
         if campaign.purpose.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             validation.title = "Додайте назву збору."
@@ -362,6 +367,20 @@ struct CampaignCreationFeature {
         }
         if campaign.template == nil {
             validation.template = "Оберіть шаблон постера."
+        }
+        // Ці дві цілі мають сенс лише для банки, що підтримує чужий збір —
+        // звичайна кампанія не показує «мою ціль» і не звіряє її з нічим.
+        if campaign.isSupportingJar {
+            if campaign.target == nil {
+                validation.generalTarget = "Вкажіть загальну ціль збору."
+            }
+            if campaign.personalTarget == nil {
+                validation.personalTarget = "Вкажіть свою ціль."
+            } else if let target = campaign.target,
+                      let personal = campaign.personalTarget,
+                      personal > target {
+                validation.personalTarget = "Моя ціль не може бути більшою за загальну ціль."
+            }
         }
         if campaign.showsQRCode && !isValidWebURL(campaign.jar?.link) {
             validation.qrLink = "Додайте повне посилання на банку для QR-коду."
