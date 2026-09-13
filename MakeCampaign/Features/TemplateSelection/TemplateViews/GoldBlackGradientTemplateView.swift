@@ -12,13 +12,17 @@ import SwiftUI
 /// reads as a bevelled setting rather than a border.
 struct GoldBlackGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -87,33 +91,115 @@ struct GoldBlackGradientTemplateView: View {
                 .minimumScaleFactor(0.6)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if let goal {
-                let labelSize = side * 0.023
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
+            }
+        }
+    }
 
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.022) {
+            HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                Text("ціль збору:")
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.16)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.deepBronze)
+
+                Text(goal)
+                    .campaignPosterElement(.target)
+                    .font(PosterFont.playfairBoldItalic.size(side * 0.076))
+                    .foregroundStyle(Self.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .padding(.trailing, side * 0.26)
+        .modifier(GoldRule(side: side))
+    }
+
+    /// Тонка смужка кутого золота на блідому тлі — та сама лінія, що ділить
+    /// назву й суму, тільки заповнена до досягнутої частки.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.028
+
+        return VStack(alignment: .leading, spacing: side * 0.012) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.01,
+                track: Self.struckGold.opacity(0.22),
+                fill: Self.struckGold
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.bronze)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+    }
+
+    /// Збір закрито — і закрито він курсивом Playfair, як підпис під
+    /// готовою справою: «Зібрано!» набране тим самим накресленням, що й сума.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.playfairBoldItalic.size(side * 0.076))
+                .foregroundStyle(Self.struckGold)
+
+            if let collected = funding.collected {
                 HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
-                    Text("ціль збору:")
+                    Text("разом:")
                         .font(PosterFont.plexMonoRegular.size(labelSize))
                         .tracking(labelSize * 0.16)
                         .textCase(.uppercase)
                         .foregroundStyle(Self.deepBronze)
 
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.playfairBoldItalic.size(side * 0.076))
+                    Text(collected)
+                        .campaignPosterFundingElement(.collected)
+                        .font(PosterFont.playfairBold.size(side * 0.068))
                         .foregroundStyle(Self.ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                 }
+            }
+        }
+        .padding(.trailing, side * 0.26)
+        .modifier(GoldRule(side: side))
+    }
+
+    private struct GoldRule: ViewModifier {
+        let side: CGFloat
+
+        func body(content: Content) -> some View {
+            content
                 .padding(.top, side * 0.022)
-                .padding(.trailing, side * 0.26)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .overlay(alignment: .top) {
                     Rectangle()
-                        .fill(Self.struckGold)
+                        .fill(Self.rule)
                         .frame(height: side * 0.002)
                 }
-            }
         }
+
+        private static let rule = Color(red: 140/255, green: 106/255, blue: 31/255)
     }
 
     private static let ink = Color(red: 44/255, green: 33/255, blue: 10/255)
@@ -123,7 +209,7 @@ struct GoldBlackGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        GoldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        GoldBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

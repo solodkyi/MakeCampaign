@@ -202,13 +202,18 @@ struct TemplateItemView: View {
 }
 
 extension Template {
+    /// Шаблони, які автор може обрати.
+    ///
+    /// Знятий із каталогу шаблон зникає лише звідси: його `View` лишається на
+    /// місці, бо збори, збережені поки він був доступним, і далі мають
+    /// малюватись. Через це в нумерації бувають дірки — вона іменує шаблон, а
+    /// не задає його місце в списку.
     static let list: IdentifiedArrayOf<Template> = [
         .init(name: "1", series: .b, gradient: .blueLinear, imagePlacement: .center),
         .init(name: "2", series: .b, gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
         .init(name: "3", series: .b, gradient: .linearPurple, imagePlacement: .topCenter),
         .init(name: "4", series: .b, gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
         .init(name: "5", series: .b, gradient: .pinkAngular, imagePlacement: .topCenter),
-        .init(name: "6", series: .b, gradient: .tealPurpleRadial, imagePlacement: .roundedTrailing),
         .init(name: "7", series: .b, gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
         .init(name: "8", series: .b, gradient: .angularYellowBlue, imagePlacement: .trailing),
         .init(name: "9", series: .b, gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),

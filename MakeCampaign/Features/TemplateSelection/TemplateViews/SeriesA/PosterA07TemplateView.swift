@@ -10,13 +10,17 @@ import SwiftUI
 /// the goal on a pale card.
 struct PosterA07TemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -82,27 +86,100 @@ struct PosterA07TemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.022
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
-            VStack(alignment: .leading, spacing: side * 0.006) {
-                Text("ціль збору:")
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: side * 0.006) {
+            Text("ціль збору:")
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.16)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.moss)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.oswaldBold.size(side * 0.074))
+                .lineSpacing(side * 0.074 * 0.02)
+                .foregroundStyle(Self.darkLeaf)
+                .minimumScaleFactor(0.5)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .modifier(Card(side: side))
+    }
+
+    /// Усередині світлої картки смужка бере лайм із тла — так поступ
+    /// прив'язує картку до плаката, на якому вона лежить.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.012,
+                track: Self.moss.opacity(0.18),
+                fill: Self.moss
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.16)
+                    .tracking(labelSize * 0.14)
                     .textCase(.uppercase)
                     .foregroundStyle(Self.moss)
-
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.oswaldBold.size(side * 0.074))
-                    .lineSpacing(side * 0.074 * 0.02)
-                    .foregroundStyle(Self.darkLeaf)
+                    .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
-            .padding(.horizontal, side * 0.028)
-            .padding(.vertical, side * 0.026)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Self.card)
+        }
+        .padding(.top, side * 0.008)
+    }
+
+    /// Збір закрито: картка темніє до мохового, а напис читається лаймом —
+    /// той самий колір, що тримає весь плакат.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: side * 0.006) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.16)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.lime)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.074))
+                    .foregroundStyle(Self.card)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .modifier(Card(side: side, fill: Self.darkLeaf))
+    }
+
+    private struct Card: ViewModifier {
+        let side: CGFloat
+        var fill: Color = Color(red: 244/255, green: 247/255, blue: 236/255)
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.horizontal, side * 0.028)
+                .padding(.vertical, side * 0.026)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(fill)
         }
     }
 
@@ -113,7 +190,7 @@ struct PosterA07TemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PosterA07TemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PosterA07TemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

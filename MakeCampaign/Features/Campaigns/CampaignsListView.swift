@@ -10,6 +10,7 @@ struct CampaignsView: View {
     @Bindable var store: StoreOf<CampaignsFeature>
     @Environment(\.colorScheme) private var colorScheme
     @State private var campaignPendingDeletion: Campaign?
+    @State private var previewedCampaign: Campaign?
 
     var body: some View {
         let palette = CampaignsPalette(colorScheme: colorScheme)
@@ -28,18 +29,28 @@ struct CampaignsView: View {
                     palette: palette,
                     presentation: store.state.jarPresentation(for:),
                     onEdit: { store.send(.editCampaign($0)) },
+                    onPreview: { previewedCampaign = $0 },
                     onDelete: { campaignPendingDeletion = $0 }
                 )
-            }
 
-            CreateCampaignButton {
-                store.send(.createCampaignTapped)
-            }
+                // Порожній стан має власну кнопку на всю ширину внизу екрана,
+                // тож плаваюча кнопка там лише накрила б її.
+                CreateCampaignButton {
+                    store.send(.createCampaignTapped)
+                }
                 .padding(.trailing, 22)
                 .padding(.bottom, 26)
+            }
         }
         .task {
             store.send(.onViewInitialLoad)
+        }
+        .fullScreenCover(item: $previewedCampaign) { campaign in
+            // Банка могла оновитися, поки постер відкритий, — тож малюємо
+            // поточну версію збору, а не знімок із моменту натискання.
+            CampaignPosterFullscreenPreview(
+                campaign: store.campaigns[id: campaign.id] ?? campaign
+            )
         }
         .alert(
             "Видалити збір?",
@@ -67,6 +78,7 @@ private struct CampaignsList: View {
     let palette: CampaignsPalette
     let presentation: (Campaign) -> CampaignsFeature.JarPresentation
     let onEdit: (Campaign.ID) -> Void
+    let onPreview: (Campaign) -> Void
     let onDelete: (Campaign) -> Void
 
     var body: some View {
@@ -75,10 +87,10 @@ private struct CampaignsList: View {
                 CampaignRow(
                     campaign: campaign,
                     palette: palette,
-                    jarPresentation: presentation(campaign)
-                ) {
-                    onEdit(campaign.id)
-                }
+                    jarPresentation: presentation(campaign),
+                    onEdit: { onEdit(campaign.id) },
+                    onPreview: { onPreview(campaign) }
+                )
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button {
                         onDelete(campaign)
@@ -104,41 +116,63 @@ private struct CampaignsList: View {
     }
 }
 
+/// Рядок має дві дії: мініатюра розгортає постер на весь екран, решта картки
+/// відкриває редактор. Тому це не одна кнопка, а дві поруч — вкладена кнопка
+/// всередині іншої в SwiftUI натискань не отримує.
 private struct CampaignRow: View {
     let campaign: Campaign
     let palette: CampaignsPalette
     let jarPresentation: CampaignsFeature.JarPresentation
     let onEdit: () -> Void
+    let onPreview: () -> Void
 
     var body: some View {
-        Button(action: onEdit) {
-            HStack(spacing: 13) {
+        HStack(spacing: 13) {
+            Button(action: onPreview) {
                 CampaignThumbnail(campaign: campaign, palette: palette)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Переглянути постер")
+            .accessibilityHint("Відкрити постер на весь екран")
+            .accessibilityIdentifier("campaign-row-poster-\(campaign.id.uuidString)")
 
+            Button(action: onEdit) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(campaign.purpose.isEmpty ? "Без назви" : campaign.purpose)
+                    Text(title)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(palette.foreground)
                         .lineLimit(2)
+                        .multilineTextAlignment(.leading)
 
                     Spacer(minLength: 8)
-                    CampaignJarDetails(
+
+                    CampaignFundingSummary(
                         campaign: campaign,
                         presentation: jarPresentation,
                         palette: palette
                     )
                 }
                 .padding(.vertical, 2)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .contentShape(Rectangle())
             }
-            .frame(minHeight: 126)
-            .padding(11)
-            .background(palette.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: palette.shadow, radius: 10, x: 0, y: 2)
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityHint("Відкрити редактор збору")
+            .accessibilityIdentifier("campaign-row-\(campaign.id.uuidString)")
         }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("campaign-row-\(campaign.id.uuidString)")
-        .accessibilityLabel(campaign.purpose.isEmpty ? "Без назви" : campaign.purpose)
-        .accessibilityHint("Відкрити редактор збору")
+        .frame(minHeight: 126)
+        .padding(11)
+        .background(palette.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        // Поля картки довкола обох кнопок теж ведуть у редактор, як і
+        // раніше, коли весь рядок був однією кнопкою.
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .onTapGesture(perform: onEdit)
+        .shadow(color: palette.shadow, radius: 10, x: 0, y: 2)
+    }
+
+    private var title: String {
+        campaign.purpose.isEmpty ? "Без назви" : campaign.purpose
     }
 }
 
@@ -179,7 +213,6 @@ private struct CampaignThumbnail: View {
         }
         .frame(width: Self.size.width, height: Self.size.height)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .accessibilityHidden(true)
         .task(id: assetInput) {
             previewAssetBuffer.beginLoading(assetInput)
             do {
@@ -197,7 +230,10 @@ private struct CampaignThumbnail: View {
     }
 }
 
-private struct CampaignJarDetails: View {
+/// Гроші збору в рядку: скільки зібрано з якої цілі, а коли банки немає —
+/// сама ціль. Рядок про оновлення має сенс лише там, де є що оновлювати,
+/// тож збір без банки його не показує.
+private struct CampaignFundingSummary: View {
     let campaign: Campaign
     let presentation: CampaignsFeature.JarPresentation
     let palette: CampaignsPalette
@@ -205,29 +241,104 @@ private struct CampaignJarDetails: View {
     var body: some View {
         switch presentation {
         case .loaded:
-            if let details = campaign.jar?.details {
-                Text(details.currencyFormatted)
-                    .font(.system(size: 19, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(palette.accent)
+            if let collected = campaign.collected {
+                VStack(alignment: .leading, spacing: 0) {
+                    CollectedAmount(
+                        collected: collected,
+                        target: campaign.target,
+                        palette: palette
+                    )
 
-                if let progress = campaign.progress {
-                    CampaignProgress(progress: progress.fractionCompleted, palette: palette)
+                    if let fraction = campaign.fundedFraction {
+                        CampaignProgress(progress: fraction, palette: palette)
+                    } else {
+                        Spacer().frame(height: 8)
+                    }
+
+                    CampaignMeta(
+                        status: status,
+                        updatedAt: campaign.updatedAt,
+                        palette: palette
+                    )
                 }
-
-                CampaignMeta(updatedAt: campaign.updatedAt, palette: palette)
             } else {
-                UnavailableJarDetails(
-                    message: "Не вдалося оновити",
-                    updatedAt: campaign.updatedAt,
-                    palette: palette
-                )
+                awaitingJar(message: CampaignsFeature.JarPresentation.failed.message)
             }
-        case .noLink, .loading, .failed:
-            UnavailableJarDetails(
-                message: presentation.message,
-                updatedAt: campaign.updatedAt,
-                palette: palette
-            )
+        case .loading, .failed:
+            awaitingJar(message: presentation.message)
+        case .noLink:
+            if let target = campaign.target {
+                TargetAmount(target: target, palette: palette)
+            }
+        }
+    }
+
+    /// Банку підключено, але сум із неї ще немає: показуємо ціль, стан
+    /// банки й коли збір востаннє оновлювався.
+    private func awaitingJar(message: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            if let target = campaign.target {
+                TargetAmount(target: target, palette: palette)
+            }
+
+            Text(message)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(palette.muted)
+
+            CampaignMeta(status: nil, updatedAt: campaign.updatedAt, palette: palette)
+        }
+    }
+
+    private var status: CampaignMeta.Status? {
+        if campaign.isFinished {
+            return .finished
+        }
+        return campaign.fundedFraction.map { .percent(Int(($0 * 100).rounded(.down))) }
+    }
+}
+
+/// Зібране великим моноширинним, ціль — дрібно поруч, як у дизайні:
+/// «1 240 000 / 2 000 000 ₴».
+private struct CollectedAmount: View {
+    let collected: Double
+    let target: Double?
+    let palette: CampaignsPalette
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 5) {
+            Text(target == nil ? collected.formattedAmount.appendingCurrency : collected.formattedAmount)
+                .font(.system(size: 19, weight: .semibold, design: .monospaced))
+                .foregroundStyle(palette.foreground)
+
+            if let target {
+                Text("/ \(target.formattedAmount.appendingCurrency)")
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(palette.muted)
+            }
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+    }
+}
+
+/// Ціль без банки — єдина сума, яку збір знає, тож вона й стоїть великою.
+private struct TargetAmount: View {
+    let target: Double
+    let palette: CampaignsPalette
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("Ціль")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .tracking(1)
+                .textCase(.uppercase)
+                .foregroundStyle(palette.muted)
+
+            Text(target.formattedAmount.appendingCurrency)
+                .font(.system(size: 19, weight: .semibold, design: .monospaced))
+                .foregroundStyle(palette.foreground)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
         }
     }
 }
@@ -256,87 +367,161 @@ private struct CampaignProgress: View {
     }
 }
 
+/// Нижній рядок картки: ліворуч — де збір зараз, праворуч — коли банка
+/// востаннє відповідала.
 private struct CampaignMeta: View {
+    enum Status {
+        case percent(Int)
+        case finished
+    }
+
+    let status: Status?
     let updatedAt: Date
     let palette: CampaignsPalette
 
     var body: some View {
-        HStack {
-            Text(updatedAt, format: .relative(presentation: .named))
-            Spacer()
-            Text("оновлено")
+        HStack(spacing: 8) {
+            switch status {
+            case let .percent(value):
+                Text("\(value)%")
+                    .foregroundStyle(palette.muted)
+            case .finished:
+                Text(CampaignPosterFunding.finishedLabel)
+                    .foregroundStyle(palette.accent)
+            case nil:
+                EmptyView()
+            }
+
+            Spacer(minLength: 0)
+
+            Text(verbatim: "оновлено \(updatedAt.formatted(Self.relativeDate))")
+                .foregroundStyle(palette.muted)
+                .lineLimit(1)
         }
         .font(.system(size: 10, weight: .medium, design: .monospaced))
-        .foregroundStyle(palette.muted)
     }
+
+    /// Застосунок говорить українською, тож і «коли» — українською: інакше в
+    /// англомовній системі рядок розпадається на «оновлено 5 minutes ago».
+    /// Рядок форматується заздалегідь, бо формат усередині `Text` SwiftUI
+    /// перекладає мовою середовища, хоч би яку мову йому задали.
+    private static let relativeDate = Date.RelativeFormatStyle(presentation: .named)
+        .locale(Locale(identifier: "uk_UA"))
 }
 
-private struct UnavailableJarDetails: View {
-    let message: String
-    let updatedAt: Date
-    let palette: CampaignsPalette
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(message)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(palette.muted)
-            CampaignMeta(updatedAt: updatedAt, palette: palette)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
+/// Порожній стан продає результат: замість іконки застосунку — стос
+/// справжніх обкладинок, які перебирають себе самі.
 private struct CampaignsEmptyState: View {
+    private static let coverSide: CGFloat = 200
+    private static let advanceInterval = Duration.seconds(2.6)
+
     let palette: CampaignsPalette
     let onCreate: () -> Void
 
+    @Dependency(\.campaignPosterPreviewAssetLoader) private var previewAssetLoader
+    @Dependency(\.campaignPosterThumbnailClient) private var thumbnailClient
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.displayScale) private var displayScale
+    @Environment(\.locale) private var locale
+    @State private var covers: [CampaignCoverSample.ID: UIImage] = [:]
+    @State private var frontIndex = 0
+
+    private var samples: [CampaignCoverSample] { CampaignCoverShowcase.samples }
+
+    /// Автоперебір вимкнено там, де рух заважає: у налаштуваннях доступності
+    /// та під UI-тестами, для яких нескінченна анімація — це екран, що ніколи
+    /// не стає idle.
+    private var autoAdvances: Bool {
+        !reduceMotion
+            && !ProcessInfo.processInfo.isUITesting
+            && samples.count >= CampaignCoverStackLayout.minimumSampleCount
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            Spacer(minLength: 0)
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 34, style: .continuous)
-                    .fill(palette.paper)
-                    .frame(width: 180, height: 180)
-                Circle()
-                    .trim(from: 0.08, to: 0.82)
-                    .stroke(palette.progressTrack, style: .init(lineWidth: 14, lineCap: .round))
-                    .overlay {
-                        Circle()
-                            .trim(from: 0.08, to: 0.32)
-                            .stroke(palette.accent, style: .init(lineWidth: 14, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                    }
-                    .frame(width: 84, height: 84)
-                    .rotationEffect(.degrees(-90))
-            }
+            CampaignCoverStack(
+                samples: samples,
+                covers: covers,
+                frontIndex: frontIndex,
+                side: Self.coverSide
+            )
+            .contentShape(Rectangle())
+            .onTapGesture(perform: advance)
 
-            Text("Зборів ще немає")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+            Text("Збір починається з обкладинки")
+                .font(.system(size: 22, weight: .heavy))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(palette.foreground)
                 .padding(.top, 26)
 
-            Text("Створіть обкладинку та додайте дані збору.")
+            Text("Фото, сума й посилання на банку — в одній картинці, готовій до сторіс і чатів.")
                 .font(.system(size: 14))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(palette.muted)
                 .padding(.top, 10)
-                .padding(.horizontal, 34)
 
-            Button("Створити збір", action: onCreate)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 56)
-                .background(palette.accent, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .padding(.top, 24)
-                .padding(.horizontal, 24)
-                .accessibilityIdentifier("empty-create-campaign-button")
+            Spacer(minLength: 0)
 
-            Spacer()
+            Button(action: onCreate) {
+                Label("Створити збір", systemImage: "plus")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(palette.invertedForeground)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+            }
+            .buttonStyle(.plain)
+            .background(
+                palette.foreground,
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .shadow(color: palette.raisedShadow, radius: 26, x: 0, y: 10)
+            .accessibilityIdentifier("empty-create-campaign-button")
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 30)
+        .task(id: coverRenderKey) {
+            covers = await CampaignCoverRenderer.covers(
+                for: samples,
+                side: Self.coverSide,
+                displayScale: displayScale,
+                colorScheme: colorScheme,
+                locale: locale,
+                assetLoader: previewAssetLoader,
+                thumbnailClient: thumbnailClient
+            )
+        }
+        .task(id: autoAdvances) {
+            guard autoAdvances else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.advanceInterval)
+                guard !Task.isCancelled else { return }
+                advance()
+            }
         }
     }
+
+    private func advance() {
+        guard !samples.isEmpty else { return }
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.82)) {
+            frontIndex = (frontIndex + 1) % samples.count
+        }
+    }
+
+    private var coverRenderKey: CampaignCoverRenderKey {
+        CampaignCoverRenderKey(
+            displayScale: displayScale,
+            usesDarkColorScheme: colorScheme == .dark,
+            localeIdentifier: locale.identifier
+        )
+    }
+}
+
+private struct CampaignCoverRenderKey: Equatable {
+    let displayScale: CGFloat
+    let usesDarkColorScheme: Bool
+    let localeIdentifier: String
 }
 
 private struct CreateCampaignButton: View {
@@ -368,11 +553,13 @@ private struct CampaignsPalette {
     var field: Color { colorScheme == .dark ? Color(red: 26 / 255, green: 26 / 255, blue: 24 / 255) : Color(red: 245 / 255, green: 243 / 255, blue: 239 / 255) }
     var paper: Color { colorScheme == .dark ? Color(red: 23 / 255, green: 23 / 255, blue: 22 / 255) : Color(red: 245 / 255, green: 243 / 255, blue: 239 / 255) }
     var foreground: Color { colorScheme == .dark ? .white.opacity(0.94) : Color(red: 20 / 255, green: 20 / 255, blue: 19 / 255) }
+    var invertedForeground: Color { colorScheme == .dark ? Color(red: 20 / 255, green: 20 / 255, blue: 19 / 255) : .white }
     var muted: Color { colorScheme == .dark ? .white.opacity(0.56) : Color(red: 20 / 255, green: 20 / 255, blue: 19 / 255).opacity(0.55) }
     var accent: Color { Color(red: 224 / 255, green: 86 / 255, blue: 42 / 255) }
     var steel: Color { Color(red: 86 / 255, green: 105 / 255, blue: 120 / 255) }
     var progressTrack: Color { colorScheme == .dark ? .white.opacity(0.12) : Color.black.opacity(0.09) }
     var shadow: Color { colorScheme == .dark ? .black.opacity(0.35) : .black.opacity(0.05) }
+    var raisedShadow: Color { colorScheme == .dark ? .black.opacity(0.5) : .black.opacity(0.22) }
 }
 
 private extension Color {
@@ -402,13 +589,14 @@ private struct CampaignsListPreviewScreen: View {
                     palette: palette,
                     presentation: { presentations[$0.id] ?? .noLink },
                     onEdit: { _ in },
+                    onPreview: { _ in },
                     onDelete: { _ in }
                 )
-            }
 
-            CreateCampaignButton(action: {})
-                .padding(.trailing, 22)
-                .padding(.bottom, 26)
+                CreateCampaignButton(action: {})
+                    .padding(.trailing, 22)
+                    .padding(.bottom, 26)
+            }
         }
     }
 }
@@ -450,17 +638,46 @@ private enum CampaignsListPreviewData {
         updatedAt: updatedAt
     )
 
-    static let allCampaigns = [noJar, refreshing, failed, loaded]
+    static let finished = Campaign(
+        id: UUID(uuidString: "55555555-5555-5555-5555-555555555555")!,
+        purpose: "Генератор для бліндажа",
+        target: 45_000,
+        jar: .init(
+            link: URL(string: "https://send.monobank.ua/jar/finished")!,
+            details: .init(jarAmount: 45_000_00, jarStatus: "ACTIVE")
+        ),
+        updatedAt: updatedAt
+    )
+
+    static let allCampaigns = [noJar, refreshing, failed, loaded, finished]
 
     static let presentations: [Campaign.ID: CampaignsFeature.JarPresentation] = [
         refreshing.id: .loading,
         failed.id: .failed,
-        loaded.id: .loaded
+        loaded.id: .loaded,
+        finished.id: .loaded
     ]
 }
 
+// Порожній стан показує справжні обкладинки, тож прев'ю бере живі залежності
+// — інакше стос лишився б із порожніх заглушок.
 #Preview("Empty") {
-    CampaignsListPreviewScreen(campaigns: [], presentations: [:])
+    withDependencies {
+        $0.campaignPosterPreviewAssetLoader = .liveValue
+        $0.campaignPosterThumbnailClient = .liveValue
+    } operation: {
+        CampaignsListPreviewScreen(campaigns: [], presentations: [:])
+    }
+}
+
+#Preview("Empty — dark") {
+    withDependencies {
+        $0.campaignPosterPreviewAssetLoader = .liveValue
+        $0.campaignPosterThumbnailClient = .liveValue
+    } operation: {
+        CampaignsListPreviewScreen(campaigns: [], presentations: [:])
+            .preferredColorScheme(.dark)
+    }
 }
 
 #Preview("Jar not linked") {

@@ -10,13 +10,17 @@ import SwiftUI
 /// in Playfair with the goal ruled off beneath it in italic.
 struct PosterA03TemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -58,25 +62,106 @@ struct PosterA03TemplateView: View {
                 .minimumScaleFactor(0.5)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if let goal {
-                let labelSize = side * 0.026
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
+            }
+        }
+        .padding(.horizontal, side * 0.05)
+        .padding(.top, side * 0.04)
+        .padding(.bottom, side * 0.05)
+    }
 
-                HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
-                    Text("ціль збору:")
-                        .font(PosterFont.plexMonoRegular.size(labelSize))
-                        .tracking(labelSize * 0.14)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Self.aubergine)
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.035
 
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.playfairBoldItalic.size(side * 0.08))
-                        .foregroundStyle(Self.nearBlack)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
+        return VStack(alignment: .leading, spacing: side * 0.02) {
+            HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                Text("ціль збору:")
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.aubergine)
+
+                Text(goal)
+                    .campaignPosterElement(.target)
+                    .font(PosterFont.playfairBoldItalic.size(side * 0.08))
+                    .foregroundStyle(Self.nearBlack)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .padding(.trailing, side * 0.26)
+        .modifier(VioletRule(side: side))
+    }
+
+    /// Смужка повторює товсту фіолетову лінію над собою — та сама вага, той
+    /// самий колір, лише заповнена до досягнутої частки.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.012,
+                track: Self.violet.opacity(0.2),
+                fill: Self.violet
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.aubergine)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+    }
+
+    /// Збір закрито: фіолет сходить із лінії на плашку, і те, що було
+    /// запитом, стає підсумком — курсивом Playfair, як і належить цій сторінці.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.035
+
+        return HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.14)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.cream)
+                .padding(.horizontal, side * 0.02)
+                .padding(.vertical, side * 0.008)
+                .background(Self.violet)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.playfairBoldItalic.size(side * 0.08))
+                    .foregroundStyle(Self.nearBlack)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.trailing, side * 0.26)
+        .modifier(VioletRule(side: side))
+    }
+
+    private struct VioletRule: ViewModifier {
+        let side: CGFloat
+
+        func body(content: Content) -> some View {
+            content
                 .padding(.top, side * 0.022)
-                .padding(.trailing, side * 0.26)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .overlay(alignment: .top) {
                     Rectangle()
@@ -84,11 +169,9 @@ struct PosterA03TemplateView: View {
                         .frame(height: side * 0.005)
                 }
                 .padding(.top, side * 0.026)
-            }
         }
-        .padding(.horizontal, side * 0.05)
-        .padding(.top, side * 0.04)
-        .padding(.bottom, side * 0.05)
+
+        private static let violet = Color(red: 107/255, green: 47/255, blue: 122/255)
     }
 
     private static let cream = Color(red: 246/255, green: 241/255, blue: 224/255)
@@ -98,7 +181,7 @@ struct PosterA03TemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PosterA03TemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PosterA03TemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

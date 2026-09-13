@@ -17,9 +17,9 @@ struct CampaignCreationFeature {
             var title: String {
                 switch self {
                 case .photo: "Фото"
-                case .data: "Текст"
+                case .data: "Назва"
                 case .template: "Шаблон"
-                case .qr: "Банка"
+                case .qr: "Ціль"
                 }
             }
 
@@ -28,7 +28,7 @@ struct CampaignCreationFeature {
                 case .photo: "photo"
                 case .data: "text.alignleft"
                 case .template: "square.grid.2x2"
-                case .qr: "qrcode"
+                case .qr: "target"
                 }
             }
         }

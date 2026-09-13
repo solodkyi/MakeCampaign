@@ -9,13 +9,17 @@ import SwiftUI
 /// thick cream border, and the title on a ribbon notched at both ends.
 struct PosterA05TemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -77,18 +81,84 @@ struct PosterA05TemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.025
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
-            VStack(spacing: side * 0.006) {
-                Text("ціль збору:")
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.034
+
+        return VStack(spacing: side * 0.006) {
+            Text("ціль збору:")
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.2)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.deepWine)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.oswaldBold.size(side * 0.095))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .shadow(color: Self.deepWine.opacity(0.5), radius: side * 0.014, y: side * 0.004)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+    }
+
+    /// Композиція тут симетрична, тож і смужка коротка та центрована —
+    /// рум'янець на глибокому вині.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.028
+
+        return VStack(spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                height: side * 0.012,
+                track: Self.deepWine.opacity(0.45),
+                fill: Self.blush
+            )
+            .frame(width: side * 0.46)
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.2)
+                    .tracking(labelSize * 0.14)
                     .textCase(.uppercase)
-                    .foregroundStyle(Self.deepWine)
+                    .foregroundStyle(Self.blush)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.top, side * 0.014)
+    }
 
-                Text(goal)
-                    .campaignPosterElement(.target)
+    /// Збір закрито: рум'янець виходить із тіні у власну капсулу, і вигук
+    /// стоїть там, де раніше стояла етикетка цілі.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.034
+
+        return VStack(spacing: side * 0.01) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.2)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.deepWine)
+                .padding(.horizontal, side * 0.024)
+                .padding(.vertical, side * 0.01)
+                .background(Self.blush, in: Capsule())
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.oswaldBold.size(side * 0.095))
                     .foregroundStyle(.white)
                     .lineLimit(1)
@@ -105,7 +175,7 @@ struct PosterA05TemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PosterA05TemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PosterA05TemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

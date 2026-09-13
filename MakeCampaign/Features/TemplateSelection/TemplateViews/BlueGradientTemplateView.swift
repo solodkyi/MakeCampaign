@@ -15,13 +15,17 @@ import SwiftUI
 /// thumbnail up to a 1080pt export and across square, portrait and story ratios.
 struct BlueGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -95,23 +99,107 @@ struct BlueGradientTemplateView: View {
                 .minimumScaleFactor(0.6)
                 .frame(maxWidth: side * 0.76)
 
-            if let goal {
-                let labelSize = side * 0.021
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
+            }
+        }
+    }
 
-                VStack(spacing: side * 0.004) {
-                    Text("ціль збору:")
-                        .font(PosterFont.plexMonoRegular.size(labelSize))
-                        .tracking(labelSize * 0.24)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Self.accent)
+    /// Збір триває: етикетка, ціль у Playfair і — коли банка вже щось
+    /// показує — коротка смужка поступу по центру.
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.028
 
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.playfairBold.size(side * 0.09))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
+        return VStack(spacing: side * 0.004) {
+            label("ціль збору:", size: labelSize)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.playfairBold.size(side * 0.09))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .modifier(RuledCaption(side: side))
+    }
+
+    /// Збір закрито. Симетрії цього шаблону пасує крапка, а не стрілка: замість
+    /// смужки, що кудись прямує, під зібраною сумою лягає суцільна риска.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.028
+
+        return VStack(spacing: side * 0.004) {
+            label(CampaignPosterFunding.finishedLabel, size: labelSize)
+                .campaignPosterFundingElement(.finished)
+
+            if let amount = funding.collected ?? funding.goal {
+                Text(amount)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.playfairBold.size(side * 0.09))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+
+            Rectangle()
+                .fill(Self.accent)
+                .frame(width: side * 0.32, height: side * 0.006)
+                .padding(.top, side * 0.022)
+        }
+        .modifier(RuledCaption(side: side))
+    }
+
+    private func label(_ text: String, size: CGFloat) -> some View {
+        Text(text)
+            .font(PosterFont.plexMonoRegular.size(size))
+            .tracking(size * 0.24)
+            .textCase(.uppercase)
+            .foregroundStyle(Self.accent)
+    }
+
+    /// Поступ у мові цього шаблону: коротка смужка по центру й зібране,
+    /// набране тією ж моноширинною, що й етикетка над сумою.
+    @ViewBuilder
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.026
+
+        VStack(spacing: side * 0.014) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.008,
+                track: .white.opacity(0.18),
+                fill: Self.accent
+            )
+            .frame(width: side * 0.5)
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.1)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.white.opacity(0.74))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.top, side * 0.024)
+    }
+
+    /// Обидва стани підпису стоять під тією самою волосяною лінією, на тому
+    /// самому місці — щоб завершення збору не зсувало композицію.
+    private struct RuledCaption: ViewModifier {
+        let side: CGFloat
+
+        func body(content: Content) -> some View {
+            content
                 .padding(.top, side * 0.02)
                 .frame(maxWidth: .infinity)
                 .overlay(alignment: .top) {
@@ -119,7 +207,6 @@ struct BlueGradientTemplateView: View {
                         .fill(.white.opacity(0.4))
                         .frame(height: side * 0.002)
                 }
-            }
         }
     }
 
@@ -127,7 +214,7 @@ struct BlueGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        BlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        BlueGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

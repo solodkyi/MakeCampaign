@@ -103,13 +103,13 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
     private func templateView(forTemplate template: Template) -> some View {
         let purpose = campaign.posterPurpose
 
-        let goal = campaign.target?.formattedAmount.appendingCurrency
+        let funding = CampaignPosterFunding(campaign: campaign)
 
         switch template.series {
         case .b:
-            seriesB(template, purpose: purpose, goal: goal)
+            seriesB(template, purpose: purpose, funding: funding)
         case .a:
-            seriesA(template, purpose: purpose, goal: goal)
+            seriesA(template, purpose: purpose, funding: funding)
         }
     }
 
@@ -118,67 +118,67 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
     private func seriesB(
         _ template: Template,
         purpose: String,
-        goal: String?
+        funding: CampaignPosterFunding
     ) -> some View {
         switch (template.gradient, template.imagePlacement) {
         case (.linearPurple, .topCenter):
-            PurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PurpleGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearGreen, .topToBottomTrailing):
-            GreenGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            GreenGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.angularYellowBlue, .trailing):
-            YellowBlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            YellowBlueGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearSilverBlue, .trailingToEdge):
-            SilverBlueTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            SilverBlueTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearCoralTeal, .trailing):
-            CoralTealGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            CoralTealGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialRedBlack, .topToEdge):
-            RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            RedBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.blueLinear, .center):
-            BlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            BlueGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.cyanMagentaRadial, .squareTrailing):
-            CyanMagentaGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            CyanMagentaGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialAquaPurple, .squareTrailing):
-            AquaPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            AquaPurpleGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.goldBlackLinear, .hexagonTrailing):
-            GoldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            GoldBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearEmeraldBlack, .hexagonTrailing):
-            EmeraldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            EmeraldBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.pinkAngular, .topCenter):
-            PinkGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PinkGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.tealPurpleRadial, .roundedTrailing):
-            TealPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            TealPurpleGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialMintIndigo, .roundedTrailing):
-            MintIndigoGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            MintIndigoGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearIndigoOrange, .trailing):
-            IndigoOrangeGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            IndigoOrangeGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         default: EmptyView()
@@ -190,67 +190,67 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
     private func seriesA(
         _ template: Template,
         purpose: String,
-        goal: String?
+        funding: CampaignPosterFunding
     ) -> some View {
         switch (template.gradient, template.imagePlacement) {
         case (.blueLinear, .center):
-            PosterA01TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA01TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.cyanMagentaRadial, .squareTrailing):
-            PosterA02TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA02TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearPurple, .topCenter):
-            PosterA03TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA03TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.goldBlackLinear, .hexagonTrailing):
-            PosterA04TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA04TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.pinkAngular, .topCenter):
-            PosterA05TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA05TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.tealPurpleRadial, .roundedTrailing):
-            PosterA06TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA06TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearGreen, .topToBottomTrailing):
-            PosterA07TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA07TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.angularYellowBlue, .trailing):
-            PosterA08TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA08TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearSilverBlue, .trailingToEdge):
-            PosterA09TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA09TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialRedBlack, .topToEdge):
-            PosterA10TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA10TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearIndigoOrange, .trailing):
-            PosterA11TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA11TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearEmeraldBlack, .hexagonTrailing):
-            PosterA12TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA12TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialAquaPurple, .squareTrailing):
-            PosterA13TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA13TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialMintIndigo, .roundedTrailing):
-            PosterA14TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA14TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearCoralTeal, .trailing):
-            PosterA15TemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PosterA15TemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         default: EmptyView()

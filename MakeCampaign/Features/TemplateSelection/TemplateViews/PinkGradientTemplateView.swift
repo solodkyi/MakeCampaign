@@ -12,13 +12,17 @@ import SwiftUI
 /// amount; matching them would read as a mistake rather than a collage.
 struct PinkGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -87,26 +91,94 @@ struct PinkGradientTemplateView: View {
                 .frame(maxWidth: side * 0.84, alignment: .leading)
                 .rotationEffect(.degrees(-1.5))
 
-            if let goal {
-                let labelSize = side * 0.022
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
+            }
+        }
+    }
 
-                HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
-                    Text("ціль збору:")
-                        .font(PosterFont.plexMonoRegular.size(labelSize))
-                        .tracking(labelSize * 0.14)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Self.amberInk)
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.030
 
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.oswaldBold.size(side * 0.064))
-                        .foregroundStyle(Self.tar)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
+        return VStack(alignment: .leading, spacing: side * 0.016) {
+            HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
+                Text("ціль збору:")
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.amberInk)
+
+                Text(goal)
+                    .campaignPosterElement(.target)
+                    .font(PosterFont.oswaldBold.size(side * 0.064))
+                    .foregroundStyle(Self.tar)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+            .padding(.horizontal, side * 0.03)
+            .padding(.vertical, side * 0.02)
+            .background(Self.lemon, in: Capsule())
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+    }
+
+    /// Смужка теж капсула — на цьому плакаті все округле, тож поступ
+    /// повторює форму лимонної плашки над ним.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                height: side * 0.016,
+                track: Self.wine.opacity(0.45),
+                fill: Self.lemon
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.horizontal, side * 0.006)
+        .frame(maxWidth: side * 0.7, alignment: .leading)
+    }
+
+    /// Збір закрито: лимонна капсула лишається, але тепер вона несе не ціль,
+    /// а вигук — і нахилена так само, як чорний слуг із назвою.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.04
+
+        return VStack(alignment: .leading, spacing: side * 0.016) {
+            Text(CampaignPosterFunding.finishedLabel.uppercased())
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.oswaldBold.size(labelSize))
+                .tracking(labelSize * 0.1)
+                .foregroundStyle(Self.tar)
                 .padding(.horizontal, side * 0.03)
                 .padding(.vertical, side * 0.02)
                 .background(Self.lemon, in: Capsule())
+                .rotationEffect(.degrees(-1.5))
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.064))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.horizontal, side * 0.006)
             }
         }
     }
@@ -120,7 +192,7 @@ struct PinkGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PinkGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PinkGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

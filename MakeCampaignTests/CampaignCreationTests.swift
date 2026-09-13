@@ -35,11 +35,15 @@ struct CampaignCreationModelTests {
         expectNoDifference(state.selectedTab, .template)
     }
 
-    @Test("Bank tab uses bank-facing copy")
-    func bankTabCopy() {
+    @Test("Editor tabs name the poster field they edit")
+    func tabCopy() {
         expectNoDifference(
             CampaignCreationFeature.State.Tab.qr.title,
-            "Банка"
+            "Ціль"
+        )
+        expectNoDifference(
+            CampaignCreationFeature.State.Tab.data.title,
+            "Назва"
         )
     }
 
@@ -259,6 +263,34 @@ struct CampaignCreationModelTests {
             !CampaignPosterInteractionPolicy.isEnabled(
                 isTransformingImage: false,
                 hasCallbacks: false
+            )
+        )
+    }
+
+    @Test("Keyboard hides the poster selection highlight")
+    func selectionHighlightYieldsToTheKeyboard() {
+        #expect(
+            CampaignPosterSelectionHighlightPolicy.isVisible(
+                selection: .campaignTitle,
+                isTextEditing: false
+            )
+        )
+        #expect(
+            !CampaignPosterSelectionHighlightPolicy.isVisible(
+                selection: .campaignTitle,
+                isTextEditing: true
+            )
+        )
+        #expect(
+            !CampaignPosterSelectionHighlightPolicy.isVisible(
+                selection: .target,
+                isTextEditing: true
+            )
+        )
+        #expect(
+            !CampaignPosterSelectionHighlightPolicy.isVisible(
+                selection: nil,
+                isTextEditing: false
             )
         )
     }

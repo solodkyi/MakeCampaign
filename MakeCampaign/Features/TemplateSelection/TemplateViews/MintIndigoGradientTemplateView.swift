@@ -13,13 +13,17 @@ import SwiftUI
 /// separate blocks together as one stack.
 struct MintIndigoGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -82,9 +86,21 @@ struct MintIndigoGradientTemplateView: View {
 
     @ViewBuilder
     private func goalCard(side: CGFloat, radius: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.022
+        if funding.isFinished {
+            finishedCard(side: side, radius: radius)
+        } else if let goal = funding.goal {
+            collectingCard(goal: goal, side: side, radius: radius)
+        }
+    }
 
+    private func collectingCard(
+        goal: String,
+        side: CGFloat,
+        radius: CGFloat
+    ) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: side * 0.018) {
             HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
                 Text("ціль збору:")
                     .font(PosterFont.plexMonoRegular.size(labelSize))
@@ -101,11 +117,83 @@ struct MintIndigoGradientTemplateView: View {
 
                 Spacer(minLength: 0)
             }
-            .padding(.leading, side * 0.034)
-            .padding(.trailing, side * 0.26)
-            .padding(.vertical, side * 0.026)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.white, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .modifier(Card(side: side, radius: radius))
+    }
+
+    /// Усередині білої картки смужка бере м'ятний — колір, яким світиться
+    /// градієнт довкола неї.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                height: side * 0.012,
+                track: Self.periwinkleInk.opacity(0.16),
+                fill: Self.indigo
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.periwinkleInk)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.trailing, side * 0.22)
+    }
+
+    /// Збір закрито — картка міняється місцями з тлом: м'ята заливає її
+    /// зсередини, а напис лягає глибоким індиго.
+    private func finishedCard(side: CGFloat, radius: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.14)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.deepIndigo)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.064))
+                    .foregroundStyle(Self.deepIndigo)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .modifier(Card(side: side, radius: radius, fill: Self.mint))
+    }
+
+    private struct Card: ViewModifier {
+        let side: CGFloat
+        let radius: CGFloat
+        var fill: Color = .white
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.leading, side * 0.034)
+                .padding(.trailing, side * 0.26)
+                .padding(.vertical, side * 0.026)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    fill,
+                    in: RoundedRectangle(cornerRadius: radius, style: .continuous)
+                )
         }
     }
 
@@ -116,7 +204,7 @@ struct MintIndigoGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        MintIndigoGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        MintIndigoGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

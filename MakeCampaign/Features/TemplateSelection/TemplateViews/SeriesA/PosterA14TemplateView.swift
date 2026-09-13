@@ -10,13 +10,17 @@ import SwiftUI
 /// edge, and the photo in a plain circle.
 struct PosterA14TemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -76,9 +80,17 @@ struct PosterA14TemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.023
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.014) {
             HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
                 Text("ціль збору:")
                     .font(PosterFont.plexMonoRegular.size(labelSize))
@@ -93,9 +105,72 @@ struct PosterA14TemplateView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
-            .padding(.horizontal, side * 0.03)
-            .padding(.vertical, side * 0.022)
-            .background(.white, in: Capsule())
+            .modifier(Pill(side: side))
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+    }
+
+    /// Смужка теж капсула — плакат складений із заокруглених форм, тож
+    /// прямокутник тут читався б як чуже тіло.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.008) {
+            PosterProgressBar(
+                fraction: fraction,
+                height: side * 0.012,
+                track: .white.opacity(0.24),
+                fill: .white
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.white.opacity(0.72))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.horizontal, side * 0.03)
+        .frame(maxWidth: side * 0.62, alignment: .leading)
+    }
+
+    /// Збір закрито: біла капсула лишається білою, але тепер несе вигук, а
+    /// сума виходить із неї назовні — на індиго.
+    private func finished(side: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: side * 0.014) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.oswaldBold.size(side * 0.05))
+                .foregroundStyle(Self.indigo)
+                .modifier(Pill(side: side))
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.066))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.horizontal, side * 0.03)
+            }
+        }
+    }
+
+    private struct Pill: ViewModifier {
+        let side: CGFloat
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.horizontal, side * 0.03)
+                .padding(.vertical, side * 0.022)
+                .background(.white, in: Capsule())
         }
     }
 
@@ -104,7 +179,7 @@ struct PosterA14TemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PosterA14TemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PosterA14TemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

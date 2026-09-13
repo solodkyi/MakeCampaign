@@ -10,13 +10,17 @@ import SwiftUI
 /// caps.
 struct PosterA10TemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -62,24 +66,10 @@ struct PosterA10TemplateView: View {
                 .minimumScaleFactor(0.6)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if let goal {
-                let labelSize = side * 0.024
-
-                HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
-                    Text("ціль збору:")
-                        .font(PosterFont.plexMonoRegular.size(labelSize))
-                        .tracking(labelSize * 0.16)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Self.flare)
-
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.oswaldBold.size(side * 0.086))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
-                .padding(.top, side * 0.024)
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
             }
         }
         .padding(.leading, side * 0.06)
@@ -99,12 +89,92 @@ struct PosterA10TemplateView: View {
         }
     }
 
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.032
+
+        return VStack(alignment: .leading, spacing: side * 0.016) {
+            HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                Text("ціль збору:")
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.16)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.flare)
+
+                Text(goal)
+                    .campaignPosterElement(.target)
+                    .font(PosterFont.oswaldBold.size(side * 0.086))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .padding(.top, side * 0.024)
+    }
+
+    /// Спалах — єдине, що світиться на сажі, тож смужка бере саме його.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.028
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.01,
+                track: .white.opacity(0.16),
+                fill: Self.flare
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+    }
+
+    /// Збір закрито: спалах густішає до суцільної плашки, і вигук читається
+    /// сажею — так, наче його щойно випалили на плакаті.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.032
+
+        return HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.16)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.soot)
+                .padding(.horizontal, side * 0.018)
+                .padding(.vertical, side * 0.008)
+                .background(Self.flare)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.086))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.top, side * 0.024)
+    }
+
     private static let soot = Color(red: 11/255, green: 7/255, blue: 8/255)
     private static let flare = Color(red: 255/255, green: 138/255, blue: 138/255)
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PosterA10TemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PosterA10TemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

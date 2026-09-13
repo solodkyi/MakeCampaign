@@ -13,6 +13,8 @@ struct CampaignPosterThumbnailKey: Hashable, Sendable {
     let composition: CampaignPosterThumbnailComposition
     let purpose: String
     let target: Double?
+    let collected: Double?
+    let isFinished: Bool
     let imageScale: CGFloat
     let imageOffset: CGSize
     let imageReferenceSize: CGSize
@@ -30,6 +32,8 @@ struct CampaignPosterThumbnailRefreshKey: Hashable, Sendable {
     let composition: CampaignPosterThumbnailComposition
     let purpose: String
     let target: Double?
+    let collected: Double?
+    let isFinished: Bool
     let contentMode: String
     let showsQRCode: Bool
     let assetSignature: String
@@ -55,6 +59,8 @@ struct CampaignPosterThumbnailRequest: @unchecked Sendable {
             composition: composition,
             purpose: campaign.purpose,
             target: campaign.target,
+            collected: campaign.collected,
+            isFinished: campaign.isFinished,
             imageScale: campaign.imageScale,
             imageOffset: campaign.imageOffset,
             imageReferenceSize: campaign.imageReferenceSize,
@@ -75,6 +81,8 @@ struct CampaignPosterThumbnailRequest: @unchecked Sendable {
             composition: composition,
             purpose: campaign.purpose,
             target: campaign.target,
+            collected: campaign.collected,
+            isFinished: campaign.isFinished,
             contentMode: campaign.image?.contentMode.rawValue
                 ?? Campaign.Image.ContentMode.fill.rawValue,
             showsQRCode: campaign.showsQRCode,

@@ -46,11 +46,24 @@ enum CampaignPosterInteractionPolicy {
     }
 }
 
+/// Рамка виділення показує, який елемент постера зараз під рукою. Коли
+/// піднімається клавіатура, редагування вже видно в самому полі, а плакат
+/// стискається — тож рамка лише захаращує його й поступається місцем.
+enum CampaignPosterSelectionHighlightPolicy {
+    static func isVisible(
+        selection: CampaignPosterElement?,
+        isTextEditing: Bool
+    ) -> Bool {
+        selection != nil && !isTextEditing
+    }
+}
+
 struct CampaignPosterView: View {
     let campaign: Campaign
     let assets: CampaignPosterPreviewAssets
     var allowsImageTransform = false
     var selectedElement: CampaignPosterElement? = nil
+    var isTextEditing = false
     var onContentModeSelect: ((Campaign.Image.ContentMode) -> Void)?
     var onImageTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
     var onElementTap: ((CampaignPosterElement) -> Void)?
@@ -150,7 +163,11 @@ struct CampaignPosterView: View {
 
     @ViewBuilder
     private var selectionBorder: some View {
-        if let selectedElement,
+        if CampaignPosterSelectionHighlightPolicy.isVisible(
+            selection: selectedElement,
+            isTextEditing: isTextEditing
+        ),
+           let selectedElement,
            let frame = elementRegions[selectedElement] {
             ZStack {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)

@@ -23,9 +23,14 @@ struct CampaignCreationView: View {
     @State private var templateThumbnailBatch: CampaignPosterThumbnailBatch?
     @State private var selectedPosterElement: CampaignPosterElement?
 
+    /// Клавіатура піднята: у цьому стані плакат стискається, а редагування
+    /// видно просто в полі під ним.
+    private var isTextEditing: Bool {
+        focusedInput != nil || isTargetInputFocused
+    }
+
     var body: some View {
         GeometryReader { proxy in
-            let isTextEditing = focusedInput != nil || isTargetInputFocused
             let isPhotoPickerExpanded = store.isPhotoPickerExpanded
             let layout = CampaignEditorLayout.metrics(
                 availableHeight: proxy.size.height,
@@ -137,6 +142,7 @@ struct CampaignCreationView: View {
                     assets: currentPreviewAssets,
                     allowsImageTransform: true,
                     selectedElement: selectedPosterElement,
+                    isTextEditing: isTextEditing,
                     onContentModeSelect: { contentMode in
                         store.send(.contentModeSelected(contentMode))
                     },
@@ -214,7 +220,7 @@ struct CampaignCreationView: View {
                         store.campaign.purpose = purpose.filter { !$0.isNewline }
                         focusedInput = nil
                         DispatchQueue.main.async {
-                            isTargetInputFocused = true
+                            advanceToTargetInput()
                         }
                     }
                     return
@@ -371,30 +377,16 @@ struct CampaignCreationView: View {
                     .submitLabel(.next)
                     .focused($focusedInput, equals: .campaignTitle)
                     .onSubmit {
-                        activateInput(.target)
+                        advanceToTargetInput()
                     }
                     .accessibilityIdentifier("campaign-title-field")
             }
             .id(EditorInput.campaignTitle)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("campaign-title-field-container")
-            if let collected = store.campaign.jar?.details?.amountInHryvnias {
-                labelledValue("Зібрано", value: collected.formattedAmount.appendingCurrency)
-            }
-            labelledField("Ціль збору", error: nil) {
-                CampaignTargetField(
-                    text: $store.campaign.formattedTarget,
-                    isFocused: $isTargetInputFocused,
-                    suffixColor: secondaryText,
-                    onSubmit: dismissKeyboard
-                )
-            }
-            .id(EditorInput.target)
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("campaign-target-field-container")
         }
         .onAppear {
-            activatePendingInputFocus()
+            activatePendingInputFocus(matching: .campaignTitle)
         }
     }
 
@@ -430,25 +422,30 @@ struct CampaignCreationView: View {
                             Button {
                                 store.send(.templateSelected(template))
                             } label: {
+                                let isSelected = store.campaign.template?.id == template.id
                                 VStack(alignment: .leading, spacing: 7) {
                                     CampaignPosterThumbnail(request: request)
                                         .frame(width: 84, height: 84)
+                                        // Обідок висить за краєм мініатюри, щоб не тиснути на саму обкладинку.
+                                        .overlay {
+                                            if isSelected {
+                                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                    .strokeBorder(accent, lineWidth: 2)
+                                                    .padding(-4)
+                                            }
+                                        }
                                     Text(template.name)
                                         .font(.caption2.weight(.semibold))
                                         .lineLimit(1)
+                                        .foregroundStyle(isSelected ? accent : secondaryText)
                                         .frame(width: 84, alignment: .leading)
                                 }
-                                .padding(6)
+                                .padding(8)
                                 .background(
-                                    store.campaign.template?.id == template.id ? accent.opacity(0.14) : fieldBackground,
-                                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                    fieldBackground,
+                                    // 8 pt відступу над радіусом 10 дають співвісні кути.
+                                    in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                                 )
-                                .overlay {
-                                    if store.campaign.template?.id == template.id {
-                                        RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                            .stroke(accent, lineWidth: 2)
-                                    }
-                                }
                             }
                             .id(template.id)
                             .buttonStyle(.plain)
@@ -521,6 +518,20 @@ struct CampaignCreationView: View {
 
     private var qrPanel: some View {
         VStack(alignment: .leading, spacing: 13) {
+            labelledField("Ціль збору", error: nil) {
+                CampaignTargetField(
+                    text: $store.campaign.formattedTarget,
+                    isFocused: $isTargetInputFocused,
+                    suffixColor: secondaryText,
+                    onSubmit: dismissKeyboard
+                )
+            }
+            .id(EditorInput.target)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("campaign-target-field-container")
+            if let collected = store.campaign.jar?.details?.amountInHryvnias {
+                labelledValue("Зібрано", value: collected.formattedAmount.appendingCurrency)
+            }
             labelledField("Посилання на банку", error: store.validation.qrLink) {
                 TextField("URL Банки (не обов'язково)", text: $store.campaign.jarURLString)
                     .keyboardType(.URL)
@@ -528,11 +539,9 @@ struct CampaignCreationView: View {
                     .autocorrectionDisabled()
                     .accessibilityIdentifier("campaign-jar-link-field")
             }
-            labelledField("Підпис", error: nil) {
-                TextField("Підтримайте збір", text: $store.campaign.shareCaption, axis: .vertical)
-                    .lineLimit(2...4)
-                    .accessibilityIdentifier("campaign-caption-field")
-            }
+        }
+        .onAppear {
+            activatePendingInputFocus(matching: .target)
         }
     }
 
@@ -574,9 +583,10 @@ struct CampaignCreationView: View {
                 isTargetInputFocused = false
             }
 
-            let dataPanelIsVisible = store.selectedTab == .data
-            store.send(.tabSelected(.data))
-            if activatesInput && dataPanelIsVisible {
+            let tab = Self.tab(hosting: input)
+            let panelIsVisible = store.selectedTab == tab
+            store.send(.tabSelected(tab))
+            if activatesInput && panelIsVisible {
                 activateInput(input)
                 pendingInputFocus = nil
             }
@@ -588,10 +598,31 @@ struct CampaignCreationView: View {
         }
     }
 
-    private func activatePendingInputFocus() {
-        guard let pendingInputFocus else { return }
-        activateInput(pendingInputFocus)
-        self.pendingInputFocus = nil
+    /// Кожне поле живе у своїй вкладці, тож панель підхоплює лише свій відкладений фокус.
+    private static func tab(hosting input: EditorInput) -> CampaignCreationFeature.State.Tab {
+        switch input {
+        case .campaignTitle: .data
+        case .target: .qr
+        }
+    }
+
+    private func activatePendingInputFocus(matching input: EditorInput) {
+        guard pendingInputFocus == input else { return }
+        activateInput(input)
+        pendingInputFocus = nil
+    }
+
+    /// Ціль тепер на сусідній вкладці — перемикаємося туди й фокусуємо поле, коли панель з'явиться.
+    private func advanceToTargetInput() {
+        if store.selectedTab == .qr {
+            activateInput(.target)
+            return
+        }
+
+        focusedInput = nil
+        isTargetInputFocused = false
+        pendingInputFocus = .target
+        store.send(.tabSelected(.qr))
     }
 
     private func activateInput(_ input: EditorInput) {

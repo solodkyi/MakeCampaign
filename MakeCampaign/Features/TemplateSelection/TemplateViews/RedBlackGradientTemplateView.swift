@@ -12,13 +12,17 @@ import SwiftUI
 /// the composition and the title reads as its caption.
 struct RedBlackGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -71,23 +75,10 @@ struct RedBlackGradientTemplateView: View {
         let purposeSize = side * 0.044
 
         return VStack(alignment: .leading, spacing: side * 0.024) {
-            if let goal {
-                let labelSize = side * 0.023
-
-                VStack(alignment: .leading, spacing: side * 0.006) {
-                    Text("ціль збору:")
-                        .font(PosterFont.plexMonoRegular.size(labelSize))
-                        .tracking(labelSize * 0.2)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Self.flare)
-
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.oswaldBold.size(side * 0.1))
-                        .foregroundStyle(Self.crimson)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
             }
 
             Text(purpose.uppercased())
@@ -106,6 +97,84 @@ struct RedBlackGradientTemplateView: View {
         .padding(.bottom, side * 0.06)
     }
 
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.006) {
+            Text("ціль збору:")
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.2)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.flare)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.oswaldBold.size(side * 0.1))
+                .foregroundStyle(Self.crimson)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+    }
+
+    /// На сажі смужка йде від багряного до спалаху — той самий перехід, що
+    /// веде око від цілі до назви.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.01,
+                track: Self.bone.opacity(0.16),
+                fill: Self.crimson
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.16)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.flare)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.top, side * 0.012)
+    }
+
+    /// Збір закрито: багрянець із цифри перебирається на плашку, і вигук
+    /// стоїть там, де щойно стояла ціль.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.012) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.2)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.soot)
+                .padding(.horizontal, side * 0.02)
+                .padding(.vertical, side * 0.009)
+                .background(Self.crimson)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.1))
+                    .foregroundStyle(Self.bone)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+    }
+
     private static let soot = Color(red: 12/255, green: 10/255, blue: 10/255)
     private static let crimson = Color(red: 200/255, green: 32/255, blue: 44/255)
     private static let flare = Color(red: 255/255, green: 90/255, blue: 90/255)
@@ -113,7 +182,7 @@ struct RedBlackGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        RedBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

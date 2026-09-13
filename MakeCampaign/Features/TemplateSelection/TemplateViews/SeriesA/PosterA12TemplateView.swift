@@ -10,13 +10,17 @@ import SwiftUI
 /// thin emerald rule.
 struct PosterA12TemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -87,9 +91,17 @@ struct PosterA12TemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.024
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.032
+
+        return VStack(spacing: side * 0.018) {
             HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
                 Text("ціль збору:")
                     .font(PosterFont.plexMonoRegular.size(labelSize))
@@ -106,15 +118,83 @@ struct PosterA12TemplateView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
-            .padding(.leading, side * 0.03)
-            .padding(.trailing, side * 0.26)
-            .padding(.vertical, side * 0.026)
-            .background(Self.pitch)
-            .overlay {
-                Rectangle()
-                    .stroke(Self.emerald, lineWidth: side * 0.0025)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
             }
         }
+        .modifier(HairlineBox(side: side))
+    }
+
+    /// Смужка тримається тієї самої волосяної естетики: тонка, пряма,
+    /// смарагдова — як обведення коробки, у якій вона лежить.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return HStack(spacing: side * 0.02) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.007,
+                track: Self.emerald.opacity(0.22),
+                fill: Self.emerald
+            )
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .foregroundStyle(Self.emerald)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+        }
+    }
+
+    /// Збір закрито: обведення заливається смарагдом, і напис читається
+    /// смолою — коробка нарешті замкнулась.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.032
+
+        return HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.14)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.pitch)
+
+            Spacer(minLength: 0)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoSemiBold.size(side * 0.062))
+                    .foregroundStyle(Self.pitch)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .modifier(HairlineBox(side: side, fill: Self.emerald))
+    }
+
+    private struct HairlineBox: ViewModifier {
+        let side: CGFloat
+        var fill: Color = Color(red: 10/255, green: 15/255, blue: 12/255)
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.leading, side * 0.03)
+                .padding(.trailing, side * 0.26)
+                .padding(.vertical, side * 0.026)
+                .background(fill)
+                .overlay {
+                    Rectangle()
+                        .stroke(Self.emerald, lineWidth: side * 0.0025)
+                }
+        }
+
+        private static let emerald = Color(red: 111/255, green: 227/255, blue: 176/255)
     }
 
     private static let pitch = Color(red: 10/255, green: 15/255, blue: 12/255)
@@ -123,7 +203,7 @@ struct PosterA12TemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PosterA12TemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PosterA12TemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

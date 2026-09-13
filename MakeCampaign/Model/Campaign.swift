@@ -98,6 +98,11 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
     var posterFormat: PosterFormat
     var showsQRCode: Bool
     var shareCaption: String
+    /// Автор оголосив збір завершеним власноруч.
+    ///
+    /// Окреме поле, а не висновок із сум: збір буває закритим і тоді, коли
+    /// банка ще активна, а ціль формально недобрана.
+    var isClosedByAuthor: Bool
     var createdAt: Date
     var updatedAt: Date
     
@@ -115,6 +120,7 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
         posterFormat: PosterFormat = .square,
         showsQRCode: Bool = false,
         shareCaption: String = "",
+        isClosedByAuthor: Bool = false,
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
@@ -128,6 +134,7 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
         self.posterFormat = posterFormat
         self.showsQRCode = showsQRCode
         self.shareCaption = shareCaption
+        self.isClosedByAuthor = isClosedByAuthor
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -135,6 +142,7 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case id, image, template, purpose, target, jar
         case status, posterFormat, showsQRCode, shareCaption
+        case isClosedByAuthor
         case createdAt, updatedAt
     }
 
@@ -150,6 +158,9 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
         posterFormat = try values.decodeIfPresent(PosterFormat.self, forKey: .posterFormat) ?? .square
         showsQRCode = try values.decodeIfPresent(Bool.self, forKey: .showsQRCode) ?? false
         shareCaption = try values.decodeIfPresent(String.self, forKey: .shareCaption) ?? ""
+        // Збори, збережені до того, як автор міг закрити збір власноруч,
+        // такого рішення не приймали.
+        isClosedByAuthor = try values.decodeIfPresent(Bool.self, forKey: .isClosedByAuthor) ?? false
         let fallbackDate = Date.now
         createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? fallbackDate
         updatedAt = try values.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
@@ -167,12 +178,44 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
         try values.encode(posterFormat, forKey: .posterFormat)
         try values.encode(showsQRCode, forKey: .showsQRCode)
         try values.encode(shareCaption, forKey: .shareCaption)
+        try values.encode(isClosedByAuthor, forKey: .isClosedByAuthor)
         try values.encode(createdAt, forKey: .createdAt)
         try values.encode(updatedAt, forKey: .updatedAt)
     }
 }
 
 extension Campaign {
+    /// Зібрана сума в гривнях, якщо банку підключено й дані вже прийшли.
+    var collected: Double? {
+        jar?.details?.amountInHryvnias
+    }
+
+    /// Частка досягнутої цілі від нуля до одиниці.
+    ///
+    /// Плакат ніколи не малює смужку, довшу за доріжку, тож частка обрізана
+    /// зверху — навіть коли зібрали більше, ніж просили.
+    var fundedFraction: Double? {
+        guard let target, target > 0, let collected else { return nil }
+        return min(max(collected / target, 0), 1)
+    }
+
+    /// Ціль досягнуто або перевищено.
+    var hasReachedTarget: Bool {
+        guard let target, let collected else { return false }
+        return collected >= target
+    }
+
+    /// Банку закрито на боці monobank.
+    var isJarClosed: Bool {
+        guard let details = jar?.details else { return false }
+        return !details.isActive
+    }
+
+    /// Збір завершено: ціль узято, банку закрито, або так вирішив автор.
+    var isFinished: Bool {
+        isClosedByAuthor || hasReachedTarget || isJarClosed
+    }
+
     var progress: Progress? {
         guard let target, let collected = jar?.details?.amountInHryvnias else { return nil }
 

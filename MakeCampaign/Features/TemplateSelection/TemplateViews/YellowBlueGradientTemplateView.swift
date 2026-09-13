@@ -13,13 +13,17 @@ import SwiftUI
 /// flag-like edge the composition is built on.
 struct YellowBlueGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -76,27 +80,99 @@ struct YellowBlueGradientTemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.023
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
-            VStack(alignment: .leading, spacing: side * 0.006) {
-                Text("ціль збору:")
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.006) {
+            Text("ціль збору:")
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.18)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.yellow)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.oswaldBold.size(side * 0.074))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .modifier(Slab(side: side))
+    }
+
+    /// Жовта смужка на синій плиті — той самий контраст, на якому тримається
+    /// весь плакат, без жодного третього кольору.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.012,
+                track: .white.opacity(0.2),
+                fill: Self.yellow
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.18)
+                    .tracking(labelSize * 0.14)
                     .textCase(.uppercase)
-                    .foregroundStyle(Self.yellow)
-
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.oswaldBold.size(side * 0.074))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.white.opacity(0.78))
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
-            .padding(.horizontal, side * 0.03)
-            .padding(.vertical, side * 0.024)
-            .frame(maxWidth: side * 0.7, alignment: .leading)
-            .background(Self.navy)
+        }
+        .padding(.top, side * 0.012)
+    }
+
+    /// Збір закрито: плита міняє колір на жовтий, і напис читається синім —
+    /// найгучніше, що цей шаблон уміє сказати.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.04
+
+        return VStack(alignment: .leading, spacing: side * 0.006) {
+            Text(CampaignPosterFunding.finishedLabel.uppercased())
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.oswaldBold.size(labelSize))
+                .tracking(labelSize * 0.1)
+                .foregroundStyle(Self.navy)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.074))
+                    .foregroundStyle(Self.navy)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .modifier(Slab(side: side, fill: Self.yellow))
+    }
+
+    private struct Slab: ViewModifier {
+        let side: CGFloat
+        var fill: Color = Color(red: 16/255, green: 48/255, blue: 125/255)
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.horizontal, side * 0.03)
+                .padding(.vertical, side * 0.024)
+                .frame(maxWidth: side * 0.7, alignment: .leading)
+                .background(fill)
         }
     }
 
@@ -105,7 +181,7 @@ struct YellowBlueGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        YellowBlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        YellowBlueGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

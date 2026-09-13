@@ -10,13 +10,17 @@ import SwiftUI
 /// cut to a matching hexagon.
 struct EmeraldBlackGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -85,26 +89,93 @@ struct EmeraldBlackGradientTemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.023
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
-            VStack(alignment: .leading, spacing: side * 0.008) {
-                Text("ціль збору:")
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.008) {
+            Text("ціль збору:")
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.18)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.neon)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.oswaldBold.size(side * 0.08))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .padding(.trailing, side * 0.26)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Смужка світиться тим самим неоном, що обводить шестикутник, — на смолі
+    /// вона читається як індикатор, а не як прикраса.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.012) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.01,
+                track: Self.neon.opacity(0.16),
+                fill: Self.neon
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.18)
+                    .tracking(labelSize * 0.16)
                     .textCase(.uppercase)
-                    .foregroundStyle(Self.neon)
+                    .foregroundStyle(Self.frost.opacity(0.66))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.top, side * 0.016)
+    }
 
-                Text(goal)
-                    .campaignPosterElement(.target)
+    /// Збір закрито: неон нарешті заливає плашку суцільним, і напис читається
+    /// смолою по зеленому — інверсія того, чим шаблон жив досі.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.012) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.18)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.pitch)
+                .padding(.horizontal, side * 0.022)
+                .padding(.vertical, side * 0.01)
+                .background(Self.neon)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.oswaldBold.size(side * 0.08))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
-            .padding(.trailing, side * 0.26)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(.trailing, side * 0.26)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private static let pitch = Color(red: 4/255, green: 18/255, blue: 12/255)
@@ -113,7 +184,7 @@ struct EmeraldBlackGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        EmeraldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        EmeraldBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

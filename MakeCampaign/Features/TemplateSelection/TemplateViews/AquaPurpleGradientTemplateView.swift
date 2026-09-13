@@ -10,13 +10,17 @@ import SwiftUI
 /// square, drop-shadowed photo.
 struct AquaPurpleGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -68,9 +72,17 @@ struct AquaPurpleGradientTemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.023
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.024) {
             HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
                 Text("ціль збору:")
                     .font(PosterFont.plexMonoRegular.size(labelSize))
@@ -85,14 +97,82 @@ struct AquaPurpleGradientTemplateView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
-            .padding(.top, side * 0.024)
-            .padding(.trailing, side * 0.26)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(alignment: .top) {
-                Rectangle()
-                    .fill(.white.opacity(0.45))
-                    .frame(height: side * 0.002)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
             }
+        }
+        .padding(.trailing, side * 0.26)
+        .modifier(HairlineRule(side: side))
+    }
+
+    /// Смужка світиться аквамарином — тим самим, з якого починається сяйво
+    /// у нижньому правому куті.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.028
+
+        return VStack(alignment: .leading, spacing: side * 0.012) {
+            PosterProgressBar(
+                fraction: fraction,
+                height: side * 0.012,
+                track: .white.opacity(0.18),
+                fill: Self.aqua
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.seafoam.opacity(0.8))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+    }
+
+    /// Збір закрито: сяйво з фону збирається в аквамаринову капсулу, і те, що
+    /// було ціллю, стає підсумком.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.18)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.night)
+                .padding(.horizontal, side * 0.022)
+                .padding(.vertical, side * 0.01)
+                .background(Self.aqua, in: Capsule())
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.072))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.trailing, side * 0.26)
+        .modifier(HairlineRule(side: side))
+    }
+
+    private struct HairlineRule: ViewModifier {
+        let side: CGFloat
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.top, side * 0.024)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(.white.opacity(0.45))
+                        .frame(height: side * 0.002)
+                }
         }
     }
 
@@ -103,7 +183,7 @@ struct AquaPurpleGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        AquaPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        AquaPurpleGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

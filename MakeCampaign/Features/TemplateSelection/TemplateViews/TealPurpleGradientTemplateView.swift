@@ -8,15 +8,24 @@ import SwiftUI
 /// `tealPurpleRadial_roundedTrailing` — a teal glow rising from the lower left
 /// into deep indigo, with the photo held in a full-height pill and the kicker
 /// set vertically up the left edge.
+///
+/// Retired from `Template.list`: it can no longer be chosen, and so it draws
+/// only the goal — the progress bar and the finished state belong to the
+/// templates still on offer. It stays here because campaigns saved while it was
+/// selectable still point at it, and those posters must keep rendering.
 struct TealPurpleGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -77,8 +86,8 @@ struct TealPurpleGradientTemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.022
+        if let goal = funding.goal {
+            let labelSize = side * 0.030
 
             HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
                 Text("ціль збору:")
@@ -112,7 +121,7 @@ struct TealPurpleGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        TealPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        TealPurpleGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

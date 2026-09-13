@@ -10,13 +10,17 @@ import SwiftUI
 /// running off the trailing edge.
 struct SilverBlueTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -81,30 +85,112 @@ struct SilverBlueTemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.022
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
-            HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
-                Text("ціль збору:")
-                    .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.14)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Self.steel)
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.030
 
-                Spacer(minLength: 0)
+        return ruled(side: side) {
+            VStack(spacing: side * 0.018) {
+                row(label: "ціль збору:", labelSize: labelSize, side: side) {
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.plexMonoSemiBold.size(side * 0.056))
+                        .foregroundStyle(Self.deepInk)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.plexMonoSemiBold.size(side * 0.056))
-                    .foregroundStyle(Self.deepInk)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                if let fraction = funding.fraction {
+                    progress(fraction: fraction, side: side)
+                }
             }
+        }
+    }
+
+    /// Досьє не терпить заокруглень: смужка тут — прямий відрізок, а частку
+    /// поруч набрано тією ж моноширинною, що й суми.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return HStack(spacing: side * 0.024) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.008,
+                track: Self.steel.opacity(0.24),
+                fill: Self.slate
+            )
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .foregroundStyle(Self.steel)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+        }
+    }
+
+    /// Збір закрито: рядок лишається на місці, лише ліворуч тепер стоїть
+    /// висновок, а не запит.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return ruled(side: side) {
+            row(
+                label: CampaignPosterFunding.finishedLabel,
+                labelSize: labelSize,
+                side: side
+            ) {
+                if let collected = funding.collected {
+                    Text(collected)
+                        .campaignPosterFundingElement(.collected)
+                        .font(PosterFont.plexMonoSemiBold.size(side * 0.056))
+                        .foregroundStyle(Self.deepInk)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
+            .campaignPosterFundingElement(.finished)
+        }
+    }
+
+    /// Обидва стани — і запит, і висновок — стоять тим самим рядком: етикетка
+    /// ліворуч, сума праворуч, між ними розпірка.
+    private func row(
+        label: String,
+        labelSize: CGFloat,
+        side: CGFloat,
+        @ViewBuilder figure: () -> some View
+    ) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
+            Text(label)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.14)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.steel)
+
+            Spacer(minLength: 0)
+
+            figure()
+        }
+    }
+
+    /// Обидва стани лежать між тими самими пунктирними лініями, тож
+    /// завершення збору не зсуває квиток.
+    private func ruled(side: CGFloat, @ViewBuilder content: () -> some View) -> some View {
+        content()
             .padding(.vertical, side * 0.024)
             .frame(maxWidth: .infinity)
             .overlay(alignment: .top) { rule(side: side) }
             .overlay(alignment: .bottom) { rule(side: side) }
-        }
     }
 
     private func rule(side: CGFloat) -> some View {
@@ -123,7 +209,7 @@ struct SilverBlueTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        SilverBlueTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        SilverBlueTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

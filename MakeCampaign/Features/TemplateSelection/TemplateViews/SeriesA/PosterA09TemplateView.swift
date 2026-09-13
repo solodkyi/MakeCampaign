@@ -10,13 +10,17 @@ import SwiftUI
 /// photo panel casting a shadow back across the page.
 struct PosterA09TemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -81,18 +85,84 @@ struct PosterA09TemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.023
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
-            VStack(alignment: .leading, spacing: side * 0.008) {
-                Text("ціль збору:")
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.008) {
+            Text("ціль збору:")
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.2)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.slate)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.playfairBoldItalic.size(side * 0.1))
+                .foregroundStyle(Self.deepInk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+    }
+
+    /// Смужка стримана, як і весь аркуш: грифель на світлій доріжці, без
+    /// заокруглень.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.01,
+                track: Self.slate.opacity(0.2),
+                fill: Self.slate
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.2)
+                    .tracking(labelSize * 0.16)
                     .textCase(.uppercase)
                     .foregroundStyle(Self.slate)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.top, side * 0.008)
+        .frame(maxWidth: side * 0.56, alignment: .leading)
+    }
 
-                Text(goal)
-                    .campaignPosterElement(.target)
+    /// Збір закрито: висновок набрано тим самим курсивом, що й сума, а
+    /// етикетка над ним лягає на грифельну плашку.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.008) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.2)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.paper)
+                .padding(.horizontal, side * 0.018)
+                .padding(.vertical, side * 0.007)
+                .background(Self.slate)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.playfairBoldItalic.size(side * 0.1))
                     .foregroundStyle(Self.deepInk)
                     .lineLimit(1)
@@ -101,13 +171,15 @@ struct PosterA09TemplateView: View {
         }
     }
 
+    private static let paper = Color(red: 240/255, green: 242/255, blue: 245/255)
+
     private static let ink = Color(red: 23/255, green: 34/255, blue: 47/255)
     private static let deepInk = Color(red: 16/255, green: 25/255, blue: 34/255)
     private static let slate = Color(red: 44/255, green: 61/255, blue: 82/255)
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PosterA09TemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PosterA09TemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

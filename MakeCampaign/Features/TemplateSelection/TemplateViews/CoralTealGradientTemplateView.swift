@@ -9,13 +9,17 @@ import SwiftUI
 /// off the trailing edge, and the photo cut to an arch that opens toward it.
 struct CoralTealGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -55,28 +59,93 @@ struct CoralTealGradientTemplateView: View {
 
             Spacer(minLength: 0)
 
-            if let goal {
-                let labelSize = side * 0.022
-
-                VStack(alignment: .leading, spacing: side * 0.006) {
-                    Text("ціль збору:")
-                        .font(PosterFont.plexMonoRegular.size(labelSize))
-                        .tracking(labelSize * 0.2)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Self.rust)
-
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.oswaldBold.size(side * 0.08))
-                        .foregroundStyle(Self.shell)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
             }
         }
         .padding(.leading, side * 0.06)
         .padding(.trailing, side * 0.04)
         .padding(.vertical, side * 0.06)
+    }
+
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: side * 0.006) {
+            Text("ціль збору:")
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.2)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.rust)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.oswaldBold.size(side * 0.08))
+                .foregroundStyle(Self.shell)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+    }
+
+    /// Смужка глибокого бірюзового на кораловому — той самий контраст, що
+    /// тримає колонку з фото праворуч.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.012) {
+            PosterProgressBar(
+                fraction: fraction,
+                height: side * 0.013,
+                track: Self.ember.opacity(0.2),
+                fill: Self.teal
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.rust)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.top, side * 0.014)
+        .padding(.trailing, side * 0.02)
+    }
+
+    /// Збір закрито: бірюза виходить із колонки на коралове поле й забирає
+    /// підсумок у власну плашку.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: side * 0.012) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.2)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.shell)
+                .padding(.horizontal, side * 0.022)
+                .padding(.vertical, side * 0.01)
+                .background(Self.teal)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.08))
+                    .foregroundStyle(Self.shell)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
     }
 
     private func photo(side: CGFloat, height: CGFloat) -> some View {
@@ -97,7 +166,7 @@ struct CoralTealGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        CoralTealGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        CoralTealGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

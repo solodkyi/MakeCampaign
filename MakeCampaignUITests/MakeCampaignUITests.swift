@@ -30,8 +30,44 @@ final class MakeCampaignUITests: XCTestCase {
         // Given: App launches with no campaigns
         
         // Then: Empty state UI elements should be visible
-        XCTAssertTrue(app.staticTexts["Зборів ще немає"].exists, "Empty state title should be visible")
-        XCTAssertTrue(app.staticTexts["Створіть обкладинку та додайте дані збору."].exists, "Empty state subtitle should be visible")
+        XCTAssertTrue(app.staticTexts["Збір починається з обкладинки"].exists, "Empty state title should be visible")
+        XCTAssertTrue(
+            app.staticTexts["Фото, сума й посилання на банку — в одній картинці, готовій до сторіс і чатів."].exists,
+            "Empty state subtitle should be visible"
+        )
+    }
+
+    @MainActor
+    func testEmptyStateShowsCoverStack() throws {
+        // Then: The cover preview stack sells the result instead of an app icon
+        let stack = app.otherElements["empty-state-cover-stack"]
+        XCTAssertTrue(stack.waitForExistence(timeout: 3), "Cover stack should be visible")
+        XCTAssertEqual(stack.label, "Приклади обкладинок")
+    }
+
+    @MainActor
+    func testTappingTheCoverStackAdvancesIt() throws {
+        let stack = app.otherElements["empty-state-cover-stack"]
+        XCTAssertTrue(stack.waitForExistence(timeout: 3))
+        let firstCover = stack.value as? String
+
+        // When: The reader taps the stack to see another cover
+        stack.tap()
+
+        // Then: A different sample moves to the front of the stack
+        let advanced = NSPredicate(format: "value != %@", firstCover ?? "")
+        expectation(for: advanced, evaluatedWith: stack)
+        waitForExpectations(timeout: 3)
+    }
+
+    @MainActor
+    func testEmptyStateHidesFloatingActionButton() throws {
+        // The empty state carries its own full-width CTA, so the FAB would
+        // only sit on top of it.
+        XCTAssertFalse(
+            app.buttons["create-campaign-button"].exists,
+            "Floating action button should be hidden while the empty state is shown"
+        )
     }
 
     @MainActor
@@ -69,37 +105,135 @@ final class MakeCampaignUITests: XCTestCase {
     
     @MainActor
     func testFloatingActionButtonIsVisible() throws {
-        // Given: App is launched
-        
+        // Given: A list that already holds a campaign
+        launchWithSeededList()
+
         // Then: Floating action button should be visible
         let fabButton = app.buttons["create-campaign-button"]
-        XCTAssertTrue(fabButton.exists, "Floating action button should be visible")
-    }
-    
-    @MainActor
-    func testFloatingActionButtonStartsCreation() throws {
-        // Given: App is launched
-        let fabButton = app.buttons["create-campaign-button"]
-        
-        // When: User taps the FAB
-        if fabButton.exists {
-            fabButton.tap()
-            
-            // Then: The same campaign editor opens
-            XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
-            XCTAssertTrue(app.buttons["editor-tab-photo"].exists)
-            XCTAssertTrue(app.buttons["editor-tab-data"].exists)
-            XCTAssertTrue(app.buttons["editor-tab-template"].exists)
-            XCTAssertTrue(app.buttons["editor-tab-qr"].exists)
-        }
+        XCTAssertTrue(fabButton.waitForExistence(timeout: 3), "Floating action button should be visible")
     }
 
     @MainActor
-    func testDataTabIsPresentedAsText() throws {
+    func testFloatingActionButtonStartsCreation() throws {
+        // Given: A list that already holds a campaign
+        launchWithSeededList()
+        let fabButton = app.buttons["create-campaign-button"]
+        XCTAssertTrue(fabButton.waitForExistence(timeout: 3))
+
+        // When: User taps the FAB
+        fabButton.tap()
+
+        // Then: The same campaign editor opens
+        XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["editor-tab-photo"].exists)
+        XCTAssertTrue(app.buttons["editor-tab-data"].exists)
+        XCTAssertTrue(app.buttons["editor-tab-template"].exists)
+        XCTAssertTrue(app.buttons["editor-tab-qr"].exists)
+    }
+
+    @MainActor
+    private func launchWithSeededList() {
+        app.terminate()
+        app = XCUIApplication()
+        app.launchArguments = ["UI_TESTING", "UI_TESTING_SEEDED_LIST"]
+        app.launch()
+    }
+
+    // MARK: - Campaign Row Tests
+
+    // The seeded list: no jar, a jar part-way to its goal, a finished jar.
+    private static let noJarRow = "campaign-row-00000000-0000-0000-0000-000000000044"
+    private static let partwayRow = "campaign-row-00000000-0000-0000-0000-000000000045"
+    private static let finishedRow = "campaign-row-00000000-0000-0000-0000-000000000046"
+    private static let noJarPoster = "campaign-row-poster-00000000-0000-0000-0000-000000000044"
+    private static let partwayPoster = "campaign-row-poster-00000000-0000-0000-0000-000000000045"
+
+    @MainActor
+    func testRowWithoutJarShowsItsTargetButNoRefreshLine() throws {
+        launchWithSeededList()
+        let row = app.buttons[Self.noJarRow]
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+
+        XCTAssertTrue(row.label.contains("20,000 грн."), "Row label was: \(row.label)")
+        XCTAssertFalse(row.label.contains("оновлено"), "Row label was: \(row.label)")
+    }
+
+    @MainActor
+    func testRowWithJarShowsCollectedOverTargetAndRefreshLine() throws {
+        launchWithSeededList()
+        let row = app.buttons[Self.partwayRow]
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+
+        let loaded = NSPredicate(format: "label CONTAINS '46,500'")
+        expectation(for: loaded, evaluatedWith: row)
+        waitForExpectations(timeout: 3)
+
+        XCTAssertTrue(row.label.contains("75,000 грн."), "Row label was: \(row.label)")
+        XCTAssertTrue(row.label.contains("62%"), "Row label was: \(row.label)")
+        XCTAssertTrue(row.label.contains("оновлено"), "Row label was: \(row.label)")
+    }
+
+    @MainActor
+    func testFinishedRowSaysCollected() throws {
+        launchWithSeededList()
+        let row = app.buttons[Self.finishedRow]
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+
+        let finished = NSPredicate(format: "label CONTAINS 'Зібрано!'")
+        expectation(for: finished, evaluatedWith: row)
+        waitForExpectations(timeout: 3)
+    }
+
+    @MainActor
+    func testTappingRowPosterOpensFullscreenPreview() throws {
+        launchWithSeededList()
+        let poster = app.buttons[Self.partwayPoster]
+        XCTAssertTrue(poster.waitForExistence(timeout: 3))
+
+        poster.tap()
+
+        let preview = app.otherElements["campaign-poster-fullscreen"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 3))
+        XCTAssertFalse(app.navigationBars["Редактор"].exists, "The poster must not open the editor")
+
+        app.buttons["campaign-poster-fullscreen-close"].tap()
+
+        XCTAssertTrue(preview.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(app.buttons[Self.partwayRow].exists)
+    }
+
+    @MainActor
+    func testSwipingThePreviewDownClosesIt() throws {
+        launchWithSeededList()
+        app.buttons[Self.noJarPoster].tap()
+
+        let preview = app.otherElements["campaign-poster-fullscreen"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 3))
+
+        preview.swipeDown(velocity: .fast)
+
+        XCTAssertTrue(preview.waitForNonExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testTappingRowDetailsOpensEditor() throws {
+        launchWithSeededList()
+        let row = app.buttons[Self.noJarRow]
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+
+        row.tap()
+
+        XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.otherElements["campaign-poster-fullscreen"].exists)
+    }
+
+    @MainActor
+    func testDataTabIsPresentedAsName() throws {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
 
-        XCTAssertEqual(app.buttons["editor-tab-data"].label, "Текст")
+        XCTAssertEqual(app.buttons["editor-tab-data"].label, "Назва")
+        XCTAssertEqual(app.buttons["editor-tab-qr"].label, "Ціль")
     }
 
     @MainActor
@@ -129,7 +263,7 @@ final class MakeCampaignUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
-        app.buttons["editor-tab-data"].tap()
+        app.buttons["editor-tab-qr"].tap()
         let targetField = app.textFields["campaign-target-field"]
         XCTAssertTrue(targetField.waitForExistence(timeout: 2))
         XCTAssertEqual(targetField.value as? String, "20,000")
@@ -137,13 +271,13 @@ final class MakeCampaignUITests: XCTestCase {
     }
 
     @MainActor
-    func testTextTabOmitsFundraisingProgress() throws {
+    func testNameTabOmitsFundraisingProgress() throws {
         launchSeededEditor()
         app.buttons["editor-tab-data"].tap()
 
         XCTAssertFalse(
             app.staticTexts["ПРОГРЕС"].exists,
-            "Fundraising progress does not belong in the poster text editor"
+            "Fundraising progress does not belong in the poster name editor"
         )
     }
 
@@ -304,7 +438,7 @@ final class MakeCampaignUITests: XCTestCase {
     func testTargetFieldFormatsDigitsWhileTyping() throws {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
-        app.buttons["editor-tab-data"].tap()
+        app.buttons["editor-tab-qr"].tap()
 
         let targetField = app.textFields["campaign-target-field"]
         XCTAssertTrue(targetField.waitForExistence(timeout: 2))
@@ -320,7 +454,7 @@ final class MakeCampaignUITests: XCTestCase {
     func testTargetFieldAcceptsLocalizedDecimalKeyWhileTyping() throws {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
-        app.buttons["editor-tab-data"].tap()
+        app.buttons["editor-tab-qr"].tap()
 
         let targetField = app.textFields["campaign-target-field"]
         XCTAssertTrue(targetField.waitForExistence(timeout: 2))
@@ -354,18 +488,21 @@ final class MakeCampaignUITests: XCTestCase {
     }
 
     @MainActor
-    func testPurposeReturnMovesFocusToTarget() throws {
+    func testPurposeReturnMovesFocusToTargetOnTheTargetTab() throws {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
         app.buttons["editor-tab-data"].tap()
 
         let titleField = app.textFields["campaign-title-field"]
-        let targetField = app.textFields["campaign-target-field"]
         XCTAssertTrue(titleField.waitForExistence(timeout: 2))
-        XCTAssertTrue(targetField.waitForExistence(timeout: 2))
+        XCTAssertFalse(app.textFields["campaign-target-field"].exists)
 
         titleField.tap()
         titleField.typeText("Purpose\n")
+
+        // Ціль живе на сусідній вкладці — Return має перемкнути її та сфокусувати поле.
+        let targetField = app.textFields["campaign-target-field"]
+        XCTAssertTrue(targetField.waitForExistence(timeout: 2))
         targetField.typeText("25000")
 
         XCTAssertEqual(targetField.value as? String, "25,000")
@@ -376,7 +513,7 @@ final class MakeCampaignUITests: XCTestCase {
     func testKeyboardDoneButtonDismissesTargetKeyboard() throws {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
-        app.buttons["editor-tab-data"].tap()
+        app.buttons["editor-tab-qr"].tap()
 
         let targetField = app.textFields["campaign-target-field"]
         XCTAssertTrue(targetField.waitForExistence(timeout: 2))
@@ -392,7 +529,7 @@ final class MakeCampaignUITests: XCTestCase {
 
         XCTAssertEqual(targetField.value as? String, "250")
         XCTAssertTrue(keyboard.waitForNonExistence(timeout: 2))
-        XCTAssertTrue(app.buttons["editor-tab-data"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["editor-tab-qr"].waitForExistence(timeout: 2))
     }
 
     @MainActor
@@ -473,7 +610,7 @@ final class MakeCampaignUITests: XCTestCase {
     }
 
     @MainActor
-    func testPosterPhotoCanBeDraggedWithoutLeavingTextTab() throws {
+    func testPosterPhotoCanBeDraggedWithoutLeavingNameTab() throws {
         launchSeededEditor()
         app.buttons["editor-tab-data"].tap()
 
@@ -609,18 +746,30 @@ final class MakeCampaignUITests: XCTestCase {
     }
 
     @MainActor
-    func testBankTabHidesQRCodeControls() throws {
+    func testTargetTabLeadsWithTheTargetAndHidesQRCodeControls() throws {
         launchSeededEditor()
 
-        let bankTab = app.buttons["editor-tab-qr"]
-        XCTAssertTrue(bankTab.waitForExistence(timeout: 2))
-        XCTAssertTrue(bankTab.label.contains("Банка"))
-        bankTab.tap()
+        let targetTab = app.buttons["editor-tab-qr"]
+        XCTAssertTrue(targetTab.waitForExistence(timeout: 2))
+        XCTAssertTrue(targetTab.label.contains("Ціль"))
+        targetTab.tap()
 
-        XCTAssertTrue(app.textFields["campaign-jar-link-field"].waitForExistence(timeout: 2))
+        let targetContainer = app.descendants(matching: .any)["campaign-target-field-container"]
+        XCTAssertTrue(targetContainer.waitForExistence(timeout: 2))
+        let jarLink = app.textFields["campaign-jar-link-field"]
+        XCTAssertTrue(jarLink.waitForExistence(timeout: 2))
+        XCTAssertLessThan(
+            targetContainer.frame.minY,
+            jarLink.frame.minY,
+            "The target is the first field on the target tab"
+        )
         XCTAssertFalse(app.switches["campaign-qr-toggle"].exists)
         XCTAssertFalse(posterElement("qr").exists)
-        keepScreenshot(named: "Campaign Editor - Bank")
+        XCTAssertFalse(
+            app.textFields["campaign-caption-field"].exists,
+            "The share caption is generated, so the target tab does not edit it"
+        )
+        keepScreenshot(named: "Campaign Editor - Target")
     }
 
     @MainActor
@@ -702,12 +851,12 @@ final class MakeCampaignUITests: XCTestCase {
 
         app.buttons["editor-tab-data"].tap()
         XCTAssertTrue(app.textFields["campaign-title-field"].waitForExistence(timeout: 2))
-        keepScreenshot(named: "Campaign Editor - Data")
+        keepScreenshot(named: "Campaign Editor - Name")
 
         app.buttons["editor-tab-qr"].tap()
         XCTAssertTrue(app.textFields["campaign-jar-link-field"].waitForExistence(timeout: 2))
         XCTAssertFalse(app.switches["campaign-qr-toggle"].exists)
-        keepScreenshot(named: "Campaign Editor - Bank")
+        keepScreenshot(named: "Campaign Editor - Target")
 
         app.buttons["export-options-button"].tap()
         let share = app.buttons["Поділитися"]
@@ -934,14 +1083,20 @@ final class MakeCampaignUITests: XCTestCase {
     @MainActor
     func testEmptyStateIsAccessible() throws {
         // Then: Empty state elements should be accessible
-        let titleText = app.staticTexts["Зборів ще немає"]
+        let titleText = app.staticTexts["Збір починається з обкладинки"]
         XCTAssertTrue(titleText.exists)
     }
     
     @MainActor
     func testFloatingActionButtonIsAccessible() throws {
+        // Given: A list that already holds a campaign
+        launchWithSeededList()
+
         // Then: FAB should be accessible
-        XCTAssertTrue(app.buttons["create-campaign-button"].exists, "The create button should be accessible")
+        XCTAssertTrue(
+            app.buttons["create-campaign-button"].waitForExistence(timeout: 3),
+            "The create button should be accessible"
+        )
     }
     
     // MARK: - Performance Tests

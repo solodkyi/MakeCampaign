@@ -9,13 +9,17 @@ import SwiftUI
 /// title set very large down the left, and the goal in a dark teal pill.
 struct PosterA15TemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -70,26 +74,98 @@ struct PosterA15TemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.022
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
-            VStack(alignment: .leading, spacing: 0) {
-                Text("ціль збору:")
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: side * 0.014) {
+            Text("ціль збору:")
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.16)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.seafoam)
+
+            Text(goal)
+                .campaignPosterElement(.target)
+                .font(PosterFont.oswaldBold.size(side * 0.064))
+                .lineSpacing(side * 0.064 * 0.02)
+                .foregroundStyle(.white)
+                .minimumScaleFactor(0.5)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .modifier(Lozenge(side: side))
+    }
+
+    /// Смужка лежить усередині бірюзової капсули, тож бере піну — той самий
+    /// колір, яким набрано етикетку над нею.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.008) {
+            PosterProgressBar(
+                fraction: fraction,
+                height: side * 0.01,
+                track: Self.seafoam.opacity(0.28),
+                fill: Self.seafoam
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
                     .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.16)
+                    .tracking(labelSize * 0.14)
                     .textCase(.uppercase)
-                    .foregroundStyle(Self.seafoam)
-
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.oswaldBold.size(side * 0.064))
-                    .lineSpacing(side * 0.064 * 0.02)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Self.seafoam.opacity(0.85))
+                    .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
-            .padding(.horizontal, side * 0.03)
-            .padding(.vertical, side * 0.024)
-            .background(Self.deepTeal, in: Capsule())
+        }
+        .padding(.trailing, side * 0.04)
+    }
+
+    /// Збір закрито: капсула світлішає до піни, і напис читається глибокою
+    /// бірюзою — та сама форма, вивернута навиворіт.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.16)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.deepTeal)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.064))
+                    .lineSpacing(side * 0.064 * 0.02)
+                    .foregroundStyle(Self.deepTeal)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .modifier(Lozenge(side: side, fill: Self.seafoam))
+    }
+
+    private struct Lozenge: ViewModifier {
+        let side: CGFloat
+        var fill: Color = Color(red: 4/255, green: 52/255, blue: 58/255)
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.horizontal, side * 0.03)
+                .padding(.vertical, side * 0.024)
+                .background(fill, in: Capsule())
         }
     }
 
@@ -99,7 +175,7 @@ struct PosterA15TemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        PosterA15TemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        PosterA15TemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

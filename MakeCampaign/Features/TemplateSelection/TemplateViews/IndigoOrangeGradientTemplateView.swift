@@ -12,13 +12,17 @@ import SwiftUI
 /// semicircle whatever the poster ratio.
 struct IndigoOrangeGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -66,30 +70,10 @@ struct IndigoOrangeGradientTemplateView: View {
                 .minimumScaleFactor(0.6)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if let goal {
-                let labelSize = side * 0.022
-
-                HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
-                    Text("ціль збору:")
-                        .font(PosterFont.plexMonoRegular.size(labelSize))
-                        .tracking(labelSize * 0.16)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Self.apricot)
-
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.oswaldBold.size(side * 0.066))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
-                .padding(.top, side * 0.02)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(.white.opacity(0.4))
-                        .frame(height: side * 0.002)
-                }
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
             }
         }
         .padding(.horizontal, side * 0.034)
@@ -98,13 +82,108 @@ struct IndigoOrangeGradientTemplateView: View {
         .background(Self.indigo)
     }
 
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return VStack(alignment: .leading, spacing: side * 0.02) {
+            HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
+                Text("ціль збору:")
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.16)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.apricot)
+
+                Text(goal)
+                    .campaignPosterElement(.target)
+                    .font(PosterFont.oswaldBold.size(side * 0.066))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .modifier(PanelRule(side: side))
+    }
+
+    /// На індиговій панелі смужка світиться мандариновим — кольором самого
+    /// тла, наче поступ витягує його всередину.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.027
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            PosterProgressBar(
+                fraction: fraction,
+                height: side * 0.012,
+                track: .white.opacity(0.16),
+                fill: Self.tangerine
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.apricot)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+    }
+
+    /// Збір закрито: мандарин переходить із тла на панель суцільною плашкою,
+    /// і «Зібрано!» читається індиго — рівно навпаки до звичного стану.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.030
+
+        return HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.plexMonoRegular.size(labelSize))
+                .tracking(labelSize * 0.16)
+                .textCase(.uppercase)
+                .foregroundStyle(Self.indigo)
+                .padding(.horizontal, side * 0.02)
+                .padding(.vertical, side * 0.009)
+                .background(Self.tangerine)
+
+            if let collected = funding.collected {
+                Text(collected)
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.oswaldBold.size(side * 0.066))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .modifier(PanelRule(side: side))
+    }
+
+    private struct PanelRule: ViewModifier {
+        let side: CGFloat
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.top, side * 0.02)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(.white.opacity(0.4))
+                        .frame(height: side * 0.002)
+                }
+        }
+    }
+
     private static let tangerine = Color(red: 239/255, green: 115/255, blue: 38/255)
     private static let indigo = Color(red: 36/255, green: 33/255, blue: 94/255)
     private static let apricot = Color(red: 255/255, green: 179/255, blue: 122/255)
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        IndigoOrangeGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        IndigoOrangeGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

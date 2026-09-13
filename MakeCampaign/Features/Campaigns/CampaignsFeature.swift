@@ -25,7 +25,9 @@ struct CampaignsFeature {
         var message: String {
             switch self {
             case .noLink:
-                "Банку не підключено"
+                // Збір без банки — звичайний стан, а не подія, про яку рядок
+                // мусить звітувати.
+                ""
             case .loading:
                 "Оновлюємо дані…"
             case .failed:

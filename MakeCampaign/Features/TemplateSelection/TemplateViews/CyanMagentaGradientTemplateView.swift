@@ -13,13 +13,17 @@ import SwiftUI
 /// the overlap its third colour; drawing them opaque would flatten the effect.
 struct CyanMagentaGradientTemplateView: View {
     let purpose: String
-    let goal: String?
+    let funding: CampaignPosterFunding
 
     var viewProvider: () -> AnyView
 
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
 
@@ -103,9 +107,17 @@ struct CyanMagentaGradientTemplateView: View {
 
     @ViewBuilder
     private func caption(side: CGFloat) -> some View {
-        if let goal {
-            let labelSize = side * 0.024
+        if funding.isFinished {
+            finished(side: side)
+        } else if let goal = funding.goal {
+            collecting(goal: goal, side: side)
+        }
+    }
 
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.032
+
+        return VStack(alignment: .leading, spacing: side * 0.026) {
             HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
                 Text("ціль збору:")
                     .font(PosterFont.plexMonoRegular.size(labelSize))
@@ -121,6 +133,74 @@ struct CyanMagentaGradientTemplateView: View {
                     .minimumScaleFactor(0.5)
             }
             .padding(.trailing, side * 0.26)
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+    }
+
+    /// Поступ у мові різографії: жодних заокруглень, лише пряма пурпурова
+    /// плашка, що набігає на блідий блакитний прогін.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.028
+
+        return VStack(alignment: .leading, spacing: side * 0.014) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.018,
+                track: Self.cyan.opacity(0.32),
+                fill: Self.magenta
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.12)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.charcoal.opacity(0.7))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .padding(.trailing, side * 0.1)
+    }
+
+    /// Збір закрито — і закритий він тим, чим друкують решту плаката: пурпурова
+    /// плашка лягає навскіс, як гумовий штамп поверх готового відбитка.
+    private func finished(side: CGFloat) -> some View {
+        let stampSize = side * 0.062
+
+        return VStack(alignment: .leading, spacing: side * 0.024) {
+            Text(CampaignPosterFunding.finishedLabel.uppercased())
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.oswaldBold.size(stampSize))
+                .tracking(stampSize * 0.08)
+                .foregroundStyle(Self.paper)
+                .padding(.horizontal, side * 0.036)
+                .padding(.vertical, side * 0.016)
+                .background(Self.magenta)
+                .rotationEffect(.degrees(-3))
+
+            if let collected = funding.collected {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                    Text("разом:")
+                        .font(PosterFont.plexMonoRegular.size(side * 0.024))
+                        .tracking(side * 0.024 * 0.16)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.magentaInk)
+
+                    Text(collected)
+                        .campaignPosterFundingElement(.collected)
+                        .font(PosterFont.oswaldBold.size(side * 0.084))
+                        .foregroundStyle(Self.charcoal)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                .padding(.trailing, side * 0.26)
+            }
         }
     }
 
@@ -132,7 +212,7 @@ struct CyanMagentaGradientTemplateView: View {
 }
 
 #Preview {
-    PosterTemplatePreview { purpose, goal, photo in
-        CyanMagentaGradientTemplateView(purpose: purpose, goal: goal, viewProvider: photo)
+    PosterTemplatePreview { purpose, funding, photo in
+        CyanMagentaGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }
