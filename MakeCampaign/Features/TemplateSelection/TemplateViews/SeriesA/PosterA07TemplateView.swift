@@ -108,6 +108,7 @@ struct PosterA07TemplateView: View {
                 .font(PosterFont.oswaldBold.size(side * 0.074))
                 .lineSpacing(side * 0.074 * 0.02)
                 .foregroundStyle(Self.darkLeaf)
+                .lineLimit(1)
                 .minimumScaleFactor(0.5)
 
             // Картка світла, тож підпис бере її мохове чорнило.

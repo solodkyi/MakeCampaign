@@ -228,7 +228,7 @@ final class MakeCampaignUITests: XCTestCase {
     }
 
     @MainActor
-    func testDataTabIsPresentedAsName() throws {
+    func testDataTabIsPresentedAsPurpose() throws {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
 

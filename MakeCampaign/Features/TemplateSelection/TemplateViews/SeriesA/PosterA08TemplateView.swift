@@ -124,6 +124,7 @@ struct PosterA08TemplateView: View {
                 .font(PosterFont.oswaldBold.size(side * 0.072))
                 .lineSpacing(side * 0.072 * 0.02)
                 .foregroundStyle(Self.yellow)
+                .lineLimit(1)
                 .minimumScaleFactor(0.5)
 
             if let supportingGoal = funding.supportingGoal {
