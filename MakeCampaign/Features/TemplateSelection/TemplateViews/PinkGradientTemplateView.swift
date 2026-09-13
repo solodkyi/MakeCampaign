@@ -121,6 +121,17 @@ struct PinkGradientTemplateView: View {
             .padding(.vertical, side * 0.02)
             .background(Self.lemon, in: Capsule())
 
+            // Підпис лягає під капсулу, а не в неї: лимонна плашка тримає
+            // рівно одну цифру, і другий рядок роздув би її вдвічі.
+            if let supportingGoal = funding.supportingGoal {
+                Text(supportingGoal)
+                    .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                    .foregroundStyle(.white.opacity(0.86))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.leading, side * 0.03)
+            }
+
             if let fraction = funding.fraction {
                 progress(fraction: fraction, side: side)
             }

@@ -115,12 +115,24 @@ struct PosterA04TemplateView: View {
 
                 Spacer(minLength: 0)
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.oswaldBold.size(side * 0.09))
-                    .foregroundStyle(Self.parchment)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                // Реєстровий рядок вирівняний по правому краю, тож підпис
+                // стає під саму цифру, а не під етикетку ліворуч.
+                VStack(alignment: .trailing, spacing: side * 0.006) {
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.09))
+                        .foregroundStyle(Self.parchment)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+
+                    if let supportingGoal = funding.supportingGoal {
+                        Text(supportingGoal)
+                            .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                            .foregroundStyle(Self.gold)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                }
             }
 
             if let fraction = funding.fraction {

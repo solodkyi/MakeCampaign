@@ -86,19 +86,29 @@ struct IndigoOrangeGradientTemplateView: View {
         let labelSize = side * 0.030
 
         return VStack(alignment: .leading, spacing: side * 0.02) {
-            HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
-                Text(funding.goalLabel)
-                    .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.16)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Self.apricot)
+            VStack(alignment: .leading, spacing: side * 0.008) {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.022) {
+                    Text(funding.goalLabel)
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.16)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.apricot)
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.oswaldBold.size(side * 0.066))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.066))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.apricot.opacity(0.82))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
             }
 
             if let fraction = funding.fraction {

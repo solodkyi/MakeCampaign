@@ -80,15 +80,31 @@ struct PosterA02TemplateView: View {
     }
 
     private func collecting(goal: String, side: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: side * 0.016) {
-            Text(goal)
-                .campaignPosterElement(.target)
-                .font(PosterFont.oswaldBold.size(side * 0.15))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.4)
-                .padding(.top, side * 0.01)
-                .modifier(Glow(side: side))
+        // Той самий кегль, що й у етикетки над цифрою: вона живе в тілі
+        // плаката, а не тут, тож розмір доводиться повторити.
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.016) {
+            VStack(alignment: .leading, spacing: side * 0.004) {
+                Text(goal)
+                    .campaignPosterElement(.target)
+                    .font(PosterFont.oswaldBold.size(side * 0.15))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+                    .padding(.top, side * 0.01)
+                    .modifier(Glow(side: side))
+
+                // Підпис не світиться: ореол належить самій цифрі, і другий
+                // сяйливий рядок з'їв би її перевагу.
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.lilac.opacity(0.8))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
 
             if let fraction = funding.fraction {
                 progress(fraction: fraction, side: side)

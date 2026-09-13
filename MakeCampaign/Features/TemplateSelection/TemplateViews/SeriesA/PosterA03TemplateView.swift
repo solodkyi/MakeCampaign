@@ -77,19 +77,29 @@ struct PosterA03TemplateView: View {
         let labelSize = side * 0.035
 
         return VStack(alignment: .leading, spacing: side * 0.02) {
-            HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
-                Text(funding.goalLabel)
-                    .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.14)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Self.aubergine)
+            VStack(alignment: .leading, spacing: side * 0.008) {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                    Text(funding.goalLabel)
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.14)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.aubergine)
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.playfairBoldItalic.size(side * 0.08))
-                    .foregroundStyle(Self.nearBlack)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.playfairBoldItalic.size(side * 0.08))
+                        .foregroundStyle(Self.nearBlack)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.aubergine)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
             }
 
             if let fraction = funding.fraction {

@@ -98,12 +98,24 @@ struct SilverBlueTemplateView: View {
         return ruled(side: side) {
             VStack(spacing: side * 0.018) {
                 row(label: funding.goalLabel, labelSize: labelSize, side: side) {
-                    Text(goal)
-                        .campaignPosterElement(.target)
-                        .font(PosterFont.plexMonoSemiBold.size(side * 0.056))
-                        .foregroundStyle(Self.deepInk)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
+                    // Колонка цифр у досьє вирівняна праворуч, тож і підпис
+                    // стоїть під сумою, а не під етикеткою ліворуч.
+                    VStack(alignment: .trailing, spacing: side * 0.006) {
+                        Text(goal)
+                            .campaignPosterElement(.target)
+                            .font(PosterFont.plexMonoSemiBold.size(side * 0.056))
+                            .foregroundStyle(Self.deepInk)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+
+                        if let supportingGoal = funding.supportingGoal {
+                            Text(supportingGoal)
+                                .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                                .foregroundStyle(Self.steel)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                        }
+                    }
                 }
 
                 if let fraction = funding.fraction {

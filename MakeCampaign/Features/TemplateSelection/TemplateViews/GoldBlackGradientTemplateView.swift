@@ -103,19 +103,29 @@ struct GoldBlackGradientTemplateView: View {
         let labelSize = side * 0.031
 
         return VStack(alignment: .leading, spacing: side * 0.022) {
-            HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
-                Text(funding.goalLabel)
-                    .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.16)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Self.deepBronze)
+            VStack(alignment: .leading, spacing: side * 0.008) {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                    Text(funding.goalLabel)
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.16)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.deepBronze)
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.playfairBoldItalic.size(side * 0.076))
-                    .foregroundStyle(Self.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.playfairBoldItalic.size(side * 0.076))
+                        .foregroundStyle(Self.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.bronze)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
             }
 
             if let fraction = funding.fraction {

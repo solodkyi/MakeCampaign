@@ -120,6 +120,17 @@ struct PosterA01TemplateView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
 
+            // На пастельному вимпелі підпис бере сливове чорнило самої
+            // плашки — білий на ній просто зник би.
+            if let supportingGoal = funding.supportingGoal {
+                Text(supportingGoal)
+                    .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                    .foregroundStyle(Self.plum)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.top, side * 0.006)
+            }
+
             if let fraction = funding.fraction {
                 progress(fraction: fraction, side: side)
             }

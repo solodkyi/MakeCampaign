@@ -101,21 +101,33 @@ struct MintIndigoGradientTemplateView: View {
         let labelSize = side * 0.030
 
         return VStack(alignment: .leading, spacing: side * 0.018) {
-            HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
-                Text(funding.goalLabel)
-                    .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.14)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Self.periwinkleInk)
+            VStack(alignment: .leading, spacing: side * 0.008) {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
+                    Text(funding.goalLabel)
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.14)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.periwinkleInk)
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.oswaldBold.size(side * 0.064))
-                    .foregroundStyle(Self.deepIndigo)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.064))
+                        .foregroundStyle(Self.deepIndigo)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
 
-                Spacer(minLength: 0)
+                    Spacer(minLength: 0)
+                }
+
+                // Усередині білої картки підпис бере її ж чорнило: біле на
+                // білому не прочиталося б.
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.periwinkleInk.opacity(0.8))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
             }
 
             if let fraction = funding.fraction {

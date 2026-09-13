@@ -118,19 +118,29 @@ struct CyanMagentaGradientTemplateView: View {
         let labelSize = side * 0.032
 
         return VStack(alignment: .leading, spacing: side * 0.026) {
-            HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
-                Text(funding.goalLabel)
-                    .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.16)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Self.magentaInk)
+            VStack(alignment: .leading, spacing: side * 0.008) {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                    Text(funding.goalLabel)
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.16)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.magentaInk)
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.oswaldBold.size(side * 0.084))
-                    .foregroundStyle(Self.charcoal)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.084))
+                        .foregroundStyle(Self.charcoal)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.charcoal.opacity(0.7))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
             }
             .padding(.trailing, side * 0.26)
 

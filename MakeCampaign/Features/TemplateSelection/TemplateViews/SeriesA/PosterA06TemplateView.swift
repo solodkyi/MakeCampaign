@@ -100,6 +100,15 @@ struct PosterA06TemplateView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.4)
 
+            if let supportingGoal = funding.supportingGoal {
+                Text(supportingGoal)
+                    .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.top, side * 0.002)
+            }
+
             if let fraction = funding.fraction {
                 progress(fraction: fraction, side: side)
             }

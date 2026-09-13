@@ -107,6 +107,17 @@ struct PosterA11TemplateView: View {
                 }
                 .fixedSize(horizontal: true, vertical: false)
 
+            // Бурштинова риска належить сумі, тож підпис відступає нижче —
+            // інакше він читався б як частина підкреслення.
+            if let supportingGoal = funding.supportingGoal {
+                Text(supportingGoal)
+                    .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                    .foregroundStyle(Self.peach)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.top, side * 0.008)
+            }
+
             if let fraction = funding.fraction {
                 progress(fraction: fraction, side: side)
             }

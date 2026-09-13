@@ -91,12 +91,29 @@ struct PosterA15TemplateView: View {
                 .textCase(.uppercase)
                 .foregroundStyle(Self.seafoam)
 
-            Text(goal)
-                .campaignPosterElement(.target)
-                .font(PosterFont.oswaldBold.size(side * 0.064))
-                .lineSpacing(side * 0.064 * 0.02)
-                .foregroundStyle(.white)
-                .minimumScaleFactor(0.5)
+            // Ціль і підпис під нею тримаються тісніше, ніж крок капсули:
+            // так другий рядок читається як пояснення, а не як новий пункт.
+            VStack(alignment: .leading, spacing: side * 0.006) {
+                Text(goal)
+                    .campaignPosterElement(.target)
+                    .font(PosterFont.oswaldBold.size(side * 0.064))
+                    .lineSpacing(side * 0.064 * 0.02)
+                    .foregroundStyle(.white)
+                    .minimumScaleFactor(0.5)
+
+                // Підпис — найдовший рядок у капсулі, а її круглий торець
+                // з'їдає праву частину нижньої лінії. Тому він лишає собі поле
+                // на дугу й стискається в межах колонки замість того, щоб
+                // вилізти за неї.
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.seafoam.opacity(0.85))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .padding(.trailing, side * 0.06)
+                }
+            }
 
             if let fraction = funding.fraction {
                 progress(fraction: fraction, side: side)
@@ -129,7 +146,9 @@ struct PosterA15TemplateView: View {
                     .minimumScaleFactor(0.5)
             }
         }
-        .padding(.trailing, side * 0.04)
+        // Підпис під ціллю зробив капсулу вищою, а з нею й круглішими торці:
+        // нижньому рядку тепер треба більше поля, щоб не зачепити дугу.
+        .padding(.trailing, side * 0.09)
     }
 
     /// Збір закрито: капсула світлішає до піни, і напис читається глибокою

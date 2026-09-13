@@ -111,12 +111,24 @@ struct PosterA12TemplateView: View {
 
                 Spacer(minLength: 0)
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.plexMonoSemiBold.size(side * 0.062))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                // Суми в цій коробці стоять праворуч, тож підпис іде під
+                // цифру, а не під етикетку.
+                VStack(alignment: .trailing, spacing: side * 0.006) {
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.plexMonoSemiBold.size(side * 0.062))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+
+                    if let supportingGoal = funding.supportingGoal {
+                        Text(supportingGoal)
+                            .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                            .foregroundStyle(Self.emerald)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                }
             }
 
             if let fraction = funding.fraction {

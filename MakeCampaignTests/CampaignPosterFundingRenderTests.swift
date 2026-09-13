@@ -35,6 +35,22 @@ struct CampaignPosterFundingRenderTests {
             goal: nil, collected: nil, fraction: nil, isFinished: true
         )),
         ("порожньо", .none),
+        ("допоміжна банка", CampaignPosterFunding(
+            goal: "50 000 грн.",
+            goalLabel: CampaignPosterFunding.personalGoalLabel,
+            supportingGoal: "із загальної цілі 1 000 000 грн.",
+            collected: nil,
+            fraction: nil,
+            isFinished: false
+        )),
+        ("допоміжна банка з поступом", CampaignPosterFunding(
+            goal: "50 000 грн.",
+            goalLabel: CampaignPosterFunding.personalGoalLabel,
+            supportingGoal: "із загальної цілі 1 000 000 грн.",
+            collected: "32 500 грн.",
+            fraction: 0.65,
+            isFinished: false
+        )),
     ]
 
     /// Кожен шаблон із каталогу — плюс знятий із каталогу, бо збори, збережені
@@ -136,9 +152,67 @@ struct CampaignPosterFundingRenderTests {
         }
     }
 
+    @Test("Every template draws the general goal a supporting jar carries")
+    func everyTemplateDrawsTheSupportingGoal() throws {
+        let personalOnly = CampaignPosterFunding(
+            goal: "50 000 грн.",
+            goalLabel: CampaignPosterFunding.personalGoalLabel,
+            supportingGoal: nil,
+            collected: nil,
+            fraction: nil,
+            isFinished: false
+        )
+        let withGeneral = CampaignPosterFunding(
+            goal: "50 000 грн.",
+            goalLabel: CampaignPosterFunding.personalGoalLabel,
+            supportingGoal: "із загальної цілі 1 000 000 грн.",
+            collected: nil,
+            fraction: nil,
+            isFinished: false
+        )
+
+        for template in Self.everyTemplate {
+            let without = try #require(Self.render(template: template, funding: personalOnly)?.pngData())
+            let with = try #require(Self.render(template: template, funding: withGeneral)?.pngData())
+
+            #expect(
+                without != with,
+                "Шаблон \(template.id) не показує загальної цілі допоміжної банки"
+            )
+        }
+    }
+
+    @Test("Every template lands on the contact sheet for review")
+    func contactSheet() throws {
+        // Тест не судить про красу — він лише кладе всі тридцять плакатів
+        // поруч, щоб їх можна було передивитись оком після зміни підпису.
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("poster-contact-sheet", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+
+        for template in Self.everyTemplate {
+            let image = try #require(
+                Self.render(
+                    template: template,
+                    funding: Self.fundingStates[5].funding,
+                    side: 1080
+                )
+            )
+            try #require(image.pngData()).write(
+                to: directory.appendingPathComponent("\(template.id).png")
+            )
+        }
+    }
+
+    /// Бік полотна за замовчуванням — розмір мініатюри у стосі. Контактний
+    /// аркуш просить більший, бо його дивляться оком, а не порівнюють байтами.
     private static func render(
         template: Template,
-        funding: CampaignPosterFunding
+        funding: CampaignPosterFunding,
+        side: CGFloat = 300
     ) -> UIImage? {
         let renderer = ImageRenderer(
             content: CampaignTemplateArtworkProbe(
@@ -146,7 +220,7 @@ struct CampaignPosterFundingRenderTests {
                 funding: funding,
                 photo: photo
             )
-            .frame(width: 300, height: 300)
+            .frame(width: side, height: side)
         )
         renderer.scale = 1
         renderer.isOpaque = false

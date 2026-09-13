@@ -107,6 +107,17 @@ struct PosterA14TemplateView: View {
             }
             .modifier(Pill(side: side))
 
+            // Біла капсула тримає одну цифру, тож підпис виходить із неї на
+            // індиго — і відступає рівно на внутрішнє поле капсули.
+            if let supportingGoal = funding.supportingGoal {
+                Text(supportingGoal)
+                    .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                    .foregroundStyle(.white.opacity(0.72))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.horizontal, side * 0.03)
+            }
+
             if let fraction = funding.fraction {
                 progress(fraction: fraction, side: side)
             }

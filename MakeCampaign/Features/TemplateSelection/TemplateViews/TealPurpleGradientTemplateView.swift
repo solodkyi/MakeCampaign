@@ -89,27 +89,40 @@ struct TealPurpleGradientTemplateView: View {
         if let goal = funding.goal {
             let labelSize = side * 0.030
 
-            HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
-                Text(funding.goalLabel)
-                    .font(PosterFont.plexMonoRegular.size(labelSize))
-                    .tracking(labelSize * 0.14)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Self.deepTeal)
+            VStack(alignment: .leading, spacing: side * 0.01) {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.02) {
+                    Text(funding.goalLabel)
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.14)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.deepTeal)
 
-                Text(goal)
-                    .campaignPosterElement(.target)
-                    .font(PosterFont.oswaldBold.size(side * 0.062))
-                    .foregroundStyle(Self.midnight)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.oswaldBold.size(side * 0.062))
+                        .foregroundStyle(Self.midnight)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
 
-                Spacer(minLength: 0)
+                    Spacer(minLength: 0)
+                }
+                .padding(.leading, side * 0.034)
+                .padding(.trailing, side * 0.26)
+                .padding(.vertical, side * 0.022)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.white, in: Capsule())
+
+                // Біла капсула тримає одну цифру; підпис виходить із неї на
+                // градієнт і бере м'яту, якою набрано вертикальний колонтитул.
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.mint)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .padding(.leading, side * 0.034)
+                }
             }
-            .padding(.leading, side * 0.034)
-            .padding(.trailing, side * 0.26)
-            .padding(.vertical, side * 0.022)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.white, in: Capsule())
         }
     }
 

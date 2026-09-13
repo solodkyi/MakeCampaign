@@ -114,6 +114,15 @@ struct RedBlackGradientTemplateView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
 
+            if let supportingGoal = funding.supportingGoal {
+                Text(supportingGoal)
+                    .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                    .foregroundStyle(Self.flare.opacity(0.85))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.top, side * 0.004)
+            }
+
             if let fraction = funding.fraction {
                 progress(fraction: fraction, side: side)
             }
