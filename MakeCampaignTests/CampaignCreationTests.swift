@@ -410,6 +410,21 @@ struct CampaignCreationModelTests {
         #expect(validation.generalTarget == nil)
         #expect(validation.personalTarget == nil)
     }
+
+    @Test("An ordinary campaign ignores even an oversized leftover personal target")
+    func ordinaryCampaignIgnoresAnOversizedLeftoverPersonalTarget() {
+        // Це саме випадок «вимкнули перемикач, а особиста ціль лишилась»:
+        // тут `target` заповнено, тож без охорони `isSupportingJar` спрацював
+        // би саме розрахунок перевищення — перевіряємо, що цього не стається.
+        var campaign = Campaign.validDraft(isSupportingJar: false)
+        campaign.target = 1_000_000
+        campaign.personalTarget = 2_000_000
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.generalTarget == nil)
+        #expect(validation.personalTarget == nil)
+    }
 }
 
 private func centerRGBA(of image: UIImage) throws -> [UInt8] {
