@@ -232,8 +232,27 @@ final class MakeCampaignUITests: XCTestCase {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))
 
-        XCTAssertEqual(app.buttons["editor-tab-data"].label, "Назва")
+        XCTAssertEqual(app.buttons["editor-tab-data"].label, "Призначення")
         XCTAssertEqual(app.buttons["editor-tab-qr"].label, "Ціль")
+    }
+
+    @MainActor
+    func testSupportingJarRevealsThePersonalTarget() throws {
+        launchSeededEditor()
+        app.buttons["editor-tab-qr"].tap()
+
+        let toggle = app.switches["supporting-jar-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 2))
+        XCTAssertEqual(toggle.value as? String, "0")
+        XCTAssertFalse(app.textFields["campaign-personal-target-field"].exists)
+
+        toggle.tap()
+
+        let personalTarget = app.textFields["campaign-personal-target-field"]
+        XCTAssertTrue(personalTarget.waitForExistence(timeout: 2))
+
+        toggle.tap()
+        XCTAssertTrue(personalTarget.waitForNonExistence(timeout: 2))
     }
 
     @MainActor

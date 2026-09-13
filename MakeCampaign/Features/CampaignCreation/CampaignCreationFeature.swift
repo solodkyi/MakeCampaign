@@ -17,7 +17,7 @@ struct CampaignCreationFeature {
             var title: String {
                 switch self {
                 case .photo: "Фото"
-                case .data: "Назва"
+                case .data: "Призначення"
                 case .template: "Шаблон"
                 case .qr: "Ціль"
                 }

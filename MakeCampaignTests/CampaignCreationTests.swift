@@ -43,7 +43,7 @@ struct CampaignCreationModelTests {
         )
         expectNoDifference(
             CampaignCreationFeature.State.Tab.data.title,
-            "Назва"
+            "Призначення"
         )
     }
 

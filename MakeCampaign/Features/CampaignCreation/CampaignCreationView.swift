@@ -17,6 +17,7 @@ struct CampaignCreationView: View {
     @Dependency(\.campaignPosterThumbnailClient) private var thumbnailClient
     @FocusState private var focusedInput: EditorInput?
     @State private var isTargetInputFocused = false
+    @State private var isPersonalTargetInputFocused = false
     @State private var pendingInputFocus: EditorInput?
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var previewAssetBuffer = CampaignPosterPreviewAssetBuffer()
@@ -26,7 +27,7 @@ struct CampaignCreationView: View {
     /// Клавіатура піднята: у цьому стані плакат стискається, а редагування
     /// видно просто в полі під ним.
     private var isTextEditing: Bool {
-        focusedInput != nil || isTargetInputFocused
+        focusedInput != nil || isTargetInputFocused || isPersonalTargetInputFocused
     }
 
     var body: some View {
@@ -518,7 +519,7 @@ struct CampaignCreationView: View {
 
     private var qrPanel: some View {
         VStack(alignment: .leading, spacing: 13) {
-            labelledField("Ціль збору", error: nil) {
+            labelledField("Ціль збору", error: store.validation.generalTarget) {
                 CampaignTargetField(
                     text: $store.campaign.formattedTarget,
                     isFocused: $isTargetInputFocused,
@@ -529,6 +530,29 @@ struct CampaignCreationView: View {
             .id(EditorInput.target)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("campaign-target-field-container")
+
+            // Допоміжна банка приєднує збір до чужої цілі, але автор все одно
+            // тримає власний орієнтир — перемикач лише показує чи ховає його поле,
+            // а введене значення не стирається при вимкненні.
+            Toggle("Допоміжна банка", isOn: $store.campaign.isSupportingJar)
+                .font(.system(size: 15, weight: .medium))
+                .tint(accent)
+                .accessibilityIdentifier("supporting-jar-toggle")
+
+            if store.campaign.isSupportingJar {
+                labelledField("Моя ціль", error: store.validation.personalTarget) {
+                    CampaignTargetField(
+                        text: $store.campaign.formattedPersonalTarget,
+                        isFocused: $isPersonalTargetInputFocused,
+                        suffixColor: secondaryText,
+                        onSubmit: dismissKeyboard
+                    )
+                    .accessibilityIdentifier("campaign-personal-target-field")
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("campaign-personal-target-field-container")
+            }
+
             if let collected = store.campaign.jar?.details?.amountInHryvnias {
                 labelledValue("Зібрано", value: collected.formattedAmount.appendingCurrency)
             }
@@ -572,6 +596,7 @@ struct CampaignCreationView: View {
         case .photo:
             focusedInput = nil
             isTargetInputFocused = false
+            isPersonalTargetInputFocused = false
             store.send(.tabSelected(.photo))
 
         case .campaignTitle, .target:
@@ -581,6 +606,7 @@ struct CampaignCreationView: View {
             } else {
                 focusedInput = nil
                 isTargetInputFocused = false
+                isPersonalTargetInputFocused = false
             }
 
             let tab = Self.tab(hosting: input)
@@ -594,6 +620,7 @@ struct CampaignCreationView: View {
         case .qr:
             focusedInput = nil
             isTargetInputFocused = false
+            isPersonalTargetInputFocused = false
             store.send(.tabSelected(.qr))
         }
     }
@@ -621,6 +648,7 @@ struct CampaignCreationView: View {
 
         focusedInput = nil
         isTargetInputFocused = false
+        isPersonalTargetInputFocused = false
         pendingInputFocus = .target
         store.send(.tabSelected(.qr))
     }
@@ -629,9 +657,11 @@ struct CampaignCreationView: View {
         switch input {
         case .campaignTitle:
             isTargetInputFocused = false
+            isPersonalTargetInputFocused = false
             focusedInput = .campaignTitle
         case .target:
             focusedInput = nil
+            isPersonalTargetInputFocused = false
             isTargetInputFocused = true
         }
     }
@@ -645,6 +675,7 @@ struct CampaignCreationView: View {
         pendingInputFocus = nil
         focusedInput = nil
         isTargetInputFocused = false
+        isPersonalTargetInputFocused = false
     }
 
     private func scrollEditor(
