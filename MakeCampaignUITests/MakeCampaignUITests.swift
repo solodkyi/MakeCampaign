@@ -256,6 +256,32 @@ final class MakeCampaignUITests: XCTestCase {
     }
 
     @MainActor
+    func testTogglingSupportingJarOffWhilePersonalTargetIsFocusedRestoresEditor() throws {
+        launchSeededEditor()
+        app.buttons["editor-tab-qr"].tap()
+
+        let poster = app.otherElements["campaign-poster-preview"]
+        let originalPosterHeight = poster.frame.height
+
+        let toggle = app.switches["supporting-jar-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 2))
+        toggle.tap()
+
+        let personalTarget = app.textFields["campaign-personal-target-field"]
+        XCTAssertTrue(personalTarget.waitForExistence(timeout: 2))
+        personalTarget.tap()
+        personalTarget.typeText("500")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 2))
+        XCTAssertFalse(app.buttons["editor-tab-data"].exists)
+
+        toggle.tap()
+
+        XCTAssertTrue(app.buttons["editor-tab-data"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.keyboards.firstMatch.waitForExistence(timeout: 1))
+        XCTAssertEqual(poster.frame.height, originalPosterHeight, accuracy: 1)
+    }
+
+    @MainActor
     func testEditorOpensWithRequestedTabOrderAndTemplateSelected() throws {
         app.buttons["empty-create-campaign-button"].tap()
         XCTAssertTrue(app.navigationBars["Редактор"].waitForExistence(timeout: 3))

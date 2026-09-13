@@ -7,6 +7,7 @@ struct CampaignCreationView: View {
     private enum EditorInput: Hashable {
         case campaignTitle
         case target
+        case personalTarget
     }
 
     @Bindable var store: StoreOf<CampaignCreationFeature>
@@ -214,6 +215,15 @@ struct CampaignCreationView: View {
                 guard isFocused else { return }
                 scrollEditor(to: .target, using: proxy)
             }
+            .onChange(of: isPersonalTargetInputFocused) { _, isFocused in
+                guard isFocused else { return }
+                scrollEditor(to: .personalTarget, using: proxy)
+            }
+            .onChange(of: store.campaign.isSupportingJar) { _, isOn in
+                if !isOn {
+                    isPersonalTargetInputFocused = false
+                }
+            }
             .onChange(of: store.campaign.purpose) { _, purpose in
                 guard focusedInput == .campaignTitle else { return }
                 if purpose.contains(where: \.isNewline) {
@@ -231,6 +241,10 @@ struct CampaignCreationView: View {
             .onChange(of: store.campaign.formattedTarget) { _, _ in
                 guard isTargetInputFocused else { return }
                 scrollEditor(to: .target, using: proxy, animated: false)
+            }
+            .onChange(of: store.campaign.formattedPersonalTarget) { _, _ in
+                guard isPersonalTargetInputFocused else { return }
+                scrollEditor(to: .personalTarget, using: proxy, animated: false)
             }
         }
     }
@@ -549,6 +563,7 @@ struct CampaignCreationView: View {
                     )
                     .accessibilityIdentifier("campaign-personal-target-field")
                 }
+                .id(EditorInput.personalTarget)
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("campaign-personal-target-field-container")
             }
@@ -629,7 +644,7 @@ struct CampaignCreationView: View {
     private static func tab(hosting input: EditorInput) -> CampaignCreationFeature.State.Tab {
         switch input {
         case .campaignTitle: .data
-        case .target: .qr
+        case .target, .personalTarget: .qr
         }
     }
 
@@ -663,6 +678,10 @@ struct CampaignCreationView: View {
             focusedInput = nil
             isPersonalTargetInputFocused = false
             isTargetInputFocused = true
+        case .personalTarget:
+            focusedInput = nil
+            isTargetInputFocused = false
+            isPersonalTargetInputFocused = true
         }
     }
 
@@ -684,7 +703,8 @@ struct CampaignCreationView: View {
         animated: Bool = true
     ) {
         let scroll = {
-            proxy.scrollTo(input, anchor: input == .target ? .bottom : .top)
+            let anchor: UnitPoint = input == .target || input == .personalTarget ? .bottom : .top
+            proxy.scrollTo(input, anchor: anchor)
         }
         if animated {
             withAnimation(.easeInOut(duration: 0.2), scroll)
