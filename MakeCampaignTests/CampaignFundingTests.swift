@@ -437,9 +437,24 @@ struct CampaignFundingTests {
         )
 
         #expect(supporting.targetLabel == "Моя ціль")
+        #expect(supporting.displayTarget == 50_000)
         #expect(supporting.effectiveTarget == 50_000)
         #expect(ordinary.targetLabel == "Ціль")
+        #expect(ordinary.displayTarget == 200_000)
         #expect(ordinary.effectiveTarget == 200_000)
+
+        // Допоміжна банка без власної цілі веде загальною — як і плакат.
+        // Поступ при цьому лишається невідомим: міряти ще нічим.
+        let withoutPersonal = Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000D003")!,
+            target: 1_000_000,
+            isSupportingJar: true,
+            personalTarget: nil
+        )
+
+        #expect(withoutPersonal.displayTarget == 1_000_000)
+        #expect(withoutPersonal.targetLabel == "Ціль")
+        #expect(withoutPersonal.effectiveTarget == nil)
     }
 }
 

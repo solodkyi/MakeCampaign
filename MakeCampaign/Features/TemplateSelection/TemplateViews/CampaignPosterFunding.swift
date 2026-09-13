@@ -66,10 +66,11 @@ struct CampaignPosterFunding: Equatable, Sendable {
     }
 
     init(campaign: Campaign) {
-        // Веде та ціль, якою міряють збір. Допоміжна банка без власної цілі
-        // ще нічим не відрізняється від звичайного збору, тож так і виглядає.
-        let leadsWithPersonalGoal = campaign.isSupportingJar && campaign.personalTarget != nil
-        let leadingGoal = leadsWithPersonalGoal ? campaign.personalTarget : campaign.target
+        // Веде та ціль, якою збір представляється, — спільна з тією, що її
+        // показує список. Допоміжна банка без власної цілі ще нічим не
+        // відрізняється від звичайного збору, тож так і виглядає.
+        let leadsWithPersonalGoal = campaign.leadsWithPersonalTarget
+        let leadingGoal = campaign.displayTarget
 
         self.init(
             goal: leadingGoal?.formattedAmount.appendingCurrency,

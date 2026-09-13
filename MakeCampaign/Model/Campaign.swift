@@ -211,9 +211,23 @@ extension Campaign {
         isSupportingJar ? personalTarget : target
     }
 
+    /// Сума, якою збір представляється. Допоміжна банка без власної цілі
+    /// веде загальною — так само, як на плакаті: список і плакат мусять
+    /// показувати ту саму провідну цифру, інакше та сама банка виглядає
+    /// по-різному в списку й на картинці.
+    var displayTarget: Double? {
+        isSupportingJar ? (personalTarget ?? target) : target
+    }
+
+    /// Чи веде збір власною ціллю автора. Допоміжна банка з порожньою
+    /// «Моєю ціллю» ще нічим не відрізняється від звичайного збору.
+    var leadsWithPersonalTarget: Bool {
+        isSupportingJar && personalTarget != nil
+    }
+
     /// Як назвати суму, якою міряють збір: у допоміжної банки вона своя.
     var targetLabel: String {
-        isSupportingJar && personalTarget != nil ? "Моя ціль" : "Ціль"
+        leadsWithPersonalTarget ? "Моя ціль" : "Ціль"
     }
 
     /// Частка досягнутої цілі від нуля до одиниці.

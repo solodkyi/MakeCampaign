@@ -245,7 +245,7 @@ private struct CampaignFundingSummary: View {
                 VStack(alignment: .leading, spacing: 0) {
                     CollectedAmount(
                         collected: collected,
-                        target: campaign.effectiveTarget,
+                        target: campaign.displayTarget,
                         palette: palette
                     )
 
@@ -267,7 +267,7 @@ private struct CampaignFundingSummary: View {
         case .loading, .failed:
             awaitingJar(message: presentation.message)
         case .noLink:
-            if let target = campaign.effectiveTarget {
+            if let target = campaign.displayTarget {
                 TargetAmount(target: target, label: campaign.targetLabel, palette: palette)
             }
         }
@@ -277,7 +277,7 @@ private struct CampaignFundingSummary: View {
     /// банки й коли збір востаннє оновлювався.
     private func awaitingJar(message: String) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            if let target = campaign.effectiveTarget {
+            if let target = campaign.displayTarget {
                 TargetAmount(target: target, label: campaign.targetLabel, palette: palette)
             }
 
