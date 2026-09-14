@@ -256,6 +256,29 @@ final class MakeCampaignUITests: XCTestCase {
     }
 
     @MainActor
+    func testMarkingTheCampaignFinishedClosesThePosterFromTheTargetTab() throws {
+        launchSeededEditor()
+        app.buttons["editor-tab-qr"].tap()
+
+        let toggle = app.switches["campaign-finished-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 2))
+        XCTAssertEqual(toggle.value as? String, "0")
+
+        let finished = app.descendants(matching: .any)["poster-funding-finished"]
+        XCTAssertFalse(finished.exists)
+
+        toggle.tap()
+
+        XCTAssertTrue(
+            finished.waitForExistence(timeout: 3),
+            "Позначений завершеним збір мусить одразу закрити плакат"
+        )
+
+        toggle.tap()
+        XCTAssertTrue(finished.waitForNonExistence(timeout: 3))
+    }
+
+    @MainActor
     func testTogglingSupportingJarOffWhilePersonalTargetIsFocusedRestoresEditor() throws {
         launchSeededEditor()
         app.buttons["editor-tab-qr"].tap()

@@ -571,6 +571,14 @@ struct CampaignCreationView: View {
             if let collected = store.campaign.jar?.details?.amountInHryvnias {
                 labelledValue("Зібрано", value: collected.formattedAmount.appendingCurrency)
             }
+
+            // Збір закривається сам, коли ціль узято або банку закрито. Але
+            // автор має право сказати «досить» і раніше — плакат тоді одразу
+            // переходить у завершений стан.
+            Toggle("Збір завершено", isOn: $store.campaign.isClosedByAuthor)
+                .font(.system(size: 15, weight: .medium))
+                .tint(accent)
+                .accessibilityIdentifier("campaign-finished-toggle")
             labelledField("Посилання на банку", error: store.validation.qrLink) {
                 TextField("URL Банки (не обов'язково)", text: $store.campaign.jarURLString)
                     .keyboardType(.URL)
