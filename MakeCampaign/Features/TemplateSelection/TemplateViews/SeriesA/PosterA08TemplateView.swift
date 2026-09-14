@@ -31,7 +31,10 @@ struct PosterA08TemplateView: View {
             VStack(alignment: .leading, spacing: side * 0.03) {
                 header(side: side)
 
-                HStack(alignment: .top, spacing: side * 0.03) {
+                // Ціль стоїть у підвалі правої колонки, врівень із нижнім
+                // краєм фото: зверху колонка порожня, і сума там висіла в
+                // повітрі, а сітка під нею лишалася голою.
+                HStack(alignment: .bottom, spacing: side * 0.03) {
                     PosterPhoto(Rectangle(), photo: viewProvider)
                         .padding(side * 0.008)
                         .overlay {
@@ -139,8 +142,7 @@ struct PosterA08TemplateView: View {
                 progress(fraction: fraction, side: side)
             }
         }
-        .padding(.top, side * 0.01)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
     }
 
     /// Жовтий тут світить, сірий мовчить — смужка користується тим самим
@@ -195,8 +197,7 @@ struct PosterA08TemplateView: View {
                     .minimumScaleFactor(0.5)
             }
         }
-        .padding(.top, side * 0.01)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
     }
 
     private static let ink = Color(red: 16/255, green: 16/255, blue: 20/255)
