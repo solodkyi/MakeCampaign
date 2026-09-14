@@ -101,17 +101,14 @@ struct PosterA15TemplateView: View {
                     .foregroundStyle(.white)
                     .minimumScaleFactor(0.5)
 
-                // Підпис — найдовший рядок у капсулі, а її круглий торець
-                // з'їдає праву частину нижньої лінії. Тому він лишає собі поле
-                // на дугу й стискається в межах колонки замість того, щоб
-                // вилізти за неї.
+                // Підпис — найдовший рядок блоку, тож він стискається в межах
+                // колонки замість того, щоб розсувати її.
                 if let supportingGoal = funding.supportingGoal {
                     Text(supportingGoal)
                         .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
                         .foregroundStyle(Self.seafoam.opacity(0.85))
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        .padding(.trailing, side * 0.06)
                 }
             }
 
@@ -119,7 +116,7 @@ struct PosterA15TemplateView: View {
                 progress(fraction: fraction, side: side)
             }
         }
-        .modifier(Lozenge(side: side))
+        .modifier(Lozenge(side: side, isTall: Self.lozengeIsTall(funding: funding)))
     }
 
     /// Смужка лежить усередині бірюзової капсули, тож бере піну — той самий
@@ -146,11 +143,6 @@ struct PosterA15TemplateView: View {
                     .minimumScaleFactor(0.5)
             }
         }
-        // Підпис під ціллю робить капсулу вищою, а з нею й круглішими торці,
-        // тож нижньому рядку треба більше поля, щоб не зачепити дугу. Без
-        // підпису капсула лишається низькою — і смужка лишається завдовжки
-        // такою, якою була.
-        .padding(.trailing, side * (funding.supportingGoal == nil ? 0.04 : 0.09))
     }
 
     /// Збір закрито: капсула світлішає до піни, і напис читається глибокою
@@ -182,12 +174,31 @@ struct PosterA15TemplateView: View {
         let side: CGFloat
         var fill: Color = Color(red: 4/255, green: 52/255, blue: 58/255)
 
+        /// Капсула гарна, поки напис у ній — один-два рядки: її торці тоді
+        /// лише обіймають текст. Коли під ціллю стають ще й смужка з підписом,
+        /// висота росте, а з нею й радіус — дуги заходять на рядки й зрізають
+        /// їх. Високий блок тому лягає в заокруглений прямокутник: та сама
+        /// м'яка мова, але кути більше не залежать від висоти.
+        var isTall = false
+
         func body(content: Content) -> some View {
             content
                 .padding(.horizontal, side * 0.03)
                 .padding(.vertical, side * 0.024)
-                .background(fill, in: Capsule())
+                .background(fill, in: shape)
         }
+
+        private var shape: AnyShape {
+            isTall
+                ? AnyShape(RoundedRectangle(cornerRadius: side * 0.07, style: .continuous))
+                : AnyShape(Capsule())
+        }
+    }
+
+    /// Блок високий, щойно під ціллю з'являється бодай один додатковий
+    /// рядок — підпис загальної цілі або смужка поступу.
+    static func lozengeIsTall(funding: CampaignPosterFunding) -> Bool {
+        funding.supportingGoal != nil || funding.fraction != nil
     }
 
     private static let shell = Color(red: 255/255, green: 246/255, blue: 240/255)

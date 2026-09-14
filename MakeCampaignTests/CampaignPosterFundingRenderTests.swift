@@ -183,6 +183,40 @@ struct CampaignPosterFundingRenderTests {
     }
 
     /// Бік полотна за замовчуванням — розмір мініатюри у стосі.
+
+    @Test("Template 30 leaves the capsule once the block grows")
+    func templateThirtyDropsTheCapsuleWhenTall() {
+        // Сама ціль — низький блок, капсула його обіймає.
+        #expect(!PosterA15TemplateView.lozengeIsTall(funding: CampaignPosterFunding(
+            goal: "20 000 грн.", collected: nil, fraction: nil, isFinished: false
+        )))
+        // Смужка поступу додає рядки — торці капсули почали б їх зрізати.
+        #expect(PosterA15TemplateView.lozengeIsTall(funding: CampaignPosterFunding(
+            goal: "20 000 грн.", collected: "14 259.75 грн.", fraction: 0.71, isFinished: false
+        )))
+        // Підпис загальної цілі теж робить блок високим.
+        #expect(PosterA15TemplateView.lozengeIsTall(funding: CampaignPosterFunding(
+            goal: "20 000 грн.",
+            goalLabel: CampaignPosterFunding.personalGoalLabel,
+            supportingGoal: "із загальної цілі 100 000 грн.",
+            collected: nil,
+            fraction: nil,
+            isFinished: false
+        )))
+    }
+
+    @Test("Template 26 hands the amber line over to the progress bar")
+    func templateTwentySixKeepsOneAmberLine() {
+        // Без банки лінія підкреслює ціль.
+        #expect(PosterA11TemplateView.showsGoalUnderline(funding: CampaignPosterFunding(
+            goal: "20 000 грн.", collected: nil, fraction: nil, isFinished: false
+        )))
+        // З поступом лінію малює смужка — друга була б дублем.
+        #expect(!PosterA11TemplateView.showsGoalUnderline(funding: CampaignPosterFunding(
+            goal: "20 000 грн.", collected: "14 259.75 грн.", fraction: 0.71, isFinished: false
+        )))
+    }
+
     private static func render(
         template: Template,
         funding: CampaignPosterFunding,

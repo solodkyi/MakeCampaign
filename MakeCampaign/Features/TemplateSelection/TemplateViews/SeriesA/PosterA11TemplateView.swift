@@ -101,9 +101,11 @@ struct PosterA11TemplateView: View {
                 .minimumScaleFactor(0.4)
                 .padding(.bottom, side * 0.006)
                 .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(Self.amber)
-                        .frame(height: side * 0.008)
+                    if Self.showsGoalUnderline(funding: funding) {
+                        Rectangle()
+                            .fill(Self.amber)
+                            .frame(height: side * 0.008)
+                    }
                 }
                 .fixedSize(horizontal: true, vertical: false)
 
@@ -124,8 +126,14 @@ struct PosterA11TemplateView: View {
         }
     }
 
-    /// Тут уже є бурштинова підкреслювальна лінія під сумою — смужка просто
-    /// продовжує її думку: та сама вага, лише заповнена частково.
+    /// Підкреслення під сумою й смужка поступу — та сама бурштинова лінія
+    /// тієї ж ваги. Поки поступу немає, вона підкреслює ціль; щойно банка
+    /// озивається, цю роль бере смужка, а підкреслення йде — інакше дві
+    /// однакові риски стоять одна під одною й читаються як помилка.
+    static func showsGoalUnderline(funding: CampaignPosterFunding) -> Bool {
+        funding.fraction == nil
+    }
+
     private func progress(fraction: Double, side: CGFloat) -> some View {
         let labelSize = side * 0.028
 
