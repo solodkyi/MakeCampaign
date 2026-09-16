@@ -1065,6 +1065,20 @@ final class MakeCampaignUITests: XCTestCase {
             beforeDrag,
             "Dragging the photo must visibly change its alignment"
         )
+
+        // Хвіст жесту прилітає із запізненням: одиночний тап доправляється аж
+        // тоді, коли провалиться подвійний, тобто вже після того, як
+        // перетягування скінчилось. Перевіряти вкладку одразу — значить
+        // розминутись із стрибком, на який скаржаться тестувальники.
+        XCTAssertFalse(
+            app.descendants(matching: .any)["campaign-inline-photo-picker"]
+                .waitForExistence(timeout: 2),
+            "Reframing the photo must not open the photo tab once the gesture settles"
+        )
+        XCTAssertTrue(
+            editorPanelElement.exists,
+            "The editor tab must still be visible once the gesture settles"
+        )
     }
 
     private func pixelRGBA(

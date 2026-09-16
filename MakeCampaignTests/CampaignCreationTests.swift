@@ -267,6 +267,36 @@ struct CampaignCreationModelTests {
         )
     }
 
+    @Test("A tap that tails a photo reframing gesture leaves the poster alone")
+    func reframingGestureDoesNotSelectThePhoto() {
+        #expect(
+            !CampaignPosterTapPolicy.handlesTap(
+                isTransformingImage: true,
+                secondsSinceTransformEnded: nil
+            )
+        )
+        // Одиночний тап приходить лише коли мине інтервал подвійного, тобто
+        // вже після того, як кадрування скінчилось.
+        #expect(
+            !CampaignPosterTapPolicy.handlesTap(
+                isTransformingImage: false,
+                secondsSinceTransformEnded: 0.3
+            )
+        )
+        #expect(
+            CampaignPosterTapPolicy.handlesTap(
+                isTransformingImage: false,
+                secondsSinceTransformEnded: 1
+            )
+        )
+        #expect(
+            CampaignPosterTapPolicy.handlesTap(
+                isTransformingImage: false,
+                secondsSinceTransformEnded: nil
+            )
+        )
+    }
+
     @Test("Keyboard hides the poster selection highlight")
     func selectionHighlightYieldsToTheKeyboard() {
         #expect(

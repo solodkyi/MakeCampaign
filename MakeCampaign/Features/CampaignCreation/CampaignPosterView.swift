@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 import SwiftUI
 
@@ -11,6 +12,9 @@ final class CampaignPhotoInteractionState {
 
     var isActive = false
     var transform: Transform?
+    /// Коли скінчився останній жест кадрування — щоб відрізнити хвіст цього
+    /// жесту від справжнього тапу. Див. `CampaignPosterTapPolicy`.
+    var transformEndedAt: Date?
 }
 
 enum CampaignPosterLayout {
@@ -43,6 +47,27 @@ enum CampaignPosterInteractionPolicy {
         hasCallbacks: Bool
     ) -> Bool {
         !isTransformingImage && hasCallbacks
+    }
+}
+
+/// Перетягування і щипок над фото завершуються тим самим дотиком, що його
+/// розпізнає тап по плакату. Композиція `exclusively(before:)` віддає одиночний
+/// тап аж тоді, коли мине інтервал подвійного, — а до того моменту кадрування
+/// вже скінчилось і мітки елементів повернулись на місце. Тож такий тап
+/// потрапляє у фото й тягне за собою вибір елемента та стрибок на вкладку
+/// «Фото», хоча автор лише поправляв кадр. Хвіст жесту — не вибір.
+enum CampaignPosterTapPolicy {
+    /// Із запасом перекриває очікування подвійного тапу, після якого SwiftUI
+    /// доправляє одиночний.
+    static let transformTapSuppressionWindow: TimeInterval = 0.5
+
+    static func handlesTap(
+        isTransformingImage: Bool,
+        secondsSinceTransformEnded: TimeInterval?
+    ) -> Bool {
+        guard !isTransformingImage else { return false }
+        guard let secondsSinceTransformEnded else { return true }
+        return secondsSinceTransformEnded > transformTapSuppressionWindow
     }
 }
 
@@ -148,6 +173,13 @@ struct CampaignPosterView: View {
     }
 
     private func handleTap(at location: CGPoint, isDoubleTap: Bool) {
+        guard CampaignPosterTapPolicy.handlesTap(
+            isTransformingImage: photoInteraction.isActive,
+            secondsSinceTransformEnded: photoInteraction.transformEndedAt.map {
+                Date().timeIntervalSince($0)
+            }
+        ) else { return }
+
         let element = CampaignPosterHitTesting.element(at: location, in: elementRegions)
         guard let element else {
             onBackgroundTap?()
@@ -317,6 +349,7 @@ struct CampaignPosterPhotoPreview: View {
                         interaction.isActive = isActive
                         if !isActive {
                             interaction.transform = nil
+                            interaction.transformEndedAt = Date()
                         }
                     },
                     onTransformChanged: { scale, offset, referenceSize in
