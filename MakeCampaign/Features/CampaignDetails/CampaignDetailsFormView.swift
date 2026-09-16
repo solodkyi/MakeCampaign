@@ -64,7 +64,7 @@ struct CampaignDetailsFormView: View {
     @ViewBuilder
     private var purposeAndTargetSection: some View {
         Section {
-            TextField("Призначення збору", text: $store.campaign.purpose)
+            TextField("Призначення збору", text: Binding(store.$campaign.purpose))
                 .focused($focus, equals: .name)
             if store.validationErrors.hasErrors(for: .name) {
                 ForEach(store.validationErrors.errorMessages(for: .name), id: \.self) { message in
@@ -74,7 +74,7 @@ struct CampaignDetailsFormView: View {
                 }
             }
             
-            TextField("Сума збору (не обов'язково)", text: $store.campaign.formattedTarget)
+            TextField("Сума збору (не обов'язково)", text: Binding(store.$campaign.formattedTarget))
                 .focused($focus, equals: .target)
                 .keyboardType(.decimalPad)
             
@@ -95,7 +95,7 @@ struct CampaignDetailsFormView: View {
         Section {
             TextField(
                 "Банка збору (не обов'язково)",
-                text: $store.campaign.jarURLString)
+                text: Binding(store.$campaign.jarURLString))
             .focused($focus, equals: .link)
             
             if store.validationErrors.hasErrors(for: .link) {
