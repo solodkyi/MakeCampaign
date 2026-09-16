@@ -77,11 +77,10 @@ struct GreenGradientTemplateView: View {
     /// The tear line: equal marks and gaps, so the header reads as a stub that
     /// could be pulled away from the card below it.
     private func perforation(side: CGFloat) -> some View {
-        let dash = side * 0.03
-        let count = Int((side / (dash * 2)).rounded(.up)) + 1
+        let dash = side * Self.dashRatio
 
         return HStack(spacing: dash) {
-            ForEach(0..<count, id: \.self) { _ in
+            ForEach(0..<Self.dashCount, id: \.self) { _ in
                 Rectangle()
                     .fill(Self.forest)
                     .frame(width: dash)
@@ -193,6 +192,17 @@ struct GreenGradientTemplateView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
     }
+
+    /// Мітка завширшки `dashRatio` сторони, і проміжок між мітками такий самий.
+    private static let dashRatio: CGFloat = 0.03
+
+    /// Скільки міток укриває лінію відриву. Мітка з проміжком забирають однакову
+    /// частку сторони, тож сторона в цьому дробі скорочується — кількість та
+    /// сама для будь-якої ширини. Рахувати її від самої сторони не можна:
+    /// SwiftUI читає тіло шаблону ще до розкладки (на push-переході — заради
+    /// preferences), сторона там нульова, і `side / (side * ratio)` дає NaN,
+    /// якого `Int()` не переживає.
+    private static let dashCount = Int((1 / (dashRatio * 2)).rounded(.up)) + 1
 
     private static let card = Color(red: 242/255, green: 245/255, blue: 233/255)
     private static let forest = Color(red: 20/255, green: 61/255, blue: 34/255)
