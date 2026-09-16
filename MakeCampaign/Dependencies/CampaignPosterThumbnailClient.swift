@@ -13,11 +13,7 @@ struct CampaignPosterThumbnailKey: Hashable, Sendable {
     let composition: CampaignPosterThumbnailComposition
     let purpose: String
     let target: Double?
-    /// Допоміжна банка малює на плакаті інший підпис і додатковий рядок під
-    /// сумою, тож ключ мусить це бачити — інакше кеш віддасть стару картинку
-    /// відразу після перемикання.
     let isSupportingJar: Bool
-    /// Власна ціль автора: провідна цифра плаката, коли її задано.
     let personalTarget: Double?
     let collected: Double?
     let isFinished: Bool
@@ -38,11 +34,7 @@ struct CampaignPosterThumbnailRefreshKey: Hashable, Sendable {
     let composition: CampaignPosterThumbnailComposition
     let purpose: String
     let target: Double?
-    /// Допоміжна банка малює на плакаті інший підпис і додатковий рядок під
-    /// сумою, тож ключ мусить це бачити — інакше кеш віддасть стару картинку
-    /// відразу після перемикання.
     let isSupportingJar: Bool
-    /// Власна ціль автора: провідна цифра плаката, коли її задано.
     let personalTarget: Double?
     let collected: Double?
     let isFinished: Bool
