@@ -15,10 +15,22 @@ struct CampaignCoverSample: Identifiable, Equatable, Sendable {
     let photoResource: String
     let purpose: String
     let target: Double
+    /// Власна ціль автора в чужій збірці. Є лише там, де зразок має показати
+    /// допоміжну банку: тоді `target` — загальна ціль збірки, а обкладинка
+    /// веде цим числом і додає під ним рядок «із загальної цілі».
+    let personalTarget: Double?
     /// Зібране. Є там, де зразок має показати поступ або завершення; без нього
     /// обкладинка показує саму ціль, як щойно створений збір.
     let collected: Double?
     let isClosedByAuthor: Bool
+    /// Наближення світлини в рамці шаблона — те саме, що автор робить щипком.
+    /// Рамка заповнюється світлиною, а не вписує її, тож у круглій чи
+    /// квадратній прорізі портретне фото стоїть задалеко: об'єкт тоне в тлі.
+    let photoScale: CGFloat
+    /// Зсув світлини часткою рамки: `0.1` — десята її ширини чи висоти.
+    /// Частками, а не пунктами, бо та сама обкладинка малюється і в стос
+    /// завширшки 200 пунктів, і на повний плакат у 1080 пікселів.
+    let photoOffset: CGSize
 
     init(
         id: UUID,
@@ -26,16 +38,22 @@ struct CampaignCoverSample: Identifiable, Equatable, Sendable {
         photoResource: String,
         purpose: String,
         target: Double,
+        personalTarget: Double? = nil,
         collected: Double? = nil,
-        isClosedByAuthor: Bool = false
+        isClosedByAuthor: Bool = false,
+        photoScale: CGFloat = 1,
+        photoOffset: CGSize = .zero
     ) {
         self.id = id
         self.templateID = templateID
         self.photoResource = photoResource
         self.purpose = purpose
         self.target = target
+        self.personalTarget = personalTarget
         self.collected = collected
         self.isClosedByAuthor = isClosedByAuthor
+        self.photoScale = photoScale
+        self.photoOffset = photoOffset
     }
 
     var template: Template? {
@@ -45,10 +63,21 @@ struct CampaignCoverSample: Identifiable, Equatable, Sendable {
     func campaign(photoData: Data?) -> Campaign {
         Campaign(
             id: id,
-            image: photoData.map { Campaign.Image(raw: $0) },
+            image: photoData.map {
+                Campaign.Image(
+                    raw: $0,
+                    offset: photoOffset,
+                    scale: photoScale,
+                    // Одиничний вимір робить зсув часткою рамки: обкладинка
+                    // ділить його на цей вимір і множить на власний.
+                    referenceSize: CGSize(width: 1, height: 1)
+                )
+            },
             template: template,
             purpose: purpose,
             target: target,
+            isSupportingJar: personalTarget != nil,
+            personalTarget: personalTarget,
             jar: collected.map { collected in
                 Campaign.JarInfo(
                     link: Self.showcaseJar,
@@ -73,46 +102,69 @@ struct CampaignCoverSample: Identifiable, Equatable, Sendable {
 enum CampaignCoverShowcase {
     /// П'ять зразків: три видно у стосі, один чекає позаду, ще один відлітає.
     /// Кількість не випадкова — її вимагає `CampaignCoverStackLayout`.
+    ///
+    /// Світлин лише три, тож дві з них стос показує двічі. Порядок розводить
+    /// повтори якнайдалі — у циклі з п'яти карток це відстань два, більшої не
+    /// буває, — а повторам дістаються шаблони різних наборів, щоб та сама
+    /// світлина читалась як інший збір, а не як збій.
+    ///
+    /// Рамка шаблона вирішує, що від світлини лишиться: `PosterPhoto` заповнює
+    /// свою рамку, а не вписується в неї. Тому альбомний `zbir2` стоїть у
+    /// єдиній широкій рамці — смузі на всю ширину, — а портретні `zbir1` і
+    /// `zbir3` живуть у високих, квадратних і круглих.
     static let samples: [CampaignCoverSample] = [
+        // Ваучер: висока рамка праворуч — портретний дрон стає на весь зріст.
         CampaignCoverSample(
             id: UUID(uuidString: "A0000000-0000-0000-0000-000000000001")!,
-            templateID: "b_blueLinear_center",
-            photoResource: "zbir2",
-            purpose: "Машина розмінування ZMIY",
-            target: 2_000_000,
-            collected: 1_240_000
+            templateID: "b_linearGreen_topToBottomTrailing",
+            photoResource: "zbir1",
+            purpose: "На FPV",
+            target: 15_000
         ),
+        // Допоміжна банка: веде власна ціль автора, під нею — загальна.
         CampaignCoverSample(
             id: UUID(uuidString: "A0000000-0000-0000-0000-000000000002")!,
-            templateID: "b_cyanMagentaRadial_squareTrailing",
+            templateID: "a_angularYellowBlue_trailing",
             photoResource: "zbir3",
-            purpose: "Аптечки для 3 ОШБр",
-            target: 20_000,
-            collected: 8_600
+            purpose: "На авто евакуації",
+            target: 100_000,
+            personalTarget: 20_000,
+            collected: 14_259.75
         ),
+        // Єдина широка рамка стоса — і єдина альбомна світлина.
         CampaignCoverSample(
             id: UUID(uuidString: "A0000000-0000-0000-0000-000000000003")!,
-            templateID: "a_goldBlackLinear_hexagonTrailing",
-            photoResource: "zbir1",
-            purpose: "Дрони для розвідки",
-            target: 75_000
+            templateID: "a_radialRedBlack_topToEdge",
+            photoResource: "zbir2",
+            purpose: "На мавік",
+            target: 75_000,
+            collected: 3_226.7
         ),
         CampaignCoverSample(
             id: UUID(uuidString: "A0000000-0000-0000-0000-000000000004")!,
-            templateID: "b_linearGreen_topToBottomTrailing",
-            photoResource: "zbir3",
-            purpose: "Тепловізор для бригади",
-            target: 60_000,
-            collected: 60_000,
-            isClosedByAuthor: true
+            templateID: "b_angularYellowBlue_trailing",
+            photoResource: "zbir1",
+            purpose: "Дрони для розвідки",
+            target: 40_000,
+            collected: 28_400,
+            // Дрон висить у нижній третині кадру, а коло бере середину: без
+            // наближення й підйому в проріз потрапляє сама стіна.
+            photoScale: 1.3,
+            photoOffset: CGSize(width: 0, height: -0.22)
         ),
+        // Завершений збір: стос показує і те, чим збір закінчується.
         CampaignCoverSample(
             id: UUID(uuidString: "A0000000-0000-0000-0000-000000000005")!,
-            templateID: "a_radialRedBlack_topToEdge",
-            photoResource: "zbir1",
-            purpose: "Генератор для бліндажа",
-            target: 45_000,
-            collected: 41_200
+            templateID: "b_radialMintIndigo_roundedTrailing",
+            photoResource: "zbir3",
+            purpose: "Позашляховик для медиків",
+            target: 90_000,
+            collected: 90_000,
+            isClosedByAuthor: true,
+            // Широка рамка бере з портретного кадру смугу посередині — саме
+            // небо над автівкою. Зсув униз опускає її на машину.
+            photoScale: 1,
+            photoOffset: CGSize(width: 0, height: -0.26)
         )
     ]
 
