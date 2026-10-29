@@ -81,38 +81,86 @@ private struct CampaignsList: View {
     let onPreview: (Campaign) -> Void
     let onDelete: (Campaign) -> Void
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     var body: some View {
+        // Широке вікно (розкладений Duo, iPad) показує збори сіткою, щоб
+        // картки не розтягувались на всю ширину; вузьке лишає список зі
+        // свайпами.
+        if horizontalSizeClass == .regular {
+            grid
+        } else {
+            list
+        }
+    }
+
+    private var list: some View {
         List {
             ForEach(campaigns) { campaign in
-                CampaignRow(
-                    campaign: campaign,
-                    palette: palette,
-                    jarPresentation: presentation(campaign),
-                    onEdit: { onEdit(campaign.id) },
-                    onPreview: { onPreview(campaign) }
-                )
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button {
-                        onDelete(campaign)
-                    } label: {
-                        Label("Видалити", systemImage: "trash")
-                    }
-                    .tint(.red)
+                row(for: campaign)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button {
+                            onDelete(campaign)
+                        } label: {
+                            Label("Видалити", systemImage: "trash")
+                        }
+                        .tint(.red)
 
-                    Button {
-                        onEdit(campaign.id)
-                    } label: {
-                        Label("Змінити", systemImage: "pencil")
+                        Button {
+                            onEdit(campaign.id)
+                        } label: {
+                            Label("Змінити", systemImage: "pencil")
+                        }
+                        .tint(palette.steel)
                     }
-                    .tint(palette.steel)
-                }
-                .listRowSeparator(.hidden)
-                .listRowBackground(palette.app)
-                .listRowInsets(.init(top: 0, leading: 20, bottom: 14, trailing: 20))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(palette.app)
+                    .listRowInsets(.init(top: 0, leading: 20, bottom: 14, trailing: 20))
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+    }
+
+    private var grid: some View {
+        ScrollView {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 340), spacing: 14, alignment: .top)],
+                alignment: .leading,
+                spacing: 14
+            ) {
+                ForEach(campaigns) { campaign in
+                    row(for: campaign)
+                        // Свайпів у сітці немає, тож ті самі дії — в меню.
+                        .contextMenu {
+                            Button {
+                                onEdit(campaign.id)
+                            } label: {
+                                Label("Змінити", systemImage: "pencil")
+                            }
+
+                            Button(role: .destructive) {
+                                onDelete(campaign)
+                            } label: {
+                                Label("Видалити", systemImage: "trash")
+                            }
+                        }
+                }
+            }
+            .padding(.horizontal, 20)
+            // Низ лишає місце під плаваючу кнопку створення.
+            .padding(.bottom, 100)
+        }
+    }
+
+    private func row(for campaign: Campaign) -> some View {
+        CampaignRow(
+            campaign: campaign,
+            palette: palette,
+            jarPresentation: presentation(campaign),
+            onEdit: { onEdit(campaign.id) },
+            onPreview: { onPreview(campaign) }
+        )
     }
 }
 
@@ -127,7 +175,7 @@ private struct CampaignRow: View {
     let onPreview: () -> Void
 
     var body: some View {
-        HStack(spacing: 13) {
+        HStack(alignment: .top, spacing: 16) {
             Button(action: onPreview) {
                 CampaignThumbnail(campaign: campaign, palette: palette)
             }
@@ -144,7 +192,7 @@ private struct CampaignRow: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    Spacer(minLength: 8)
+                    Spacer(minLength: 12)
 
                     CampaignFundingSummary(
                         campaign: campaign,
@@ -152,7 +200,9 @@ private struct CampaignRow: View {
                         palette: palette
                     )
                 }
-                .padding(.vertical, 2)
+                // Заголовок тримається верхнього краю мініатюри, гроші —
+                // нижнього. Так заголовки всіх рядків стоять на одній лінії,
+                // а різний обсяг вмісту забирає проміжок посередині.
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .contentShape(Rectangle())
             }
@@ -161,8 +211,10 @@ private struct CampaignRow: View {
             .accessibilityHint("Відкрити редактор збору")
             .accessibilityIdentifier("campaign-row-\(campaign.id.uuidString)")
         }
-        .frame(minHeight: 126)
-        .padding(11)
+        // Висота рядка — висота мініатюри, тож поле довкола неї однакове
+        // з усіх боків, а не вдвічі більше згори й знизу.
+        .frame(minHeight: CampaignThumbnail.size.height)
+        .padding(12)
         .background(palette.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         // Поля картки довкола обох кнопок теж ведуть у редактор, як і
         // раніше, коли весь рядок був однією кнопкою.
@@ -177,7 +229,7 @@ private struct CampaignRow: View {
 }
 
 private struct CampaignThumbnail: View {
-    private static let size = CGSize(width: 104, height: 104)
+    static let size = CGSize(width: 104, height: 104)
 
     let campaign: Campaign
     let palette: CampaignsPalette
@@ -276,16 +328,18 @@ private struct CampaignFundingSummary: View {
     /// Банку підключено, але сум із неї ще немає: показуємо ціль, стан
     /// банки й коли збір востаннє оновлювався.
     private func awaitingJar(message: String) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 8) {
             if let target = campaign.displayTarget {
                 TargetAmount(target: target, label: campaign.targetLabel, palette: palette)
             }
 
-            Text(message)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(palette.muted)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(message)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(palette.muted)
 
-            CampaignMeta(status: nil, updatedAt: campaign.updatedAt, palette: palette)
+                CampaignMeta(status: nil, updatedAt: campaign.updatedAt, palette: palette)
+            }
         }
     }
 
@@ -305,7 +359,7 @@ private struct CollectedAmount: View {
     let palette: CampaignsPalette
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 5) {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(target == nil ? collected.formattedAmount.appendingCurrency : collected.formattedAmount)
                 .font(.system(size: 19, weight: .semibold, design: .monospaced))
                 .foregroundStyle(palette.foreground)
@@ -328,7 +382,7 @@ private struct TargetAmount: View {
     let palette: CampaignsPalette
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .tracking(1)
@@ -363,8 +417,7 @@ private struct CampaignProgress: View {
                 }
         }
         .frame(height: 5)
-        .padding(.top, 9)
-        .padding(.bottom, 7)
+        .padding(.vertical, 8)
     }
 }
 
@@ -440,6 +493,38 @@ private struct CampaignsEmptyState: View {
     }
 
     var body: some View {
+        // У низькому вікні (ландшафт, розкладений Duo) вміст не влазить у
+        // висоту, тож він прокручується, а не вилазить за краї. Там, де місця
+        // вистачає, мінімальна висота тримає кнопку внизу, як і раніше.
+        GeometryReader { proxy in
+            ScrollView {
+                content
+                    .frame(minHeight: proxy.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .task(id: coverRenderKey) {
+            covers = await CampaignCoverRenderer.covers(
+                for: samples,
+                side: Self.coverSide,
+                displayScale: displayScale,
+                colorScheme: colorScheme,
+                locale: locale,
+                assetLoader: previewAssetLoader,
+                thumbnailClient: thumbnailClient
+            )
+        }
+        .task(id: autoAdvances) {
+            guard autoAdvances else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.advanceInterval)
+                guard !Task.isCancelled else { return }
+                advance()
+            }
+        }
+    }
+
+    private var content: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
 
@@ -473,34 +558,18 @@ private struct CampaignsEmptyState: View {
                     .frame(maxWidth: .infinity, minHeight: 56)
             }
             .buttonStyle(.plain)
+            // У широкому вікні кнопка не розтягується на всю ширину.
+            .frame(maxWidth: 420)
             .background(
                 palette.foreground,
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
             )
             .shadow(color: palette.raisedShadow, radius: 26, x: 0, y: 10)
             .accessibilityIdentifier("empty-create-campaign-button")
+            .padding(.top, 16)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 30)
-        .task(id: coverRenderKey) {
-            covers = await CampaignCoverRenderer.covers(
-                for: samples,
-                side: Self.coverSide,
-                displayScale: displayScale,
-                colorScheme: colorScheme,
-                locale: locale,
-                assetLoader: previewAssetLoader,
-                thumbnailClient: thumbnailClient
-            )
-        }
-        .task(id: autoAdvances) {
-            guard autoAdvances else { return }
-            while !Task.isCancelled {
-                try? await Task.sleep(for: Self.advanceInterval)
-                guard !Task.isCancelled else { return }
-                advance()
-            }
-        }
     }
 
     private func advance() {
