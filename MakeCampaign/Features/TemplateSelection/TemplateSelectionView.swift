@@ -12,64 +12,53 @@ struct TemplateSelectionView: View {
     @Dependency(\.campaignPosterThumbnailClient) private var thumbnailClient
     @State private var previewAssetBuffer = CampaignPosterPreviewAssetBuffer()
     @State private var templateThumbnailBatch: CampaignPosterThumbnailBatch?
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                if let uiImage = currentPreviewAssets.photo {
-                    if let selectedTemplate = store.selectedTemplate {
-                        CampaignTemplateView(
-                            campaign: store.campaign,
-                            template: selectedTemplate,
-                            image: uiImage,
-                            onImageTransformEnd: { newScale, newOffset, containerSize in
-                                store.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
-                            }
-                        )
-                    } else {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                    }
-                } else {
-                    Text("Неможливо завантажити зображення")
-                        .foregroundColor(.secondary)
-                }
-            }
-            .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-            .background(Color(.systemGroupedBackground))
-            
-            Divider()
-            Spacer()
-            
-            VStack(spacing: 12) {
-                Text("Оберіть шаблон")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.top)
-                
-                templateThumbnailStrip
 
-                Button {
-                    store.send(.doneButtonTapped)
-                } label: {
-                    Text("Готово")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(store.selectedTemplateID != nil ? Color.accentColor : Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+    /// Нижче цієї висоти перегляд не стискається далі, а вибір шаблону
+    /// прокручується.
+    private static let minimumPreviewHeight: CGFloat = 180
+
+    var body: some View {
+        GeometryReader { proxy in
+            if CampaignEditorLayout.usesSideBySide(in: proxy.size) {
+                // Широке вікно: перегляд ліворуч, вибір шаблону праворуч,
+                // щоб перегляд не стискався по висоті.
+                HStack(spacing: 0) {
+                    posterPreview
+                    Divider()
+                    templatePicker
+                        .frame(
+                            width: CampaignEditorLayout.sideBySideTrayWidth(
+                                availableWidth: proxy.size.width
+                            )
+                        )
+                        .frame(maxHeight: .infinity)
                 }
-                .contentShape(Rectangle())
-                .padding(.horizontal)
-                .padding(.bottom)
-                .disabled(store.selectedTemplateID == nil)
+            } else {
+                // Низьке вузьке вікно (зовнішній екран Duo): якщо перегляд не
+                // лишається бодай мінімальним, вибір шаблону прокручується
+                // разом із ним, а не стискає перегляд до нуля.
+                ViewThatFits(in: .vertical) {
+                    VStack(spacing: 0) {
+                        posterPreview
+                            .frame(
+                                minHeight: Self.minimumPreviewHeight,
+                                idealHeight: Self.minimumPreviewHeight,
+                                maxHeight: .infinity
+                            )
+                        Divider()
+                        templatePicker
+                    }
+
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            posterPreview
+                                .frame(height: Self.minimumPreviewHeight)
+                            Divider()
+                            templatePicker
+                        }
+                    }
+                }
             }
-            .background(Color(.systemBackground))
         }
         .onAppear {
             store.send(.onAppear)
@@ -79,6 +68,63 @@ struct TemplateSelectionView: View {
         }
         .navigationTitle("Обрати шаблон")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var posterPreview: some View {
+        ZStack {
+            if let uiImage = currentPreviewAssets.photo {
+                if let selectedTemplate = store.selectedTemplate {
+                    CampaignTemplateView(
+                        campaign: store.campaign,
+                        template: selectedTemplate,
+                        image: uiImage,
+                        onImageTransformEnd: { newScale, newOffset, containerSize in
+                            store.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
+                        }
+                    )
+                } else {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                }
+            } else {
+                Text("Неможливо завантажити зображення")
+                    .foregroundColor(.secondary)
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+        .background(Color(.systemGroupedBackground))
+    }
+
+    private var templatePicker: some View {
+        VStack(spacing: 12) {
+            Text("Оберіть шаблон")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.top)
+
+            templateThumbnailStrip
+
+            Button {
+                store.send(.doneButtonTapped)
+            } label: {
+                Text("Готово")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(store.selectedTemplateID != nil ? Color.accentColor : Color.gray)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+            .contentShape(Rectangle())
+            .padding(.horizontal)
+            .padding(.bottom)
+            .disabled(store.selectedTemplateID == nil)
+        }
+        .background(Color(.systemBackground))
     }
 
     @ViewBuilder
@@ -202,22 +248,42 @@ struct TemplateItemView: View {
 }
 
 extension Template {
+    /// Шаблони, які автор може обрати.
+    ///
+    /// Знятий із каталогу шаблон зникає лише звідси: його `View` лишається на
+    /// місці, бо збори, збережені поки він був доступним, і далі мають
+    /// малюватись. Через це в нумерації бувають дірки — вона іменує шаблон, а
+    /// не задає його місце в списку.
     static let list: IdentifiedArrayOf<Template> = [
-        .init(name: "1", gradient: .blueLinear, imagePlacement: .center),
-        .init(name: "2", gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
-        .init(name: "3", gradient: .linearPurple, imagePlacement: .topCenter),
-        .init(name: "4", gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
-        .init(name: "5", gradient: .pinkAngular, imagePlacement: .topCenter),
-        .init(name: "6", gradient: .tealPurpleRadial, imagePlacement: .roundedTrailing),
-        .init(name: "7", gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
-        .init(name: "8", gradient: .angularYellowBlue, imagePlacement: .trailing),
-        .init(name: "9", gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
-        .init(name: "10", gradient: .radialRedBlack, imagePlacement: .topToEdge),
-        .init(name: "11", gradient: .linearIndigoOrange, imagePlacement: .trailing),
-        .init(name: "12", gradient: .linearEmeraldBlack, imagePlacement: .hexagonTrailing),
-        .init(name: "13", gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
-        .init(name: "14", gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
-        .init(name: "15", gradient: .linearCoralTeal, imagePlacement: .trailing)
+        .init(name: "1", series: .b, gradient: .blueLinear, imagePlacement: .center),
+        .init(name: "2", series: .b, gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
+        .init(name: "3", series: .b, gradient: .linearPurple, imagePlacement: .topCenter),
+        .init(name: "4", series: .b, gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
+        .init(name: "5", series: .b, gradient: .pinkAngular, imagePlacement: .topCenter),
+        .init(name: "7", series: .b, gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
+        .init(name: "8", series: .b, gradient: .angularYellowBlue, imagePlacement: .trailing),
+        .init(name: "9", series: .b, gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
+        .init(name: "10", series: .b, gradient: .radialRedBlack, imagePlacement: .topToEdge),
+        .init(name: "11", series: .b, gradient: .linearIndigoOrange, imagePlacement: .trailing),
+        .init(name: "12", series: .b, gradient: .linearEmeraldBlack, imagePlacement: .hexagonTrailing),
+        .init(name: "13", series: .b, gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
+        .init(name: "14", series: .b, gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
+        .init(name: "15", series: .b, gradient: .linearCoralTeal, imagePlacement: .trailing),
+        .init(name: "16", series: .a, gradient: .blueLinear, imagePlacement: .center),
+        .init(name: "17", series: .a, gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
+        .init(name: "18", series: .a, gradient: .linearPurple, imagePlacement: .topCenter),
+        .init(name: "19", series: .a, gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
+        .init(name: "20", series: .a, gradient: .pinkAngular, imagePlacement: .topCenter),
+        .init(name: "21", series: .a, gradient: .tealPurpleRadial, imagePlacement: .roundedTrailing),
+        .init(name: "22", series: .a, gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
+        .init(name: "23", series: .a, gradient: .angularYellowBlue, imagePlacement: .trailing),
+        .init(name: "24", series: .a, gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
+        .init(name: "25", series: .a, gradient: .radialRedBlack, imagePlacement: .topToEdge),
+        .init(name: "26", series: .a, gradient: .linearIndigoOrange, imagePlacement: .trailing),
+        .init(name: "27", series: .a, gradient: .linearEmeraldBlack, imagePlacement: .hexagonTrailing),
+        .init(name: "28", series: .a, gradient: .radialAquaPurple, imagePlacement: .squareTrailing),
+        .init(name: "29", series: .a, gradient: .radialMintIndigo, imagePlacement: .roundedTrailing),
+        .init(name: "30", series: .a, gradient: .linearCoralTeal, imagePlacement: .trailing)
     ]
 }
 

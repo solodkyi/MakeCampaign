@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 import SwiftUI
 
@@ -11,6 +12,9 @@ final class CampaignPhotoInteractionState {
 
     var isActive = false
     var transform: Transform?
+    /// Коли скінчився останній жест кадрування — щоб відрізнити хвіст цього
+    /// жесту від справжнього тапу. Див. `CampaignPosterTapPolicy`.
+    var transformEndedAt: Date?
 }
 
 enum CampaignPosterLayout {
@@ -46,11 +50,45 @@ enum CampaignPosterInteractionPolicy {
     }
 }
 
+/// Перетягування і щипок над фото завершуються тим самим дотиком, що його
+/// розпізнає тап по плакату. Композиція `exclusively(before:)` віддає одиночний
+/// тап аж тоді, коли мине інтервал подвійного, — а до того моменту кадрування
+/// вже скінчилось і мітки елементів повернулись на місце. Тож такий тап
+/// потрапляє у фото й тягне за собою вибір елемента та стрибок на вкладку
+/// «Фото», хоча автор лише поправляв кадр. Хвіст жесту — не вибір.
+enum CampaignPosterTapPolicy {
+    /// Із запасом перекриває очікування подвійного тапу, після якого SwiftUI
+    /// доправляє одиночний.
+    static let transformTapSuppressionWindow: TimeInterval = 0.5
+
+    static func handlesTap(
+        isTransformingImage: Bool,
+        secondsSinceTransformEnded: TimeInterval?
+    ) -> Bool {
+        guard !isTransformingImage else { return false }
+        guard let secondsSinceTransformEnded else { return true }
+        return secondsSinceTransformEnded > transformTapSuppressionWindow
+    }
+}
+
+/// Рамка виділення показує, який елемент постера зараз під рукою. Коли
+/// піднімається клавіатура, редагування вже видно в самому полі, а плакат
+/// стискається — тож рамка лише захаращує його й поступається місцем.
+enum CampaignPosterSelectionHighlightPolicy {
+    static func isVisible(
+        selection: CampaignPosterElement?,
+        isTextEditing: Bool
+    ) -> Bool {
+        selection != nil && !isTextEditing
+    }
+}
+
 struct CampaignPosterView: View {
     let campaign: Campaign
     let assets: CampaignPosterPreviewAssets
     var allowsImageTransform = false
     var selectedElement: CampaignPosterElement? = nil
+    var isTextEditing = false
     var onContentModeSelect: ((Campaign.Image.ContentMode) -> Void)?
     var onImageTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
     var onElementTap: ((CampaignPosterElement) -> Void)?
@@ -135,6 +173,13 @@ struct CampaignPosterView: View {
     }
 
     private func handleTap(at location: CGPoint, isDoubleTap: Bool) {
+        guard CampaignPosterTapPolicy.handlesTap(
+            isTransformingImage: photoInteraction.isActive,
+            secondsSinceTransformEnded: photoInteraction.transformEndedAt.map {
+                Date().timeIntervalSince($0)
+            }
+        ) else { return }
+
         let element = CampaignPosterHitTesting.element(at: location, in: elementRegions)
         guard let element else {
             onBackgroundTap?()
@@ -150,7 +195,11 @@ struct CampaignPosterView: View {
 
     @ViewBuilder
     private var selectionBorder: some View {
-        if let selectedElement,
+        if CampaignPosterSelectionHighlightPolicy.isVisible(
+            selection: selectedElement,
+            isTextEditing: isTextEditing
+        ),
+           let selectedElement,
            let frame = elementRegions[selectedElement] {
             ZStack {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
@@ -293,12 +342,14 @@ struct CampaignPosterPhotoPreview: View {
                     initialOffset: initialOffset,
                     initialScale: initialScale,
                     containerSize: geometry.size,
+                    referenceSize: referenceSize,
                     contentMode: contentMode,
                     onTransformEnd: onTransformEnd,
                     onTransformActivityChanged: { isActive in
                         interaction.isActive = isActive
                         if !isActive {
                             interaction.transform = nil
+                            interaction.transformEndedAt = Date()
                         }
                     },
                     onTransformChanged: { scale, offset, referenceSize in
@@ -329,7 +380,7 @@ struct CampaignPosterPlaceholder: View {
         VStack(spacing: 12) {
             Image(systemName: "photo.badge.plus")
                 .font(.system(size: 42, weight: .light))
-            Text(campaign.purpose.isEmpty ? "Ваш постер з’явиться тут" : campaign.purpose)
+            Text(campaign.purpose.isEmpty ? "Фото" : campaign.purpose)
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 28)

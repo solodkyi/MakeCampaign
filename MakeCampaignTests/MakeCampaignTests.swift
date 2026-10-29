@@ -30,9 +30,12 @@ final class MakeCampaignTests: XCTestCase {
     }
 
     func test_campaignsList_jarPresentationProvidesApprovedMessages() {
-        XCTAssertEqual(CampaignsFeature.JarPresentation.noLink.message, "Банку не підключено")
         XCTAssertEqual(CampaignsFeature.JarPresentation.loading.message, "Оновлюємо дані…")
         XCTAssertEqual(CampaignsFeature.JarPresentation.failed.message, "Не вдалося оновити")
+    }
+
+    func test_campaignsList_rowSaysNothingAboutAMissingJar() {
+        XCTAssertEqual(CampaignsFeature.JarPresentation.noLink.message, "")
     }
 
     func test_campaignsList_deleteConfirmedRemovesTheCampaign() async {

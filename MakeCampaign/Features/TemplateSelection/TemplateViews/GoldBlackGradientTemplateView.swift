@@ -1,268 +1,225 @@
+//
+//  GoldBlackGradientTemplateView.swift
+//  MakeCampaign
+//
+
 import SwiftUI
 
+/// `goldBlackLinear_hexagonTrailing` — light gold washing across bone paper,
+/// set in Playfair, with the photo cut to a hexagon over a struck-gold backing.
+///
+/// The backing sits slightly proud of the photo on every edge, which is what
+/// reads as a bevelled setting rather than a border.
 struct GoldBlackGradientTemplateView: View {
     let purpose: String
-    let goal: String?
-    
+    let funding: CampaignPosterFunding
+
     var viewProvider: () -> AnyView
-    
-    init(purpose: String, goal: String?, viewProvider: @escaping () -> some View = { Color.clear }) {
+
+    init(
+        purpose: String,
+        funding: CampaignPosterFunding,
+        viewProvider: @escaping () -> some View = { Color.clear }
+    ) {
         self.purpose = purpose
-        self.goal = goal
+        self.funding = funding
         self.viewProvider = { AnyView(viewProvider()) }
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
-            let side = geometry.size.width // Use full width instead of minimum
-            let imageSize = side * 0.58
-            let padding = side * 0.045
-            
-            let purposeFontSize = side * 0.048
-            let goalLabelFontSize = side * 0.052
-            let goalValueFontSize = side * 0.066
-            
-            ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 255/255, green: 215/255, blue: 0/255),   // #FFD700 (Gold)
-                        Color(red: 20/255, green: 20/255, blue: 20/255)     // #141414 (Dark Black)
-                    ]),
-                    startPoint: .topTrailing,
-                    endPoint: .bottomLeading
-                )
-                .ignoresSafeArea()
-                
-                ZStack {
-                    // Hexagonal image positioned centrally with slight offset and rotation
-                    viewProvider()
-                        .frame(width: imageSize, height: imageSize)
-                        .campaignPhotoFrame(
-                            Polygon(sides: 6)
-                        )
-                        .rotationEffect(.degrees(8))
-                        .offset(x: -side * 0.02, y: side * 0.02)
-                        .shadow(color: .black.opacity(0.45), radius: side * 0.018, x: side * 0.01, y: side * 0.01)
-                        .overlay(
-                            Polygon(sides: 6)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [.yellow.opacity(0.6), .clear],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: side * 0.004
-                                )
-                                .rotationEffect(.degrees(8))
-                        )
-                    
-                    // Purpose text positioned diagonally in top-left with semi-transparent background
-                    VStack {
-                        HStack {
-                            VStack(alignment: .leading, spacing: side * 0.008) {
-                                Text(purpose)
-                                    .campaignPosterElement(.campaignTitle)
-                                    .font(.custom("Roboto-Bold", size: purposeFontSize))
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.leading)
-                                    .lineLimit(nil)
-                                    .minimumScaleFactor(0.8)
-                            }
-                            .padding(padding * 0.8)
-                            .background(
-                                Capsule()
-                                    .fill(.black.opacity(0.6))
-                            )
-                            .frame(maxWidth: side * 0.42, alignment: .leading)
-                            .rotationEffect(.degrees(-6))
-                            .offset(x: -side * 0.02, y: side * 0.01)
-                            
-                            Spacer()
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.top, padding)
-                    .padding(.leading, padding)
-                    
-                    // Goal positioned in bottom-right with angled background
-                    if let goal {
-                        VStack {
-                            Spacer()
-                            HStack {
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: side * 0.006) {
-                                    Text("ціль збору:")
-                                        .font(.custom("Roboto-Bold", size: goalLabelFontSize))
-                                        .foregroundColor(.white)
-                                        .minimumScaleFactor(0.8)
-                                        .lineLimit(1)
-                                    
-                                    Text(goal)
-                                        .campaignPosterElement(.target)
-                                        .font(.custom("Roboto-Bold", size: goalValueFontSize))
-                                        .foregroundColor(.white)
-                                        .minimumScaleFactor(0.8)
-                                        .lineLimit(1)
-                                }
-                                .padding(padding * 0.8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: side * 0.02)
-                                        .fill(.black.opacity(0.6))
-                                        .rotationEffect(.degrees(6))
-                                )
-                                .offset(x: side * 0.02, y: -side * 0.01)
-                            }
-                        }
-                        .padding(.bottom, padding)
-                        .padding(.trailing, padding)
-                    }
-                }
-                .frame(width: geometry.size.width, height: geometry.size.height)
-                .clipped() // Ensure content doesn't overflow
-            }
-        }
-    }
-}
+            let side = geometry.size.width
 
-// Custom Polygon shape for hexagon
-struct Polygon: Shape {
-    let sides: Int
-    
-    func path(in rect: CGRect) -> Path {
-        guard sides >= 3 else { return Path() }
-        
-        let center = CGPoint(x: rect.width / 2, y: rect.height / 2)
-        let radius = min(rect.width, rect.height) / 2
-        let angle = .pi * 2 / Double(sides)
-        
-        var path = Path()
-        
-        for i in 0..<sides {
-            let x = center.x + radius * cos(Double(i) * angle - .pi / 2)
-            let y = center.y + radius * sin(Double(i) * angle - .pi / 2)
-            let point = CGPoint(x: x, y: y)
-            
-            if i == 0 {
-                path.move(to: point)
-            } else {
-                path.addLine(to: point)
+            VStack(alignment: .leading, spacing: 0) {
+                kicker(side: side)
+
+                photo(side: side)
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: .infinity)
+                    .padding(.vertical, side * 0.03)
+
+                caption(side: side)
+            }
+            .padding(side * 0.06)
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .background(background)
+        }
+    }
+
+    private var background: some View {
+        LinearGradient(
+            stops: [
+                .init(color: Color(red: 247/255, green: 242/255, blue: 226/255), location: 0),
+                .init(color: Color(red: 236/255, green: 223/255, blue: 184/255), location: 0.6),
+                .init(color: Color(red: 203/255, green: 171/255, blue: 99/255), location: 1),
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private func kicker(side: CGFloat) -> some View {
+        let size = side * 0.022
+
+        return Text("збір")
+            .font(PosterFont.plexMonoRegular.size(size))
+            .tracking(size * 0.36)
+            .textCase(.uppercase)
+            .foregroundStyle(Self.bronze)
+    }
+
+    private func photo(side: CGFloat) -> some View {
+        PosterPhoto(PosterHexagon(), photo: viewProvider)
+            .padding(side * 0.014)
+            .background {
+                PosterHexagon().fill(Self.struckGold)
+            }
+            .aspectRatio(1.0, contentMode: .fit)
+                    .frame(maxWidth: side * 0.56, maxHeight: side * 0.56)
+    }
+
+    private func caption(side: CGFloat) -> some View {
+        let purposeSize = side * 0.066
+
+        return VStack(alignment: .leading, spacing: side * 0.024) {
+            Text(purpose)
+                .campaignPosterElement(.campaignTitle)
+                .font(PosterFont.playfairBold.size(purposeSize))
+                .lineSpacing(purposeSize * 0.02)
+                .foregroundStyle(Self.ink)
+                .multilineTextAlignment(.leading)
+                .minimumScaleFactor(0.6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if funding.isFinished {
+                finished(side: side)
+            } else if let goal = funding.goal {
+                collecting(goal: goal, side: side)
             }
         }
-        
-        path.closeSubpath()
-        return path
     }
+
+    private func collecting(goal: String, side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.022) {
+            VStack(alignment: .leading, spacing: side * 0.008) {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                    Text(funding.goalLabel)
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.16)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.deepBronze)
+
+                    Text(goal)
+                        .campaignPosterElement(.target)
+                        .font(PosterFont.playfairBoldItalic.size(side * 0.076))
+                        .foregroundStyle(Self.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+
+                if let supportingGoal = funding.supportingGoal {
+                    Text(supportingGoal)
+                        .font(PosterFont.plexMonoRegular.size(labelSize * 0.86))
+                        .foregroundStyle(Self.bronze)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
+
+            if let fraction = funding.fraction {
+                progress(fraction: fraction, side: side)
+            }
+        }
+        .padding(.trailing, side * 0.26)
+        .modifier(GoldRule(side: side))
+    }
+
+    /// Тонка смужка кутого золота на блідому тлі — та сама лінія, що ділить
+    /// назву й суму, тільки заповнена до досягнутої частки.
+    private func progress(fraction: Double, side: CGFloat) -> some View {
+        let labelSize = side * 0.028
+
+        return VStack(alignment: .leading, spacing: side * 0.012) {
+            PosterProgressBar(
+                fraction: fraction,
+                shape: Rectangle(),
+                height: side * 0.01,
+                track: Self.struckGold.opacity(0.22),
+                fill: Self.struckGold
+            )
+
+            if let collected = funding.collected {
+                Text("зібрано \(collected)")
+                    .campaignPosterFundingElement(.collected)
+                    .font(PosterFont.plexMonoRegular.size(labelSize))
+                    .tracking(labelSize * 0.14)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Self.bronze)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+    }
+
+    /// Збір закрито — і закрито він курсивом Playfair, як підпис під
+    /// готовою справою: «Зібрано!» набране тим самим накресленням, що й сума.
+    private func finished(side: CGFloat) -> some View {
+        let labelSize = side * 0.031
+
+        return VStack(alignment: .leading, spacing: side * 0.01) {
+            Text(CampaignPosterFunding.finishedLabel)
+                .campaignPosterFundingElement(.finished)
+                .font(PosterFont.playfairBoldItalic.size(side * 0.076))
+                .foregroundStyle(Self.struckGold)
+
+            if let collected = funding.collected {
+                HStack(alignment: .firstTextBaseline, spacing: side * 0.024) {
+                    Text("разом:")
+                        .font(PosterFont.plexMonoRegular.size(labelSize))
+                        .tracking(labelSize * 0.16)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Self.deepBronze)
+
+                    Text(collected)
+                        .campaignPosterFundingElement(.collected)
+                        .font(PosterFont.playfairBold.size(side * 0.068))
+                        .foregroundStyle(Self.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
+        }
+        .padding(.trailing, side * 0.26)
+        .modifier(GoldRule(side: side))
+    }
+
+    private struct GoldRule: ViewModifier {
+        let side: CGFloat
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.top, side * 0.022)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(Self.rule)
+                        .frame(height: side * 0.002)
+                }
+        }
+
+        private static let rule = Color(red: 140/255, green: 106/255, blue: 31/255)
+    }
+
+    private static let ink = Color(red: 44/255, green: 33/255, blue: 10/255)
+    private static let bronze = Color(red: 122/255, green: 92/255, blue: 25/255)
+    private static let deepBronze = Color(red: 106/255, green: 79/255, blue: 20/255)
+    private static let struckGold = Color(red: 140/255, green: 106/255, blue: 31/255)
 }
 
 #Preview {
-    ScrollView {
-        VStack(spacing: 20) {
-            VStack(spacing: 10) {
-                Text("Size: 1080/3 (360x360)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                GoldBlackGradientTemplateView(
-                    purpose: "Збір на дрони для захисників", goal: "1.500.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/3, height: 1080/3)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/4 (270x270)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                GoldBlackGradientTemplateView(
-                    purpose: "Збір на дрони для захисників", goal: "1.500.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/4, height: 1080/4)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/5 (216x216)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                GoldBlackGradientTemplateView(
-                    purpose: "Збір на дрони для захисників", goal: "1.500.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/5, height: 1080/5)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/6 (180x180)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                GoldBlackGradientTemplateView(
-                    purpose: "Збір на дрони для захисників", goal: "1.500.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/6, height: 1080/6)
-            }
-            
-            VStack(spacing: 10) {
-                Text("Size: 1080/7 (154x154)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                GoldBlackGradientTemplateView(
-                    purpose: "Збір на дрони для захисників", goal: "1.500.000", viewProvider: {
-                        if let imageData = Campaign.mock1.image?.raw, let uiImage = UIImage(data: imageData) {
-                            return AnyView(
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                            )
-                        } else {
-                            return AnyView(Rectangle().fill(Color.red))
-                        }
-                    }
-                )
-                .frame(width: 1080/7, height: 1080/7)
-            }
-        }
-        .padding()
+    PosterTemplatePreview { purpose, funding, photo in
+        GoldBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: photo)
     }
 }

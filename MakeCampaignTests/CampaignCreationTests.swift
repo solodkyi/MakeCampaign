@@ -35,6 +35,33 @@ struct CampaignCreationModelTests {
         expectNoDifference(state.selectedTab, .template)
     }
 
+    @Test("Editor tabs name the poster field they edit")
+    func tabCopy() {
+        expectNoDifference(
+            CampaignCreationFeature.State.Tab.qr.title,
+            "Ціль"
+        )
+        expectNoDifference(
+            CampaignCreationFeature.State.Tab.data.title,
+            "Призначення"
+        )
+    }
+
+    @Test("Opening the editor disables a previously enabled QR code")
+    func editorDisablesQRCode() {
+        let state = CampaignCreationFeature.State(
+            campaign: Campaign(
+                id: UUID(0),
+                status: .draft,
+                showsQRCode: true
+            ),
+            isNew: false
+        )
+
+        #expect(state.campaign.showsQRCode == false)
+        #expect(state.initialCampaign.showsQRCode == false)
+    }
+
     @Test("Poster purpose uses meaningful copy when the campaign is blank")
     func posterPurposeCopy() {
         var campaign = Campaign(id: UUID(0), status: .draft)
@@ -167,6 +194,48 @@ struct CampaignCreationModelTests {
         expectNoDifference(editing.posterStageHeight, 232)
     }
 
+    @Test("Editor keeps the poster visible in windows shorter than the tray")
+    func editorLayoutKeepsPosterVisibleInShortWindows() {
+        let short = CampaignEditorLayout.metrics(
+            availableHeight: 300,
+            isTextEditing: false
+        )
+        let borderline = CampaignEditorLayout.metrics(
+            availableHeight: 430,
+            isTextEditing: false
+        )
+        let tiny = CampaignEditorLayout.metrics(
+            availableHeight: 100,
+            isTextEditing: false
+        )
+
+        // Нижче 320 pt плакат бере половину вікна, а не повний мінімум.
+        expectNoDifference(short.posterStageHeight, 150)
+        expectNoDifference(short.trayHeight, 150)
+        expectNoDifference(borderline.posterStageHeight, 160)
+        expectNoDifference(borderline.trayHeight, 270)
+        expectNoDifference(tiny.posterStageHeight, 50)
+        expectNoDifference(tiny.trayHeight, 50)
+    }
+
+    @Test("Editor goes side by side only in wide, landscape-shaped windows")
+    func editorLayoutChoosesSideBySideForWideWindows() {
+        #expect(CampaignEditorLayout.usesSideBySide(in: CGSize(width: 852, height: 393)))
+        #expect(CampaignEditorLayout.usesSideBySide(in: CGSize(width: 900, height: 700)))
+        #expect(!CampaignEditorLayout.usesSideBySide(in: CGSize(width: 393, height: 852)))
+        #expect(!CampaignEditorLayout.usesSideBySide(in: CGSize(width: 744, height: 1133)))
+        #expect(!CampaignEditorLayout.usesSideBySide(in: CGSize(width: 480, height: 300)))
+        #expect(!CampaignEditorLayout.usesSideBySide(in: CGSize(width: CGFloat.infinity, height: 300)))
+    }
+
+    @Test("Side-by-side tray takes at most half the window")
+    func sideBySideTrayWidthIsBounded() {
+        expectNoDifference(CampaignEditorLayout.sideBySideTrayWidth(availableWidth: 600), 300)
+        expectNoDifference(CampaignEditorLayout.sideBySideTrayWidth(availableWidth: 1400), 460)
+        expectNoDifference(CampaignEditorLayout.sideBySideTrayWidth(availableWidth: -5), 0)
+        expectNoDifference(CampaignEditorLayout.sideBySideTrayWidth(availableWidth: .nan), 0)
+    }
+
     @Test("QR overlay scales with both preview and exported poster")
     func qrOverlayScalesWithPoster() {
         expectNoDifference(CampaignPosterLayout.qrSideLength(for: 350), 42)
@@ -240,6 +309,64 @@ struct CampaignCreationModelTests {
         )
     }
 
+    @Test("A tap that tails a photo reframing gesture leaves the poster alone")
+    func reframingGestureDoesNotSelectThePhoto() {
+        #expect(
+            !CampaignPosterTapPolicy.handlesTap(
+                isTransformingImage: true,
+                secondsSinceTransformEnded: nil
+            )
+        )
+        // Одиночний тап приходить лише коли мине інтервал подвійного, тобто
+        // вже після того, як кадрування скінчилось.
+        #expect(
+            !CampaignPosterTapPolicy.handlesTap(
+                isTransformingImage: false,
+                secondsSinceTransformEnded: 0.3
+            )
+        )
+        #expect(
+            CampaignPosterTapPolicy.handlesTap(
+                isTransformingImage: false,
+                secondsSinceTransformEnded: 1
+            )
+        )
+        #expect(
+            CampaignPosterTapPolicy.handlesTap(
+                isTransformingImage: false,
+                secondsSinceTransformEnded: nil
+            )
+        )
+    }
+
+    @Test("Keyboard hides the poster selection highlight")
+    func selectionHighlightYieldsToTheKeyboard() {
+        #expect(
+            CampaignPosterSelectionHighlightPolicy.isVisible(
+                selection: .campaignTitle,
+                isTextEditing: false
+            )
+        )
+        #expect(
+            !CampaignPosterSelectionHighlightPolicy.isVisible(
+                selection: .campaignTitle,
+                isTextEditing: true
+            )
+        )
+        #expect(
+            !CampaignPosterSelectionHighlightPolicy.isVisible(
+                selection: .target,
+                isTextEditing: true
+            )
+        )
+        #expect(
+            !CampaignPosterSelectionHighlightPolicy.isVisible(
+                selection: nil,
+                isTextEditing: false
+            )
+        )
+    }
+
     @Test("Poster elements expose named editing actions where double tap adds behavior")
     func posterAccessibilityActions() {
         expectNoDifference(
@@ -308,6 +435,68 @@ struct CampaignCreationModelTests {
             expectNoDifference(rendered.size, format.pixelSize)
         }
     }
+
+    @Test("A supporting jar needs both targets")
+    func supportingJarNeedsBothTargets() {
+        let campaign = Campaign.validDraft(isSupportingJar: true)
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.generalTarget == "Вкажіть загальну ціль збору.")
+        #expect(validation.personalTarget == "Вкажіть свою ціль.")
+        #expect(!validation.isValid)
+    }
+
+    @Test("My goal may not exceed the general one")
+    func personalTargetMayNotExceedTheGeneralOne() {
+        var campaign = Campaign.validDraft(isSupportingJar: true)
+        campaign.target = 1_000_000
+        campaign.personalTarget = 2_000_000
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.personalTarget == "Моя ціль не може бути більшою за загальну ціль.")
+        #expect(!validation.isValid)
+    }
+
+    @Test("Equal targets are allowed")
+    func equalTargetsAreAllowed() {
+        var campaign = Campaign.validDraft(isSupportingJar: true)
+        campaign.target = 1_000_000
+        campaign.personalTarget = 1_000_000
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.personalTarget == nil)
+        #expect(validation.generalTarget == nil)
+    }
+
+    @Test("An ordinary campaign ignores the personal target entirely")
+    func ordinaryCampaignIgnoresThePersonalTarget() {
+        var campaign = Campaign.validDraft(isSupportingJar: false)
+        campaign.target = nil
+        campaign.personalTarget = 2_000_000
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.generalTarget == nil)
+        #expect(validation.personalTarget == nil)
+    }
+
+    @Test("An ordinary campaign ignores even an oversized leftover personal target")
+    func ordinaryCampaignIgnoresAnOversizedLeftoverPersonalTarget() {
+        // Це саме випадок «вимкнули перемикач, а особиста ціль лишилась»:
+        // тут `target` заповнено, тож без охорони `isSupportingJar` спрацював
+        // би саме розрахунок перевищення — перевіряємо, що цього не стається.
+        var campaign = Campaign.validDraft(isSupportingJar: false)
+        campaign.target = 1_000_000
+        campaign.personalTarget = 2_000_000
+
+        let validation = CampaignCreationFeature().validation(for: campaign)
+
+        #expect(validation.generalTarget == nil)
+        #expect(validation.personalTarget == nil)
+    }
 }
 
 private func centerRGBA(of image: UIImage) throws -> [UInt8] {
@@ -375,32 +564,12 @@ struct CampaignCreationReducerTests {
         }
         store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.exportButtonTapped)
+        await store.send(.shareButtonTapped)
         #expect(store.state.validation.title != nil)
         #expect(store.state.validation.photo != nil)
         #expect(store.state.validation.template != nil)
         #expect(store.state.isRendering == false)
-    }
-
-    @Test("Export options are presented before poster rendering")
-    func presentsExportOptions() async {
-        @Shared(value: []) var campaigns: IdentifiedArrayOf<Campaign>
-        let store = TestStore(
-            initialState: CampaignCreationFeature.State(
-                campaign: Campaign(id: UUID(0), status: .draft),
-                campaigns: $campaigns,
-                isNew: true
-            )
-        ) {
-            CampaignCreationFeature()
-        }
-
-        await store.send(.exportOptionsButtonTapped) {
-            $0.isExportPresented = true
-        }
-        await store.send(.exportSheetDismissed) {
-            $0.isExportPresented = false
-        }
+        #expect(store.state.exportNotice?.id == .validationFailed)
     }
 
     @Test("Photo processing failure keeps the previous campaign intact")
@@ -573,8 +742,53 @@ struct CampaignCreationReducerTests {
         #expect(store.state.photoPhase == .idle)
     }
 
-    @Test("Successful render promotes the draft and prepares sharing")
-    func successfulRenderPromotesDraft() async throws {
+    @Test("Saving renders the poster into the photo library without sharing")
+    func saveRendersIntoPhotoLibrary() async throws {
+        @Shared(value: []) var campaigns: IdentifiedArrayOf<Campaign>
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
+            UIColor.orange.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        }
+        let campaign = Campaign(
+            id: UUID(0),
+            image: .init(raw: try #require(image.pngData())),
+            template: try #require(Template.list.first),
+            purpose: "Аптечки",
+            status: .draft
+        )
+        let savedImage = LockIsolated<UIImage?>(nil)
+        let store = TestStore(
+            initialState: CampaignCreationFeature.State(
+                campaign: campaign,
+                campaigns: $campaigns,
+                isNew: true
+            )
+        ) {
+            CampaignCreationFeature()
+        } withDependencies: {
+            $0.campaignRenderer = CampaignRenderer(render: { _ in image })
+            $0.photoLibrarySaver = .init(
+                saveImage: { image in
+                    savedImage.withValue { $0 = image }
+                },
+                requestPermission: { .authorized }
+            )
+            $0.date.now = Date(timeIntervalSince1970: 1_800_000_000)
+        }
+        store.exhaustivity = .off(showSkippedAssertions: false)
+
+        await store.send(.saveButtonTapped)
+        await store.skipReceivedActions()
+
+        #expect(savedImage.value != nil)
+        expectNoDifference(store.state.campaign.status, .active)
+        expectNoDifference(campaigns.first?.status, .active)
+        #expect(store.state.exportNotice?.id == .saved)
+        #expect(store.state.presentation == nil)
+    }
+
+    @Test("Sharing promotes the draft and presents the system share sheet")
+    func successfulSharePromotesDraft() async throws {
         @Shared(value: []) var campaigns: IdentifiedArrayOf<Campaign>
         let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
             UIColor.orange.setFill()
@@ -602,15 +816,13 @@ struct CampaignCreationReducerTests {
         }
         store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.exportButtonTapped)
+        await store.send(.shareButtonTapped)
         await store.skipReceivedActions()
         expectNoDifference(store.state.campaign.status, .active)
         expectNoDifference(campaigns.first?.status, .active)
         #expect(store.state.sharePayload?.pngData.isEmpty == false)
-
-        await store.send(.presentationDismissed)
         guard case .share = store.state.presentation else {
-            Issue.record("Expected system sharing only after the export sheet finished dismissing")
+            Issue.record("Expected system sharing after rendering")
             return
         }
     }
@@ -641,10 +853,10 @@ struct CampaignCreationReducerTests {
         }
         store.exhaustivity = .off(showSkippedAssertions: false)
 
-        await store.send(.exportButtonTapped)
+        await store.send(.shareButtonTapped)
         await store.skipReceivedActions()
         expectNoDifference(store.state.campaign.status, .draft)
-        #expect(store.state.renderError != nil)
+        #expect(store.state.exportNotice?.id == .renderFailed)
         #expect(store.state.sharePayload == nil)
     }
 }
@@ -652,17 +864,15 @@ struct CampaignCreationReducerTests {
 @MainActor
 @Suite("Campaign creation routing")
 struct CampaignCreationRoutingTests {
-    @Test("Campaign list separates active campaigns from drafts")
-    func listSections() {
+    @Test("Campaign list shows active campaigns and drafts together")
+    func unifiedList() {
         @Shared(value: [
             Campaign(id: UUID(0), purpose: "Активний", status: .active),
             Campaign(id: UUID(1), purpose: "Чернетка", status: .draft),
         ]) var campaigns: IdentifiedArrayOf<Campaign>
-        var state = CampaignsFeature.State(campaigns: $campaigns)
+        let state = CampaignsFeature.State(campaigns: $campaigns)
 
-        expectNoDifference(state.visibleCampaigns.map(\.purpose), ["Активний"])
-        state.selectedSection = .drafts
-        expectNoDifference(state.visibleCampaigns.map(\.purpose), ["Чернетка"])
+        expectNoDifference(state.visibleCampaigns.map(\.purpose), ["Активний", "Чернетка"])
     }
 
     @Test("Create intent opens a deterministic untouched editor")
@@ -688,4 +898,26 @@ struct CampaignCreationRoutingTests {
         #expect(store.state.path[id: 0, case: \.editor]?.campaign.status == .draft)
         #expect(campaigns.isEmpty)
     }
+}
+
+extension Campaign {
+    /// Збір, у якому все інше вже правильне: тести цілей мають падати саме
+    /// на цілях, а не на відсутньому фото чи шаблоні.
+    static func validDraft(isSupportingJar: Bool) -> Campaign {
+        Campaign(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000C001")!,
+            image: Campaign.Image(raw: onePixelPNG),
+            template: Template.list[0],
+            purpose: "Збір на пікап",
+            target: nil,
+            isSupportingJar: isSupportingJar
+        )
+    }
+
+    private static let onePixelPNG: Data = {
+        UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1)).pngData { context in
+            UIColor.systemTeal.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
+        }
+    }()
 }

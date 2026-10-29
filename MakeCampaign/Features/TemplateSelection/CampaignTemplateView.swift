@@ -83,15 +83,20 @@ private struct InteractiveCampaignTemplateView: View {
 struct CampaignTemplateArtwork<PhotoContent: View>: View {
     let campaign: Campaign
     let template: Template
+    /// Тести малюють окремі грошові стани, яких збір виразити не може, —
+    /// тоді стан передають напряму.
+    let funding: CampaignPosterFunding?
     private let photoContent: PhotoContent
 
     init(
         campaign: Campaign,
         template: Template,
+        funding: CampaignPosterFunding? = nil,
         @ViewBuilder photoContent: () -> PhotoContent
     ) {
         self.campaign = campaign
         self.template = template
+        self.funding = funding
         self.photoContent = photoContent()
     }
 
@@ -102,74 +107,161 @@ struct CampaignTemplateArtwork<PhotoContent: View>: View {
     @ViewBuilder
     private func templateView(forTemplate template: Template) -> some View {
         let purpose = campaign.posterPurpose
-        
-        let goal = campaign.target?.formattedAmount.appendingCurrency
-        
+
+        let funding = self.funding ?? CampaignPosterFunding(campaign: campaign)
+
+        switch template.series {
+        case .b:
+            seriesB(template, purpose: purpose, funding: funding)
+        case .a:
+            seriesA(template, purpose: purpose, funding: funding)
+        }
+    }
+
+    /// Набір B — свіжий погляд.
+    @ViewBuilder
+    private func seriesB(
+        _ template: Template,
+        purpose: String,
+        funding: CampaignPosterFunding
+    ) -> some View {
         switch (template.gradient, template.imagePlacement) {
         case (.linearPurple, .topCenter):
-            PurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PurpleGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearGreen, .topToBottomTrailing):
-            GreenGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            GreenGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.angularYellowBlue, .trailing):
-            YellowBlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            YellowBlueGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearSilverBlue, .trailingToEdge):
-            SilverBlueTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            SilverBlueTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearCoralTeal, .trailing):
-            CoralTealGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            CoralTealGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialRedBlack, .topToEdge):
-            RedBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            RedBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.blueLinear, .center):
-            BlueGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            BlueGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.cyanMagentaRadial, .squareTrailing):
-            CyanMagentaGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            CyanMagentaGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialAquaPurple, .squareTrailing):
-            AquaPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            AquaPurpleGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.goldBlackLinear, .hexagonTrailing):
-            GoldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            GoldBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearEmeraldBlack, .hexagonTrailing):
-            EmeraldBlackGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            EmeraldBlackGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.pinkAngular, .topCenter):
-            PinkGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            PinkGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.tealPurpleRadial, .roundedTrailing):
-            TealPurpleGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            TealPurpleGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.radialMintIndigo, .roundedTrailing):
-            MintIndigoGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            MintIndigoGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         case (.linearIndigoOrange, .trailing):
-            IndigoOrangeGradientTemplateView(purpose: purpose, goal: goal, viewProvider: {
+            IndigoOrangeGradientTemplateView(purpose: purpose, funding: funding, viewProvider: {
                 content()
             })
         default: EmptyView()
         }
     }
-    
+
+    /// Набір A — перша ітерація.
+    @ViewBuilder
+    private func seriesA(
+        _ template: Template,
+        purpose: String,
+        funding: CampaignPosterFunding
+    ) -> some View {
+        switch (template.gradient, template.imagePlacement) {
+        case (.blueLinear, .center):
+            PosterA01TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.cyanMagentaRadial, .squareTrailing):
+            PosterA02TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.linearPurple, .topCenter):
+            PosterA03TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.goldBlackLinear, .hexagonTrailing):
+            PosterA04TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.pinkAngular, .topCenter):
+            PosterA05TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.tealPurpleRadial, .roundedTrailing):
+            PosterA06TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.linearGreen, .topToBottomTrailing):
+            PosterA07TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.angularYellowBlue, .trailing):
+            PosterA08TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.linearSilverBlue, .trailingToEdge):
+            PosterA09TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.radialRedBlack, .topToEdge):
+            PosterA10TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.linearIndigoOrange, .trailing):
+            PosterA11TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.linearEmeraldBlack, .hexagonTrailing):
+            PosterA12TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.radialAquaPurple, .squareTrailing):
+            PosterA13TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.radialMintIndigo, .roundedTrailing):
+            PosterA14TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        case (.linearCoralTeal, .trailing):
+            PosterA15TemplateView(purpose: purpose, funding: funding, viewProvider: {
+                content()
+            })
+        default: EmptyView()
+        }
+    }
+
     @ViewBuilder
     private func content() -> some View {
         photoContent.campaignPosterElement(.photo)
@@ -238,25 +330,50 @@ struct ImageTransformView: View {
     let initialOffset: CGSize
     let initialScale: CGFloat
     let containerSize: CGSize
+    let referenceSize: CGSize
     let contentMode: Campaign.Image.ContentMode
     let onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)?
     let onTransformActivityChanged: ((Bool) -> Void)?
     let onTransformChanged: ((CGFloat, CGSize, CGSize) -> Void)?
-    
+
     @State private var offset: CGSize
     @State private var scale: CGFloat
     @State private var dragStartOffset: CGSize = .zero
     @State private var activeGestures: Set<ActiveGesture> = []
-    
+
     private var isRepositioningEnabled: Bool {
         onTransformEnd != nil
     }
-    
+
+    /// `initialOffset` is stored against the container it was captured in, which
+    /// is what `referenceSize` records. Displaying it in a container of another
+    /// size means scaling it back into that container's coordinate space — the
+    /// same conversion `DisplayImageView` performs. Applying it raw makes the
+    /// editor and the exported artwork disagree about where the photo sits
+    /// wherever the photo frame is not the size the offset was recorded against.
+    private static func scaledOffset(
+        _ offset: CGSize,
+        from referenceSize: CGSize,
+        to containerSize: CGSize
+    ) -> CGSize {
+        guard referenceSize.width > 0, referenceSize.height > 0 else { return offset }
+
+        return CGSize(
+            width: offset.width / referenceSize.width * containerSize.width,
+            height: offset.height / referenceSize.height * containerSize.height
+        )
+    }
+
+    private var resolvedInitialOffset: CGSize {
+        Self.scaledOffset(initialOffset, from: referenceSize, to: containerSize)
+    }
+
     init(
         image: UIImage,
         initialOffset: CGSize,
         initialScale: CGFloat,
         containerSize: CGSize,
+        referenceSize: CGSize = .zero,
         contentMode: Campaign.Image.ContentMode = .fill,
         onTransformEnd: ((CGFloat, CGSize, CGSize) -> Void)? = nil,
         onTransformActivityChanged: ((Bool) -> Void)? = nil,
@@ -266,11 +383,16 @@ struct ImageTransformView: View {
         self.initialOffset = initialOffset
         self.initialScale = initialScale
         self.containerSize = containerSize
+        self.referenceSize = referenceSize
         self.contentMode = contentMode
         self.onTransformEnd = onTransformEnd
         self.onTransformActivityChanged = onTransformActivityChanged
         self.onTransformChanged = onTransformChanged
-        _offset = State(initialValue: initialOffset)
+        _offset = State(
+            initialValue: Self.scaledOffset(
+                initialOffset, from: referenceSize, to: containerSize
+            )
+        )
         _scale = State(initialValue: initialScale)
     }
     
@@ -285,8 +407,8 @@ struct ImageTransformView: View {
             .scaleEffect(max(0.1, scale))
             .offset(offset)
             .clipped()
-            .onChange(of: initialOffset) { _, newOffset in
-                offset = newOffset
+            .onChange(of: initialOffset) { _, _ in
+                offset = resolvedInitialOffset
             }
             .onChange(of: initialScale) { _, newScale in
                 scale = max(0.1, newScale)
@@ -327,7 +449,7 @@ struct ImageTransformView: View {
                     )
             }
             .onAppear {
-                dragStartOffset = initialOffset
+                dragStartOffset = resolvedInitialOffset
             }
             .onDisappear {
                 activeGestures.removeAll()

@@ -64,7 +64,7 @@ struct CampaignDetailsFormView: View {
     @ViewBuilder
     private var purposeAndTargetSection: some View {
         Section {
-            TextField("Призначення збору", text: $store.campaign.purpose)
+            TextField("Призначення збору", text: Binding(store.$campaign.purpose))
                 .focused($focus, equals: .name)
             if store.validationErrors.hasErrors(for: .name) {
                 ForEach(store.validationErrors.errorMessages(for: .name), id: \.self) { message in
@@ -74,7 +74,7 @@ struct CampaignDetailsFormView: View {
                 }
             }
             
-            TextField("Сума збору (не обов'язково)", text: $store.campaign.formattedTarget)
+            TextField("Сума збору (не обов'язково)", text: Binding(store.$campaign.formattedTarget))
                 .focused($focus, equals: .target)
                 .keyboardType(.decimalPad)
             
@@ -95,7 +95,7 @@ struct CampaignDetailsFormView: View {
         Section {
             TextField(
                 "Банка збору (не обов'язково)",
-                text: $store.campaign.jarURLString)
+                text: Binding(store.$campaign.jarURLString))
             .focused($focus, equals: .link)
             
             if store.validationErrors.hasErrors(for: .link) {
@@ -154,12 +154,13 @@ struct CampaignDetailsFormView: View {
                 .onTapGesture {
                     store.send(.onImageTapped)
                 }
-                .frame(width: 1080/4, height: 1080/4)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: 1080/4)
         } else {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 200)
+                .frame(maxHeight: 200)
                 .onTapGesture {
                     store.send(.onImageTapped)
                 }

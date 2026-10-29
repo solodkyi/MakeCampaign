@@ -59,6 +59,33 @@ struct CampaignPosterThumbnailTests {
         }
     }
 
+    @Test("A supporting jar's own target changes both thumbnail keys")
+    func supportingJarTargetsChangeKey() throws {
+        // Плакат допоміжної банки малює власну ціль і рядок про загальну, тож
+        // ключ мусить розрізняти ці стани — інакше після перемикання кеш
+        // віддасть стару картинку зі старою цифрою.
+        let original = try makeRequest()
+
+        var supporting = original.campaign
+        supporting.isSupportingJar = true
+        let flipped = try makeRequest(campaign: supporting)
+
+        var withPersonalTarget = supporting
+        withPersonalTarget.personalTarget = 5_000
+        let personal = try makeRequest(campaign: withPersonalTarget)
+
+        var withOtherPersonalTarget = supporting
+        withOtherPersonalTarget.personalTarget = 7_000
+        let otherPersonal = try makeRequest(campaign: withOtherPersonalTarget)
+
+        #expect(flipped.key != original.key)
+        #expect(flipped.refreshKey != original.refreshKey)
+        #expect(personal.key != flipped.key)
+        #expect(personal.refreshKey != flipped.refreshKey)
+        #expect(otherPersonal.key != personal.key)
+        #expect(otherPersonal.refreshKey != personal.refreshKey)
+    }
+
     @Test("Selection and nonvisual campaign state do not invalidate a candidate tile")
     func nonvisualInputsKeepKey() throws {
         let candidate = try #require(Template.list.first)
@@ -245,6 +272,34 @@ struct CampaignPosterThumbnailTests {
 
             expectPixelsEqual(thumbnail, expected)
         }
+    }
+
+    @Test("Campaign row thumbnails render the composed poster instead of the source photo")
+    func campaignRowThumbnailMatchesPoster() async throws {
+        var campaign = try visualCampaign()
+        campaign.posterFormat = .story
+        campaign.showsQRCode = true
+        let assets = visualAssets(for: campaign)
+        let request = try #require(
+            CampaignRowPosterThumbnailRequest.make(
+                campaign: campaign,
+                assets: assets,
+                containerSize: CGSize(width: 104, height: 104),
+                displayScale: 3,
+                colorScheme: .light,
+                locale: Locale(identifier: "uk_UA")
+            )
+        )
+
+        let thumbnail = try await CampaignPosterThumbnailStore().image(for: request)
+        let expected = try render(
+            CampaignPosterView(campaign: campaign, assets: assets),
+            request: request
+        )
+
+        expectNoDifference(request.composition, .poster)
+        expectNoDifference(request.pointSize, CGSize(width: 58.5, height: 104))
+        expectPixelsEqual(thumbnail, expected)
     }
 
     @Test("Template-only thumbnails preserve the legacy white-photo tiles")

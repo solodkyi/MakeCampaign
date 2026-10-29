@@ -16,14 +16,6 @@ extension SharedKey where Self == FileStorageKey<IdentifiedArrayOf<Campaign>>.De
 
 @Reducer
 struct CampaignsFeature {
-    enum Section: String, CaseIterable, Equatable, Identifiable {
-        case active
-        case drafts
-
-        var id: Self { self }
-        var title: String { self == .active ? "Активні" : "Чернетки" }
-    }
-
     enum JarPresentation: Equatable {
         case noLink
         case loading
@@ -33,7 +25,9 @@ struct CampaignsFeature {
         var message: String {
             switch self {
             case .noLink:
-                "Банку не підключено"
+                // Збір без банки — звичайний стан, а не подія, про яку рядок
+                // мусить звітувати.
+                ""
             case .loading:
                 "Оновлюємо дані…"
             case .failed:
@@ -47,7 +41,6 @@ struct CampaignsFeature {
     @ObservableState
     struct State: Equatable {
         @Shared var campaigns: IdentifiedArrayOf<Campaign>
-        var selectedSection: Section = .active
         var jarPresentations: [Campaign.ID: JarPresentation] = [:]
 
         init(campaigns: Shared<IdentifiedArrayOf<Campaign>>? = nil) {
@@ -59,12 +52,7 @@ struct CampaignsFeature {
         }
 
         var visibleCampaigns: [Campaign] {
-            campaigns.filter { campaign in
-                switch selectedSection {
-                case .active: campaign.status == .active
-                case .drafts: campaign.status == .draft
-                }
-            }
+            Array(campaigns)
         }
 
         func jarPresentation(for campaign: Campaign) -> JarPresentation {
@@ -76,7 +64,6 @@ struct CampaignsFeature {
     enum Action {
         case onViewInitialLoad
         case createCampaignTapped
-        case sectionSelected(Section)
         case campaignSelected(Campaign.ID)
         case editCampaign(Campaign.ID)
         case deleteCampaignConfirmed(Campaign.ID)
@@ -96,9 +83,6 @@ struct CampaignsFeature {
         Reduce { state, action in
             switch action {
             case .createCampaignTapped:
-                return .none
-            case let .sectionSelected(section):
-                state.selectedSection = section
                 return .none
             case .onViewInitialLoad:
                 for campaign in state.campaigns where campaign.jar?.link != nil {

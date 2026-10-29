@@ -93,28 +93,41 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
     var template: Template?
     var purpose: String
     var target: Double?
+    /// Збір підтримує чужу банку: `target` тоді — загальна ціль тієї збірки,
+    /// а `personalTarget` — те, що взявся зібрати автор цього плаката.
+    var isSupportingJar: Bool
+    var personalTarget: Double?
     var jar: JarInfo?
     var status: Status
     var posterFormat: PosterFormat
     var showsQRCode: Bool
     var shareCaption: String
+    /// Автор оголосив збір завершеним власноруч.
+    ///
+    /// Окреме поле, а не висновок із сум: збір буває закритим і тоді, коли
+    /// банка ще активна, а ціль формально недобрана.
+    var isClosedByAuthor: Bool
     var createdAt: Date
     var updatedAt: Date
     
     private var rawTargetInput: String = ""
+    private var rawPersonalTargetInput: String = ""
     private var rawJarLinkInput: String = ""
-    
+
     init(
         id: UUID,
         image: Image? = nil,
         template: Template? = nil,
         purpose: String = "",
         target: Double? = nil,
+        isSupportingJar: Bool = false,
+        personalTarget: Double? = nil,
         jar: JarInfo? = nil,
         status: Status = .active,
         posterFormat: PosterFormat = .square,
         showsQRCode: Bool = false,
         shareCaption: String = "",
+        isClosedByAuthor: Bool = false,
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
@@ -123,18 +136,23 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
         self.template = template
         self.purpose = purpose
         self.target = target
+        self.isSupportingJar = isSupportingJar
+        self.personalTarget = personalTarget
         self.jar = jar
         self.status = status
         self.posterFormat = posterFormat
         self.showsQRCode = showsQRCode
         self.shareCaption = shareCaption
+        self.isClosedByAuthor = isClosedByAuthor
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, image, template, purpose, target, jar
+        case isSupportingJar, personalTarget
         case status, posterFormat, showsQRCode, shareCaption
+        case isClosedByAuthor
         case createdAt, updatedAt
     }
 
@@ -145,11 +163,17 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
         template = try values.decodeIfPresent(Template.self, forKey: .template)
         purpose = try values.decode(String.self, forKey: .purpose)
         target = try values.decodeIfPresent(Double.self, forKey: .target)
+        // Збори, збережені до допоміжних банок, такими не були.
+        isSupportingJar = try values.decodeIfPresent(Bool.self, forKey: .isSupportingJar) ?? false
+        personalTarget = try values.decodeIfPresent(Double.self, forKey: .personalTarget)
         jar = try values.decodeIfPresent(JarInfo.self, forKey: .jar)
         status = try values.decodeIfPresent(Status.self, forKey: .status) ?? .active
         posterFormat = try values.decodeIfPresent(PosterFormat.self, forKey: .posterFormat) ?? .square
         showsQRCode = try values.decodeIfPresent(Bool.self, forKey: .showsQRCode) ?? false
         shareCaption = try values.decodeIfPresent(String.self, forKey: .shareCaption) ?? ""
+        // Збори, збережені до того, як автор міг закрити збір власноруч,
+        // такого рішення не приймали.
+        isClosedByAuthor = try values.decodeIfPresent(Bool.self, forKey: .isClosedByAuthor) ?? false
         let fallbackDate = Date.now
         createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? fallbackDate
         updatedAt = try values.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
@@ -162,21 +186,80 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
         try values.encodeIfPresent(template, forKey: .template)
         try values.encode(purpose, forKey: .purpose)
         try values.encodeIfPresent(target, forKey: .target)
+        try values.encode(isSupportingJar, forKey: .isSupportingJar)
+        try values.encodeIfPresent(personalTarget, forKey: .personalTarget)
         try values.encodeIfPresent(jar, forKey: .jar)
         try values.encode(status, forKey: .status)
         try values.encode(posterFormat, forKey: .posterFormat)
         try values.encode(showsQRCode, forKey: .showsQRCode)
         try values.encode(shareCaption, forKey: .shareCaption)
+        try values.encode(isClosedByAuthor, forKey: .isClosedByAuthor)
         try values.encode(createdAt, forKey: .createdAt)
         try values.encode(updatedAt, forKey: .updatedAt)
     }
 }
 
 extension Campaign {
-    var progress: Progress? {
-        guard let target, let collected = jar?.details?.amountInHryvnias else { return nil }
+    /// Зібрана сума в гривнях, якщо банку підключено й дані вже прийшли.
+    var collected: Double? {
+        jar?.details?.amountInHryvnias
+    }
 
-        let progress = Progress(totalUnitCount: Int64(target * 100))
+    /// Ціль, якою міряють цей збір. У допоміжної банки це власна ціль автора:
+    /// загальна належить чужій збірці й на поступ не впливає.
+    var effectiveTarget: Double? {
+        isSupportingJar ? personalTarget : target
+    }
+
+    /// Сума, якою збір представляється. Допоміжна банка без власної цілі
+    /// веде загальною — так само, як на плакаті: список і плакат мусять
+    /// показувати ту саму провідну цифру, інакше та сама банка виглядає
+    /// по-різному в списку й на картинці.
+    var displayTarget: Double? {
+        isSupportingJar ? (personalTarget ?? target) : target
+    }
+
+    /// Чи веде збір власною ціллю автора. Допоміжна банка з порожньою
+    /// «Моєю ціллю» ще нічим не відрізняється від звичайного збору.
+    var leadsWithPersonalTarget: Bool {
+        isSupportingJar && personalTarget != nil
+    }
+
+    /// Як назвати суму, якою міряють збір: у допоміжної банки вона своя.
+    var targetLabel: String {
+        leadsWithPersonalTarget ? "Моя ціль" : "Ціль"
+    }
+
+    /// Частка досягнутої цілі від нуля до одиниці.
+    ///
+    /// Плакат ніколи не малює смужку, довшу за доріжку, тож частка обрізана
+    /// зверху — навіть коли зібрали більше, ніж просили.
+    var fundedFraction: Double? {
+        guard let effectiveTarget, effectiveTarget > 0, let collected else { return nil }
+        return min(max(collected / effectiveTarget, 0), 1)
+    }
+
+    /// Ціль досягнуто або перевищено.
+    var hasReachedTarget: Bool {
+        guard let effectiveTarget, let collected else { return false }
+        return collected >= effectiveTarget
+    }
+
+    /// Банку закрито на боці monobank.
+    var isJarClosed: Bool {
+        guard let details = jar?.details else { return false }
+        return !details.isActive
+    }
+
+    /// Збір завершено: ціль узято, банку закрито, або так вирішив автор.
+    var isFinished: Bool {
+        isClosedByAuthor || hasReachedTarget || isJarClosed
+    }
+
+    var progress: Progress? {
+        guard let effectiveTarget, let collected = jar?.details?.amountInHryvnias else { return nil }
+
+        let progress = Progress(totalUnitCount: Int64(effectiveTarget * 100))
         progress.completedUnitCount = Int64(collected * 100)
         return progress
     }
@@ -199,7 +282,22 @@ extension Campaign {
             target = newValue.asCurrencyDouble
         }
     }
-    
+
+    var formattedPersonalTarget: String {
+        get {
+            if !rawPersonalTargetInput.isEmpty && personalTarget == nil {
+                return rawPersonalTargetInput
+            }
+
+            guard let personalTarget else { return "" }
+            return personalTarget.formattedAmount
+        } set {
+            rawPersonalTargetInput = newValue
+
+            personalTarget = newValue.asCurrencyDouble
+        }
+    }
+
     var jarURLString: String {
         get {
             if !rawJarLinkInput.isEmpty && jar?.link == nil {

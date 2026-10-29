@@ -21,10 +21,20 @@ The app is built using modern iOS development practices with SwiftUI for the use
 
 ## Screenshots
 
+### iPhone
+
 <div align="center">
-  <img src="screenshots/1.PNG" width="250" alt="Campaign List View"/>
-  <img src="screenshots/2.PNG" width="250" alt="Campaign Details Form"/>
-  <img src="screenshots/3.PNG" width="250" alt="Template Selection"/>
+  <img src="screenshots/iphone/1.PNG" width="250" alt="Campaign List View"/>
+  <img src="screenshots/iphone/2.PNG" width="250" alt="Campaign Poster Preview"/>
+  <img src="screenshots/iphone/3.PNG" width="250" alt="Template Selection"/>
+</div>
+
+### iPad
+
+<div align="center">
+  <img src="screenshots/ipad/1.PNG" width="350" alt="Campaign List View"/>
+  <img src="screenshots/ipad/2.PNG" width="350" alt="Campaign Poster Preview"/>
+  <img src="screenshots/ipad/3.PNG" width="350" alt="Template Selection"/>
 </div>
 
 ## Installation

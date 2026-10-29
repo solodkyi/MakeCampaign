@@ -17,9 +17,9 @@ struct CampaignCreationFeature {
             var title: String {
                 switch self {
                 case .photo: "Фото"
-                case .data: "Текст"
+                case .data: "Призначення"
                 case .template: "Шаблон"
-                case .qr: "QR"
+                case .qr: "Ціль"
                 }
             }
 
@@ -28,7 +28,7 @@ struct CampaignCreationFeature {
                 case .photo: "photo"
                 case .data: "text.alignleft"
                 case .template: "square.grid.2x2"
-                case .qr: "qrcode"
+                case .qr: "target"
                 }
             }
         }
@@ -43,10 +43,13 @@ struct CampaignCreationFeature {
             var title: String?
             var photo: String?
             var template: String?
+            var generalTarget: String?
+            var personalTarget: String?
             var qrLink: String?
 
             var isValid: Bool {
-                title == nil && photo == nil && template == nil && qrLink == nil
+                title == nil && photo == nil && template == nil
+                    && generalTarget == nil && personalTarget == nil && qrLink == nil
             }
         }
 
@@ -56,13 +59,24 @@ struct CampaignCreationFeature {
             let caption: String
         }
 
+        struct ExportNotice: Equatable, Identifiable {
+            enum ID: Hashable {
+                case renderFailed
+                case saveFailed
+                case saved
+                case validationFailed
+            }
+
+            let id: ID
+            let message: String?
+            let title: String
+        }
+
         enum Presentation: Equatable, Identifiable {
-            case export
             case share(SharePayload)
 
             var id: String {
                 switch self {
-                case .export: "export"
                 case let .share(payload): "share-\(payload.id.uuidString)"
                 }
             }
@@ -77,29 +91,14 @@ struct CampaignCreationFeature {
         var photoPhase: PhotoPhase = .idle
         var validation = Validation()
         var isRendering = false
-        var renderError: String?
+        var exportNotice: ExportNotice?
         var presentation: Presentation?
-        var pendingSharePayload: SharePayload?
-
-        var isExportPresented: Bool {
-            get {
-                guard case .export = presentation else { return false }
-                return true
-            }
-            set {
-                if newValue {
-                    presentation = .export
-                } else if isExportPresented {
-                    presentation = nil
-                }
-            }
-        }
 
         var sharePayload: SharePayload? {
             if case let .share(payload) = presentation {
                 return payload
             }
-            return pendingSharePayload
+            return nil
         }
 
         init(
@@ -112,6 +111,8 @@ struct CampaignCreationFeature {
             } else {
                 self._campaigns = Shared(.campaigns)
             }
+            var campaign = campaign
+            campaign.showsQRCode = false
             self.campaign = campaign
             self.initialCampaign = campaign
             self.isNew = isNew
@@ -129,18 +130,19 @@ struct CampaignCreationFeature {
         case templateSelected(Template)
         case contentModeSelected(Campaign.Image.ContentMode)
         case imageTransformEnded(scale: CGFloat, offset: CGSize, referenceSize: CGSize)
-        case exportOptionsButtonTapped
-        case exportSheetDismissed
-        case exportButtonTapped
-        case renderSucceeded(Data)
+        case saveButtonTapped
+        case saveSucceeded
+        case saveFailed
+        case shareButtonTapped
+        case shareRenderSucceeded(Data)
         case renderFailed
         case presentationDismissed
-        case shareDismissed
     }
 
     @Dependency(\.date.now) var now
     @Dependency(\.campaignImageProcessor) var imageProcessor
     @Dependency(\.campaignRenderer) var renderer
+    @Dependency(\.photoLibrarySaver) var photoLibrarySaver
 
     private enum CancelID {
         case photoProcessing
@@ -225,19 +227,50 @@ struct CampaignCreationFeature {
                 autosave(&state)
                 return .none
 
-            case .exportOptionsButtonTapped:
-                state.pendingSharePayload = nil
-                state.isExportPresented = true
-                return .none
-
-            case .exportSheetDismissed:
-                state.isExportPresented = false
-                return .none
-
-            case .exportButtonTapped:
+            case .saveButtonTapped:
                 state.validation = validation(for: state.campaign)
-                state.renderError = nil
-                guard state.validation.isValid else { return .none }
+                state.exportNotice = nil
+                guard state.validation.isValid else {
+                    state.exportNotice = validationNotice(for: state.validation)
+                    return .none
+                }
+                state.isRendering = true
+                return .run { [campaign = state.campaign] send in
+                    do {
+                        let image = try await renderer.render(campaign)
+                        try await photoLibrarySaver.saveImage(image)
+                        await send(.saveSucceeded)
+                    } catch {
+                        await send(.saveFailed)
+                    }
+                }
+
+            case .saveSucceeded:
+                state.isRendering = false
+                completeExport(&state)
+                state.exportNotice = .init(
+                    id: .saved,
+                    message: nil,
+                    title: "Фото збережено"
+                )
+                return .none
+
+            case .saveFailed:
+                state.isRendering = false
+                state.exportNotice = .init(
+                    id: .saveFailed,
+                    message: "Перевірте доступ до Фото та спробуйте ще раз.",
+                    title: "Не вдалося зберегти фото"
+                )
+                return .none
+
+            case .shareButtonTapped:
+                state.validation = validation(for: state.campaign)
+                state.exportNotice = nil
+                guard state.validation.isValid else {
+                    state.exportNotice = validationNotice(for: state.validation)
+                    return .none
+                }
                 state.isRendering = true
                 return .run { [campaign = state.campaign] send in
                     do {
@@ -246,40 +279,33 @@ struct CampaignCreationFeature {
                             await send(.renderFailed)
                             return
                         }
-                        await send(.renderSucceeded(data))
+                        await send(.shareRenderSucceeded(data))
                     } catch {
                         await send(.renderFailed)
                     }
                 }
 
-            case let .renderSucceeded(data):
+            case let .shareRenderSucceeded(data):
                 state.isRendering = false
-                state.campaign.status = .active
-                persist(&state)
-                state.initialCampaign = state.campaign
-                state.isNew = false
-                state.pendingSharePayload = .init(
+                completeExport(&state)
+                state.presentation = .share(.init(
                     id: state.campaign.id,
                     pngData: data,
                     caption: shareCaption(for: state.campaign)
-                )
-                state.presentation = nil
+                ))
                 return .none
 
             case .renderFailed:
                 state.isRendering = false
-                state.renderError = "Не вдалося створити постер. Перевірте дані та спробуйте ще раз."
+                state.exportNotice = .init(
+                    id: .renderFailed,
+                    message: "Перевірте дані та спробуйте ще раз.",
+                    title: "Не вдалося створити постер"
+                )
                 return .none
 
             case .presentationDismissed:
-                guard let payload = state.pendingSharePayload else { return .none }
-                state.pendingSharePayload = nil
-                state.presentation = .share(payload)
-                return .none
-
-            case .shareDismissed:
                 state.presentation = nil
-                state.pendingSharePayload = nil
                 return .none
             }
         }
@@ -305,7 +331,33 @@ struct CampaignCreationFeature {
         }
     }
 
-    private func validation(for campaign: Campaign) -> State.Validation {
+    private func completeExport(_ state: inout State) {
+        state.campaign.status = .active
+        persist(&state)
+        state.initialCampaign = state.campaign
+        state.isNew = false
+    }
+
+    private func validationNotice(for validation: State.Validation) -> State.ExportNotice {
+        let message = [
+            validation.title,
+            validation.photo,
+            validation.template,
+            validation.generalTarget,
+            validation.personalTarget,
+            validation.qrLink,
+        ]
+        .compactMap { $0 }
+        .joined(separator: "\n")
+
+        return .init(
+            id: .validationFailed,
+            message: message,
+            title: "Щоб створити постер"
+        )
+    }
+
+    func validation(for campaign: Campaign) -> State.Validation {
         var validation = State.Validation()
         if campaign.purpose.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             validation.title = "Додайте назву збору."
@@ -315,6 +367,20 @@ struct CampaignCreationFeature {
         }
         if campaign.template == nil {
             validation.template = "Оберіть шаблон постера."
+        }
+        // Ці дві цілі мають сенс лише для банки, що підтримує чужий збір —
+        // звичайна кампанія не показує «мою ціль» і не звіряє її з нічим.
+        if campaign.isSupportingJar {
+            if campaign.target == nil {
+                validation.generalTarget = "Вкажіть загальну ціль збору."
+            }
+            if campaign.personalTarget == nil {
+                validation.personalTarget = "Вкажіть свою ціль."
+            } else if let target = campaign.target,
+                      let personal = campaign.personalTarget,
+                      personal > target {
+                validation.personalTarget = "Моя ціль не може бути більшою за загальну ціль."
+            }
         }
         if campaign.showsQRCode && !isValidWebURL(campaign.jar?.link) {
             validation.qrLink = "Додайте повне посилання на банку для QR-коду."

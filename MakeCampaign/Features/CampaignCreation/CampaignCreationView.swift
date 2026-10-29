@@ -7,6 +7,7 @@ struct CampaignCreationView: View {
     private enum EditorInput: Hashable {
         case campaignTitle
         case target
+        case personalTarget
     }
 
     @Bindable var store: StoreOf<CampaignCreationFeature>
@@ -17,27 +18,48 @@ struct CampaignCreationView: View {
     @Dependency(\.campaignPosterThumbnailClient) private var thumbnailClient
     @FocusState private var focusedInput: EditorInput?
     @State private var isTargetInputFocused = false
+    @State private var isPersonalTargetInputFocused = false
     @State private var pendingInputFocus: EditorInput?
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var previewAssetBuffer = CampaignPosterPreviewAssetBuffer()
     @State private var templateThumbnailBatch: CampaignPosterThumbnailBatch?
     @State private var selectedPosterElement: CampaignPosterElement?
 
+    /// Клавіатура піднята: у цьому стані плакат стискається, а редагування
+    /// видно просто в полі під ним.
+    private var isTextEditing: Bool {
+        focusedInput != nil || isTargetInputFocused || isPersonalTargetInputFocused
+    }
+
     var body: some View {
         GeometryReader { proxy in
-            let isTextEditing = focusedInput != nil || isTargetInputFocused
             let isPhotoPickerExpanded = store.isPhotoPickerExpanded
             let layout = CampaignEditorLayout.metrics(
                 availableHeight: proxy.size.height,
                 isTextEditing: isTextEditing
             )
+            let isSideBySide = CampaignEditorLayout.usesSideBySide(in: proxy.size)
 
-            VStack(spacing: 0) {
+            // Широке або низьке вікно (розкладений Duo, ландшафт): плакат
+            // ліворуч, редактор праворуч на всю висоту. Контейнер один, а
+            // змінюється лише його вісь і розміри: так плакат і редактор не
+            // втрачають ідентичність, і фокус поля чи позиція прокрутки
+            // переживають складання телефона.
+            let container = isSideBySide
+                ? AnyLayout(HStackLayout(spacing: 0))
+                : AnyLayout(VStackLayout(spacing: 0))
+
+            container {
                 posterStage
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.horizontal, 18)
-                    .padding(.vertical, isTextEditing ? 6 : 10)
-                    .frame(height: isPhotoPickerExpanded ? 0 : layout.posterStageHeight)
+                    .padding(.vertical, isSideBySide ? 10 : (isTextEditing ? 6 : 10))
+                    .frame(
+                        width: isSideBySide && isPhotoPickerExpanded ? 0 : nil,
+                        height: isSideBySide
+                            ? nil
+                            : (isPhotoPickerExpanded ? 0 : layout.posterStageHeight)
+                    )
                     .background(editorBackground)
                     .clipped()
                     .opacity(isPhotoPickerExpanded ? 0 : 1)
@@ -45,14 +67,22 @@ struct CampaignCreationView: View {
 
                 editorTray(
                     showsTabs: !isTextEditing && !isPhotoPickerExpanded,
-                    isPhotoPickerExpanded: isPhotoPickerExpanded
+                    isPhotoPickerExpanded: isPhotoPickerExpanded,
+                    isSideBySide: isSideBySide
                 )
                     .frame(
-                        height: isTextEditing
+                        width: isSideBySide
+                            ? (isPhotoPickerExpanded
+                                ? proxy.size.width
+                                : CampaignEditorLayout.sideBySideTrayWidth(
+                                    availableWidth: proxy.size.width
+                                ))
+                            : nil,
+                        height: isSideBySide || isTextEditing
                             ? nil
                             : (isPhotoPickerExpanded ? proxy.size.height : layout.trayHeight)
                     )
-                    .frame(maxHeight: isTextEditing ? .infinity : nil)
+                    .frame(maxHeight: isSideBySide || isTextEditing ? .infinity : nil)
             }
             .animation(.easeInOut(duration: 0.22), value: isTextEditing)
             .animation(.easeInOut(duration: 0.22), value: isPhotoPickerExpanded)
@@ -66,13 +96,24 @@ struct CampaignCreationView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    store.send(.exportOptionsButtonTapped)
+                Menu {
+                    Button {
+                        store.send(.saveButtonTapped)
+                    } label: {
+                        Label("Зберегти у Фото", systemImage: "square.and.arrow.down")
+                    }
+
+                    Button {
+                        store.send(.shareButtonTapped)
+                    } label: {
+                        Label("Поділитися", systemImage: "square.and.arrow.up")
+                    }
                 } label: {
                     Image(systemName: "ellipsis")
                 }
                 .accessibilityLabel("Експортувати постер")
                 .accessibilityIdentifier("export-options-button")
+                .disabled(store.isRendering)
             }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -86,14 +127,17 @@ struct CampaignCreationView: View {
             store.send(.presentationDismissed)
         }) { presentation in
             switch presentation {
-            case .export:
-                exportSheet
-                    .presentationDetents([.medium])
-                    .presentationDragIndicator(.visible)
             case let .share(payload):
                 CampaignShareSheet(payload: payload)
                     .accessibilityIdentifier("campaign-system-share")
             }
+        }
+        .alert(item: $store.exportNotice) { notice in
+            Alert(
+                title: Text(notice.title),
+                message: notice.message.map(Text.init),
+                dismissButton: .default(Text("Гаразд"))
+            )
         }
         .task(id: posterAssetInput) {
             await preparePreviewAssets(for: posterAssetInput)
@@ -123,6 +167,7 @@ struct CampaignCreationView: View {
                     assets: currentPreviewAssets,
                     allowsImageTransform: true,
                     selectedElement: selectedPosterElement,
+                    isTextEditing: isTextEditing,
                     onContentModeSelect: { contentMode in
                         store.send(.contentModeSelected(contentMode))
                     },
@@ -152,7 +197,8 @@ struct CampaignCreationView: View {
 
     private func editorTray(
         showsTabs: Bool,
-        isPhotoPickerExpanded: Bool
+        isPhotoPickerExpanded: Bool,
+        isSideBySide: Bool
     ) -> some View {
         VStack(spacing: 0) {
             if showsTabs {
@@ -163,22 +209,22 @@ struct CampaignCreationView: View {
                 photoPickerExpansionControl
                 photoPanel
             } else {
-                scrollableEditorPanel
+                scrollableEditorPanel(isSideBySide: isSideBySide)
             }
         }
         .background(panelBackground)
         .clipShape(
             UnevenRoundedRectangle(
                 topLeadingRadius: isPhotoPickerExpanded ? 0 : 24,
-                topTrailingRadius: isPhotoPickerExpanded ? 0 : 24
+                topTrailingRadius: isPhotoPickerExpanded || isSideBySide ? 0 : 24
             )
         )
     }
 
-    private var scrollableEditorPanel: some View {
+    private func scrollableEditorPanel(isSideBySide: Bool) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
-                editorPanel
+                editorPanel(isSideBySide: isSideBySide)
                     .padding(.horizontal, 18)
                     .padding(.top, 16)
                     .padding(.bottom, 24)
@@ -193,6 +239,15 @@ struct CampaignCreationView: View {
                 guard isFocused else { return }
                 scrollEditor(to: .target, using: proxy)
             }
+            .onChange(of: isPersonalTargetInputFocused) { _, isFocused in
+                guard isFocused else { return }
+                scrollEditor(to: .personalTarget, using: proxy)
+            }
+            .onChange(of: store.campaign.isSupportingJar) { _, isOn in
+                if !isOn {
+                    isPersonalTargetInputFocused = false
+                }
+            }
             .onChange(of: store.campaign.purpose) { _, purpose in
                 guard focusedInput == .campaignTitle else { return }
                 if purpose.contains(where: \.isNewline) {
@@ -200,7 +255,7 @@ struct CampaignCreationView: View {
                         store.campaign.purpose = purpose.filter { !$0.isNewline }
                         focusedInput = nil
                         DispatchQueue.main.async {
-                            isTargetInputFocused = true
+                            advanceToTargetInput()
                         }
                     }
                     return
@@ -210,6 +265,10 @@ struct CampaignCreationView: View {
             .onChange(of: store.campaign.formattedTarget) { _, _ in
                 guard isTargetInputFocused else { return }
                 scrollEditor(to: .target, using: proxy, animated: false)
+            }
+            .onChange(of: store.campaign.formattedPersonalTarget) { _, _ in
+                guard isPersonalTargetInputFocused else { return }
+                scrollEditor(to: .personalTarget, using: proxy, animated: false)
             }
         }
     }
@@ -243,11 +302,11 @@ struct CampaignCreationView: View {
     }
 
     @ViewBuilder
-    private var editorPanel: some View {
+    private func editorPanel(isSideBySide: Bool) -> some View {
         switch store.selectedTab {
         case .photo: EmptyView()
         case .data: dataPanel
-        case .template: templatePanel
+        case .template: templatePanel(isSideBySide: isSideBySide)
         case .qr: qrPanel
         }
     }
@@ -357,96 +416,129 @@ struct CampaignCreationView: View {
                     .submitLabel(.next)
                     .focused($focusedInput, equals: .campaignTitle)
                     .onSubmit {
-                        activateInput(.target)
+                        advanceToTargetInput()
                     }
                     .accessibilityIdentifier("campaign-title-field")
             }
             .id(EditorInput.campaignTitle)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("campaign-title-field-container")
-            if let collected = store.campaign.jar?.details?.amountInHryvnias {
-                labelledValue("Зібрано", value: collected.formattedAmount.appendingCurrency)
-            }
-            labelledField("Ціль збору", error: nil) {
-                CampaignTargetField(
-                    text: $store.campaign.formattedTarget,
-                    isFocused: $isTargetInputFocused,
-                    suffixColor: secondaryText,
-                    onSubmit: dismissKeyboard
-                )
-            }
-            .id(EditorInput.target)
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("campaign-target-field-container")
         }
         .onAppear {
-            activatePendingInputFocus()
+            activatePendingInputFocus(matching: .campaignTitle)
         }
     }
 
-    private var templatePanel: some View {
+    private func templatePanel(isSideBySide: Bool) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            fieldLabel("Родина обкладинки")
-            templateThumbnailStrip
-
-            fieldLabel("Формат")
-            Picker("Формат постера", selection: $store.campaign.posterFormat) {
-                Text("1:1").tag(Campaign.PosterFormat.square)
-                Text("4:5").tag(Campaign.PosterFormat.portrait)
-                Text("9:16").tag(Campaign.PosterFormat.story)
+            if isSideBySide {
+                // Сітка довга й гортається разом із панеллю, тож формат
+                // стоїть над нею — інакше його довелося б шукати внизу.
+                posterFormatPicker
+                fieldLabel("Родина обкладинки")
+                templateThumbnailContent(isSideBySide: true)
+            } else {
+                fieldLabel("Родина обкладинки")
+                templateThumbnailContent(isSideBySide: false)
+                posterFormatPicker
             }
-            .pickerStyle(.segmented)
-            .accessibilityIdentifier("poster-format-picker")
             if let error = store.validation.template { errorText(error) }
         }
     }
 
     @ViewBuilder
-    private var templateThumbnailStrip: some View {
+    private var posterFormatPicker: some View {
+        fieldLabel("Формат")
+        Picker("Формат постера", selection: $store.campaign.posterFormat) {
+            Text("1:1").tag(Campaign.PosterFormat.square)
+            Text("4:5").tag(Campaign.PosterFormat.portrait)
+            Text("9:16").tag(Campaign.PosterFormat.story)
+        }
+        .pickerStyle(.segmented)
+        .accessibilityIdentifier("poster-format-picker")
+    }
+
+    private func templateCell(for request: CampaignPosterThumbnailRequest) -> some View {
+        let template = request.template
+        let isSelected = store.campaign.template?.id == template.id
+        return Button {
+            store.send(.templateSelected(template))
+        } label: {
+            VStack(alignment: .leading, spacing: 7) {
+                CampaignPosterThumbnail(request: request)
+                    .frame(width: 84, height: 84)
+                    // Обідок висить за краєм мініатюри, щоб не тиснути на саму обкладинку.
+                    .overlay {
+                        if isSelected {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(accent, lineWidth: 2)
+                                .padding(-4)
+                        }
+                    }
+                Text(template.name)
+                    .font(.caption2.weight(.semibold))
+                    .lineLimit(1)
+                    .foregroundStyle(isSelected ? accent : secondaryText)
+                    .frame(width: 84, alignment: .leading)
+            }
+            .padding(8)
+            .background(
+                fieldBackground,
+                // 8 pt відступу над радіусом 10 дають співвісні кути.
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+        }
+        .id(template.id)
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("template-\(template.id)")
+        .accessibilityValue(isSelected ? "Вибрано" : "")
+    }
+
+    @ViewBuilder
+    private func templateThumbnailContent(isSideBySide: Bool) -> some View {
         let currentRequests = templateThumbnailRequests
         let refreshKeys = currentRequests.map(\.refreshKey)
         if let requests = templateThumbnailBatch?.retainedRequests(
             matching: currentRequests
         ) {
-            ScrollView(.horizontal) {
-                LazyHStack(spacing: 10) {
-                    ForEach(requests, id: \.template.id) { request in
-                        let template = request.template
-                        Button {
-                            store.send(.templateSelected(template))
-                        } label: {
-                            VStack(alignment: .leading, spacing: 7) {
-                                CampaignPosterThumbnail(request: request)
-                                    .frame(width: 84, height: 84)
-                                Text(template.name)
-                                    .font(.caption2.weight(.semibold))
-                                    .lineLimit(1)
-                                    .frame(width: 84, alignment: .leading)
-                            }
-                            .padding(6)
-                            .background(
-                                store.campaign.template?.id == template.id ? accent.opacity(0.14) : fieldBackground,
-                                in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            )
-                            .overlay {
-                                if store.campaign.template?.id == template.id {
-                                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                        .stroke(accent, lineWidth: 2)
-                                }
+            ScrollViewReader { proxy in
+                if isSideBySide {
+                    // Широка панель: шаблони складаються в сітку без власної
+                    // прокрутки, щоб на екрані було видно якнайбільше.
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 100), spacing: 10, alignment: .topLeading)],
+                        alignment: .leading,
+                        spacing: 10
+                    ) {
+                        ForEach(requests, id: \.template.id) { request in
+                            templateCell(for: request)
+                        }
+                    }
+                    .accessibilityIdentifier("campaign-template-grid")
+                    .onAppear {
+                        scrollToSelectedTemplate(using: proxy, animated: false)
+                    }
+                    .onChange(of: store.campaign.template?.id) { _, _ in
+                        scrollToSelectedTemplate(using: proxy, animated: true)
+                    }
+                } else {
+                    ScrollView(.horizontal) {
+                        LazyHStack(spacing: 10) {
+                            ForEach(requests, id: \.template.id) { request in
+                                templateCell(for: request)
                             }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("template-\(template.id)")
-                        .accessibilityValue(
-                            store.campaign.template?.id == template.id
-                                ? "Вибрано"
-                                : ""
-                        )
+                    }
+                    .scrollIndicators(.hidden)
+                    .accessibilityIdentifier("campaign-template-thumbnail-strip")
+                    .onAppear {
+                        scrollToSelectedTemplate(using: proxy, animated: false)
+                    }
+                    .onChange(of: store.campaign.template?.id) { _, _ in
+                        scrollToSelectedTemplate(using: proxy, animated: true)
                     }
                 }
             }
-            .scrollIndicators(.hidden)
-            .accessibilityIdentifier("campaign-template-thumbnail-strip")
         } else {
             HStack(spacing: 8) {
                 ProgressView()
@@ -482,123 +574,82 @@ struct CampaignCreationView: View {
         }
     }
 
+    private func scrollToSelectedTemplate(
+        using proxy: ScrollViewProxy,
+        animated: Bool
+    ) {
+        guard let templateID = store.campaign.template?.id else { return }
+        if animated {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                proxy.scrollTo(templateID, anchor: .center)
+            }
+        } else {
+            proxy.scrollTo(templateID, anchor: .center)
+        }
+    }
+
     private var qrPanel: some View {
         VStack(alignment: .leading, spacing: 13) {
+            labelledField("Ціль збору", error: store.validation.generalTarget) {
+                CampaignTargetField(
+                    text: $store.campaign.formattedTarget,
+                    isFocused: $isTargetInputFocused,
+                    suffixColor: secondaryText,
+                    onSubmit: dismissKeyboard
+                )
+            }
+            .id(EditorInput.target)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("campaign-target-field-container")
+
+            // Допоміжна банка приєднує збір до чужої цілі, але автор все одно
+            // тримає власний орієнтир — перемикач лише показує чи ховає його поле,
+            // а введене значення не стирається при вимкненні.
+            Toggle("Допоміжна банка", isOn: $store.campaign.isSupportingJar)
+                .font(.system(size: 15, weight: .medium))
+                .tint(accent)
+                .accessibilityIdentifier("supporting-jar-toggle")
+
+            if store.campaign.isSupportingJar {
+                labelledField("Моя ціль", error: store.validation.personalTarget) {
+                    CampaignTargetField(
+                        text: $store.campaign.formattedPersonalTarget,
+                        isFocused: $isPersonalTargetInputFocused,
+                        suffixColor: secondaryText,
+                        onSubmit: dismissKeyboard
+                    )
+                    .accessibilityIdentifier("campaign-personal-target-field")
+                }
+                .id(EditorInput.personalTarget)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("campaign-personal-target-field-container")
+            }
+
+            if let collected = store.campaign.jar?.details?.amountInHryvnias {
+                labelledValue("Зібрано", value: collected.formattedAmount.appendingCurrency)
+            }
+
+            // Збір закривається сам, коли ціль узято або банку закрито. Але
+            // автор має право сказати «досить» і раніше — плакат тоді одразу
+            // переходить у завершений стан.
+            Toggle("Збір завершено", isOn: $store.campaign.isClosedByAuthor)
+                .font(.system(size: 15, weight: .medium))
+                .tint(accent)
+                .accessibilityIdentifier("campaign-finished-toggle")
             labelledField("Посилання на банку", error: store.validation.qrLink) {
-                TextField("https://send.monobank.ua/jar/…", text: $store.campaign.jarURLString)
+                TextField("URL Банки (не обов'язково)", text: $store.campaign.jarURLString)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .accessibilityIdentifier("campaign-jar-link-field")
             }
-            Toggle(isOn: $store.campaign.showsQRCode) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Показувати QR").font(.subheadline.weight(.semibold))
-                    Text("На постері та в експорті")
-                        .font(.caption2)
-                        .foregroundStyle(secondaryText)
-                }
-            }
-            .tint(accent)
-            .accessibilityIdentifier("campaign-qr-toggle")
-            labelledField("Підпис", error: nil) {
-                TextField("Підтримайте збір", text: $store.campaign.shareCaption, axis: .vertical)
-                    .lineLimit(2...4)
-                    .accessibilityIdentifier("campaign-caption-field")
-            }
         }
-    }
-
-    private var exportSheet: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("Експортувати обкладинку")
-                    .font(.title2.bold())
-
-                HStack(spacing: 9) {
-                    exportFormatOption(.square, title: "1080×1080", subtitle: "Допис")
-                    exportFormatOption(.portrait, title: "1080×1350", subtitle: "Портрет")
-                    exportFormatOption(.story, title: "1080×1920", subtitle: "Історія")
-                }
-
-                Text("Обкладинка збереже якість фото, ціль і QR-код банки.")
-                    .font(.footnote)
-                    .foregroundStyle(secondaryText)
-
-                validationSummary
-
-                Button {
-                    store.send(.exportButtonTapped)
-                } label: {
-                    HStack(spacing: 10) {
-                        if store.isRendering { ProgressView().tint(.white) }
-                        Image(systemName: "square.and.arrow.up")
-                        Text(store.isRendering ? "Створюємо постер…" : "Зберегти й поширити")
-                    }
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 56)
-                    .background(accent, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-                }
-                .disabled(store.isRendering)
-                .accessibilityIdentifier("save-and-share-button")
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 24)
-            .padding(.bottom, 24)
+        .onAppear {
+            // Вкладка приймає обидві цілі, тож підхоплюємо кожен відкладений
+            // фокус, який тут живе, — інакше «Моя ціль» ніколи б не спрацювала.
+            activatePendingInputFocus(matching: .target)
+            activatePendingInputFocus(matching: .personalTarget)
         }
-        .scrollIndicators(.hidden)
-        .accessibilityIdentifier("campaign-export-sheet")
-    }
-
-    @ViewBuilder
-    private var validationSummary: some View {
-        let messages = [
-            store.validation.title,
-            store.validation.photo,
-            store.validation.template,
-            store.validation.qrLink,
-        ].compactMap { $0 }
-        if !messages.isEmpty {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Щоб створити постер:").font(.subheadline.bold())
-                ForEach(messages, id: \.self) { message in
-                    Text("• \(message)").font(.subheadline)
-                }
-            }
-            .foregroundStyle(.red)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityIdentifier("campaign-validation-summary")
-        } else if let error = store.renderError {
-            errorText(error).accessibilityIdentifier("campaign-render-error")
-        }
-    }
-
-    private func exportFormatOption(
-        _ format: Campaign.PosterFormat,
-        title: String,
-        subtitle: String
-    ) -> some View {
-        Button {
-            store.send(.binding(.set(\.campaign.posterFormat, format)))
-        } label: {
-            VStack(spacing: 6) {
-                Text(title).font(.caption2.monospaced().weight(.bold))
-                Text(subtitle).font(.caption2)
-            }
-            .foregroundStyle(store.campaign.posterFormat == format ? primaryText : secondaryText)
-            .frame(maxWidth: .infinity, minHeight: 70)
-            .background(
-                store.campaign.posterFormat == format ? accent.opacity(0.13) : fieldBackground,
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(store.campaign.posterFormat == format ? accent : .clear, lineWidth: 2)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("export-format-\(format.rawValue)")
     }
 
     private func loadSelectedPhoto() async {
@@ -628,20 +679,28 @@ struct CampaignCreationView: View {
         case .photo:
             focusedInput = nil
             isTargetInputFocused = false
+            isPersonalTargetInputFocused = false
             store.send(.tabSelected(.photo))
 
         case .campaignTitle, .target:
-            let input: EditorInput = element == .campaignTitle ? .campaignTitle : .target
+            // `.target` на плакаті — це провідна цифра, а в допоміжної банки
+            // нею є власна ціль автора. Тож і фокус має падати на «Моя ціль»,
+            // а не на «Ціль збору», якої торкались зовсім не тут.
+            let input: EditorInput = element == .campaignTitle
+                ? .campaignTitle
+                : (store.campaign.leadsWithPersonalTarget ? .personalTarget : .target)
             if activatesInput {
                 pendingInputFocus = input
             } else {
                 focusedInput = nil
                 isTargetInputFocused = false
+                isPersonalTargetInputFocused = false
             }
 
-            let dataPanelIsVisible = store.selectedTab == .data
-            store.send(.tabSelected(.data))
-            if activatesInput && dataPanelIsVisible {
+            let tab = Self.tab(hosting: input)
+            let panelIsVisible = store.selectedTab == tab
+            store.send(.tabSelected(tab))
+            if activatesInput && panelIsVisible {
                 activateInput(input)
                 pendingInputFocus = nil
             }
@@ -649,24 +708,53 @@ struct CampaignCreationView: View {
         case .qr:
             focusedInput = nil
             isTargetInputFocused = false
+            isPersonalTargetInputFocused = false
             store.send(.tabSelected(.qr))
         }
     }
 
-    private func activatePendingInputFocus() {
-        guard let pendingInputFocus else { return }
-        activateInput(pendingInputFocus)
-        self.pendingInputFocus = nil
+    /// Кожне поле живе у своїй вкладці, тож панель підхоплює лише свій відкладений фокус.
+    private static func tab(hosting input: EditorInput) -> CampaignCreationFeature.State.Tab {
+        switch input {
+        case .campaignTitle: .data
+        case .target, .personalTarget: .qr
+        }
+    }
+
+    private func activatePendingInputFocus(matching input: EditorInput) {
+        guard pendingInputFocus == input else { return }
+        activateInput(input)
+        pendingInputFocus = nil
+    }
+
+    /// Ціль тепер на сусідній вкладці — перемикаємося туди й фокусуємо поле, коли панель з'явиться.
+    private func advanceToTargetInput() {
+        if store.selectedTab == .qr {
+            activateInput(.target)
+            return
+        }
+
+        focusedInput = nil
+        isTargetInputFocused = false
+        isPersonalTargetInputFocused = false
+        pendingInputFocus = .target
+        store.send(.tabSelected(.qr))
     }
 
     private func activateInput(_ input: EditorInput) {
         switch input {
         case .campaignTitle:
             isTargetInputFocused = false
+            isPersonalTargetInputFocused = false
             focusedInput = .campaignTitle
         case .target:
             focusedInput = nil
+            isPersonalTargetInputFocused = false
             isTargetInputFocused = true
+        case .personalTarget:
+            focusedInput = nil
+            isTargetInputFocused = false
+            isPersonalTargetInputFocused = true
         }
     }
 
@@ -679,6 +767,7 @@ struct CampaignCreationView: View {
         pendingInputFocus = nil
         focusedInput = nil
         isTargetInputFocused = false
+        isPersonalTargetInputFocused = false
     }
 
     private func scrollEditor(
@@ -687,7 +776,8 @@ struct CampaignCreationView: View {
         animated: Bool = true
     ) {
         let scroll = {
-            proxy.scrollTo(input, anchor: input == .target ? .bottom : .top)
+            let anchor: UnitPoint = input == .target || input == .personalTarget ? .bottom : .top
+            proxy.scrollTo(input, anchor: anchor)
         }
         if animated {
             withAnimation(.easeInOut(duration: 0.2), scroll)
@@ -782,6 +872,25 @@ enum CampaignEditorLayout {
         let posterStageHeight: CGFloat
     }
 
+    /// Найнижча сцена плаката, коли редактор стоїть під ним.
+    static let minimumPosterStageHeight: CGFloat = 160
+
+    /// Плакат стає поруч із редактором, коли вікно широке й ширше, ніж
+    /// заввишки. Портретне вікно, зокрема iPad, лишається в одну колонку.
+    static func usesSideBySide(in size: CGSize) -> Bool {
+        size.width.isFinite
+            && size.height.isFinite
+            && size.width >= 500
+            && size.width > size.height
+    }
+
+    /// Ширина редактора поруч із плакатом: не більше половини вікна, щоб
+    /// плакату лишалось місце.
+    static func sideBySideTrayWidth(availableWidth: CGFloat) -> CGFloat {
+        guard availableWidth.isFinite else { return 0 }
+        return min(460, max(0, availableWidth) * 0.5)
+    }
+
     static func metrics(
         availableHeight: CGFloat,
         isTextEditing: Bool
@@ -793,7 +902,11 @@ enum CampaignEditorLayout {
             364,
             max(330, availableHeight * 0.47)
         )
-        let trayHeight = min(availableHeight, desiredTrayHeight)
+        // Низьке вікно (зовнішній екран Duo) не віддає плакатові нуль: редактор
+        // стискається й прокручується, а плакат тримає свій мінімум — або
+        // половину вікна, коли воно ще нижче.
+        let posterFloor = min(minimumPosterStageHeight, availableHeight / 2)
+        let trayHeight = min(desiredTrayHeight, availableHeight - posterFloor)
         let desiredEditingPosterHeight = min(
             220,
             max(190, availableHeight * 0.5)
@@ -934,7 +1047,7 @@ private struct CampaignTargetTextField: UIViewRepresentable {
         inputToolbar.sizeToFit()
         let doneButton = UIBarButtonItem(
             title: "Готово",
-            style: .done,
+            style: .prominent,
             target: context.coordinator,
             action: #selector(Coordinator.submit)
         )
