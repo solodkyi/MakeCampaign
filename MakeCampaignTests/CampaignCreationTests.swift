@@ -194,6 +194,48 @@ struct CampaignCreationModelTests {
         expectNoDifference(editing.posterStageHeight, 232)
     }
 
+    @Test("Editor keeps the poster visible in windows shorter than the tray")
+    func editorLayoutKeepsPosterVisibleInShortWindows() {
+        let short = CampaignEditorLayout.metrics(
+            availableHeight: 300,
+            isTextEditing: false
+        )
+        let borderline = CampaignEditorLayout.metrics(
+            availableHeight: 430,
+            isTextEditing: false
+        )
+        let tiny = CampaignEditorLayout.metrics(
+            availableHeight: 100,
+            isTextEditing: false
+        )
+
+        // Нижче 320 pt плакат бере половину вікна, а не повний мінімум.
+        expectNoDifference(short.posterStageHeight, 150)
+        expectNoDifference(short.trayHeight, 150)
+        expectNoDifference(borderline.posterStageHeight, 160)
+        expectNoDifference(borderline.trayHeight, 270)
+        expectNoDifference(tiny.posterStageHeight, 50)
+        expectNoDifference(tiny.trayHeight, 50)
+    }
+
+    @Test("Editor goes side by side only in wide, landscape-shaped windows")
+    func editorLayoutChoosesSideBySideForWideWindows() {
+        #expect(CampaignEditorLayout.usesSideBySide(in: CGSize(width: 852, height: 393)))
+        #expect(CampaignEditorLayout.usesSideBySide(in: CGSize(width: 900, height: 700)))
+        #expect(!CampaignEditorLayout.usesSideBySide(in: CGSize(width: 393, height: 852)))
+        #expect(!CampaignEditorLayout.usesSideBySide(in: CGSize(width: 744, height: 1133)))
+        #expect(!CampaignEditorLayout.usesSideBySide(in: CGSize(width: 480, height: 300)))
+        #expect(!CampaignEditorLayout.usesSideBySide(in: CGSize(width: CGFloat.infinity, height: 300)))
+    }
+
+    @Test("Side-by-side tray takes at most half the window")
+    func sideBySideTrayWidthIsBounded() {
+        expectNoDifference(CampaignEditorLayout.sideBySideTrayWidth(availableWidth: 600), 300)
+        expectNoDifference(CampaignEditorLayout.sideBySideTrayWidth(availableWidth: 1400), 460)
+        expectNoDifference(CampaignEditorLayout.sideBySideTrayWidth(availableWidth: -5), 0)
+        expectNoDifference(CampaignEditorLayout.sideBySideTrayWidth(availableWidth: .nan), 0)
+    }
+
     @Test("QR overlay scales with both preview and exported poster")
     func qrOverlayScalesWithPoster() {
         expectNoDifference(CampaignPosterLayout.qrSideLength(for: 350), 42)

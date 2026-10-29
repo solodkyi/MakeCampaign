@@ -12,64 +12,53 @@ struct TemplateSelectionView: View {
     @Dependency(\.campaignPosterThumbnailClient) private var thumbnailClient
     @State private var previewAssetBuffer = CampaignPosterPreviewAssetBuffer()
     @State private var templateThumbnailBatch: CampaignPosterThumbnailBatch?
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                if let uiImage = currentPreviewAssets.photo {
-                    if let selectedTemplate = store.selectedTemplate {
-                        CampaignTemplateView(
-                            campaign: store.campaign,
-                            template: selectedTemplate,
-                            image: uiImage,
-                            onImageTransformEnd: { newScale, newOffset, containerSize in
-                                store.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
-                            }
-                        )
-                    } else {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                    }
-                } else {
-                    Text("Неможливо завантажити зображення")
-                        .foregroundColor(.secondary)
-                }
-            }
-            .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-            .background(Color(.systemGroupedBackground))
-            
-            Divider()
-            Spacer()
-            
-            VStack(spacing: 12) {
-                Text("Оберіть шаблон")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.top)
-                
-                templateThumbnailStrip
 
-                Button {
-                    store.send(.doneButtonTapped)
-                } label: {
-                    Text("Готово")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(store.selectedTemplateID != nil ? Color.accentColor : Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+    /// Нижче цієї висоти перегляд не стискається далі, а вибір шаблону
+    /// прокручується.
+    private static let minimumPreviewHeight: CGFloat = 180
+
+    var body: some View {
+        GeometryReader { proxy in
+            if CampaignEditorLayout.usesSideBySide(in: proxy.size) {
+                // Широке вікно: перегляд ліворуч, вибір шаблону праворуч,
+                // щоб перегляд не стискався по висоті.
+                HStack(spacing: 0) {
+                    posterPreview
+                    Divider()
+                    templatePicker
+                        .frame(
+                            width: CampaignEditorLayout.sideBySideTrayWidth(
+                                availableWidth: proxy.size.width
+                            )
+                        )
+                        .frame(maxHeight: .infinity)
                 }
-                .contentShape(Rectangle())
-                .padding(.horizontal)
-                .padding(.bottom)
-                .disabled(store.selectedTemplateID == nil)
+            } else {
+                // Низьке вузьке вікно (зовнішній екран Duo): якщо перегляд не
+                // лишається бодай мінімальним, вибір шаблону прокручується
+                // разом із ним, а не стискає перегляд до нуля.
+                ViewThatFits(in: .vertical) {
+                    VStack(spacing: 0) {
+                        posterPreview
+                            .frame(
+                                minHeight: Self.minimumPreviewHeight,
+                                idealHeight: Self.minimumPreviewHeight,
+                                maxHeight: .infinity
+                            )
+                        Divider()
+                        templatePicker
+                    }
+
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            posterPreview
+                                .frame(height: Self.minimumPreviewHeight)
+                            Divider()
+                            templatePicker
+                        }
+                    }
+                }
             }
-            .background(Color(.systemBackground))
         }
         .onAppear {
             store.send(.onAppear)
@@ -79,6 +68,63 @@ struct TemplateSelectionView: View {
         }
         .navigationTitle("Обрати шаблон")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var posterPreview: some View {
+        ZStack {
+            if let uiImage = currentPreviewAssets.photo {
+                if let selectedTemplate = store.selectedTemplate {
+                    CampaignTemplateView(
+                        campaign: store.campaign,
+                        template: selectedTemplate,
+                        image: uiImage,
+                        onImageTransformEnd: { newScale, newOffset, containerSize in
+                            store.send(.onImageRepositionFinished(newScale, newOffset, containerSize))
+                        }
+                    )
+                } else {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                }
+            } else {
+                Text("Неможливо завантажити зображення")
+                    .foregroundColor(.secondary)
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+        .background(Color(.systemGroupedBackground))
+    }
+
+    private var templatePicker: some View {
+        VStack(spacing: 12) {
+            Text("Оберіть шаблон")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.top)
+
+            templateThumbnailStrip
+
+            Button {
+                store.send(.doneButtonTapped)
+            } label: {
+                Text("Готово")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(store.selectedTemplateID != nil ? Color.accentColor : Color.gray)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+            .contentShape(Rectangle())
+            .padding(.horizontal)
+            .padding(.bottom)
+            .disabled(store.selectedTemplateID == nil)
+        }
+        .background(Color(.systemBackground))
     }
 
     @ViewBuilder

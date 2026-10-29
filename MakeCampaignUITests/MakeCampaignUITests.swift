@@ -884,7 +884,11 @@ final class MakeCampaignUITests: XCTestCase {
         XCTAssertTrue(poster.waitForExistence(timeout: 2))
         XCTAssertTrue(placeholder.waitForExistence(timeout: 2))
         XCTAssertEqual(placeholder.label, "Фото")
-        XCTAssertLessThan(abs(placeholder.frame.midY - poster.frame.midY), poster.frame.height * 0.12)
+        // Підпис стоїть під іконкою, тож його центр нижчий за центр плаката
+        // приблизно на пів іконки з відступом (≈ 27 pt). На низькому плакаті
+        // (зовнішній екран Duo) 12 % висоти менше за цей зсув.
+        let tolerance = max(poster.frame.height * 0.12, 40)
+        XCTAssertLessThan(abs(placeholder.frame.midY - poster.frame.midY), tolerance)
     }
 
     @MainActor

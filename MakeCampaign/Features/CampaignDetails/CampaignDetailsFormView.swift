@@ -154,12 +154,13 @@ struct CampaignDetailsFormView: View {
                 .onTapGesture {
                     store.send(.onImageTapped)
                 }
-                .frame(width: 1080/4, height: 1080/4)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: 1080/4)
         } else {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 200)
+                .frame(maxHeight: 200)
                 .onTapGesture {
                     store.send(.onImageTapped)
                 }
