@@ -14,7 +14,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir2", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "2", gradient: .blueLinear, imagePlacement: .center),
-        purpose: "Збір на машину розмінування ZMIY",
+        purpose: "Мавік для розвідки",
         target: 50000,
     )
     
@@ -22,7 +22,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir3", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "3", gradient: .cyanMagentaRadial, imagePlacement: .squareTrailing),
-        purpose: "Великодній кошик для окупантів",
+        purpose: "Авто для евакуації",
         target: 30000
     )
 
@@ -30,7 +30,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir1", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "4", gradient: .goldBlackLinear, imagePlacement: .hexagonTrailing),
-        purpose: "Дрон для розвідки",
+        purpose: "FPV для штурмової роти",
         target: 75000
     )
 
@@ -38,7 +38,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir2", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "5", gradient: .pinkAngular, imagePlacement: .topCenter),
-        purpose: "Аптечки для фронту",
+        purpose: "Дрон-розвідник для бригади",
         target: 20000
     )
 
@@ -46,7 +46,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir3", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "6", gradient: .tealPurpleRadial, imagePlacement: .roundedTrailing),
-        purpose: "Тепловізори в бліндажі",
+        purpose: "Позашляховик для евакуації",
         target: 60000
     )
 
@@ -54,7 +54,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir1", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "7", gradient: .linearGreen, imagePlacement: .topToBottomTrailing),
-        purpose: "Генератор для бригади",
+        purpose: "FPV-дрони для 3 ОШБр",
         target: 45000
     )
 
@@ -62,7 +62,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir2", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "8", gradient: .angularYellowBlue, imagePlacement: .trailing),
-        purpose: "Пікап для підрозділу",
+        purpose: "Мавік 3 Pro для розвідки",
         target: 80000
     )
 
@@ -70,7 +70,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir3", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "9", gradient: .linearSilverBlue, imagePlacement: .trailingToEdge),
-        purpose: "Маскувальні сітки",
+        purpose: "Авто для евакуації поранених",
         target: 10000
     )
 
@@ -78,7 +78,7 @@ extension Campaign {
         id: UUID(),
         image: .init(raw: Bundle.main.url(forResource: "zbir1", withExtension: "png").flatMap { try? Data(contentsOf: $0) }),
         template: .init(name: "10", gradient: .radialRedBlack, imagePlacement: .topToEdge),
-        purpose: "Шини для автівки",
+        purpose: "FPV-дрони для батальйону",
         target: 12000
     )
     

@@ -71,35 +71,61 @@ struct MakeCampaignApp: App {
 
     /// Список, на якому видно кожен вигляд рядка: збір без банки, збір на
     /// півдорозі й зібраний. Суми банок приходять із `JarAPIClient.seededList`,
-    /// тож тести не ходять у мережу.
+    /// тож тести не ходять у мережу. Кожен запис — власний шаблон і власна
+    /// світлина, щоб список не виглядав як один і той самий плакат тричі.
     private static func seededListCampaigns() -> IdentifiedArrayOf<Campaign> {
-        let imageData = Bundle.main.url(forResource: "zbir1", withExtension: "png")
-            .flatMap { try? Data(contentsOf: $0) }
-        let template = Template.list.first
+        // Кожен збір веде та світлина, про яку він і зібраний: zbir1 — FPV-дрон
+        // у руці, zbir2 — коробка «Мавіка», zbir3 — авто евакуації.
+        //
+        // Шаблон дібрано під форму світлини, бо `PosterPhoto` заповнює рамку, а
+        // не вписується в неї: альбомний zbir2 стоїть у смузі на всю ширину, а
+        // портретні zbir1 і zbir3 — у майже квадратній прорізі ваучера та в
+        // широкій картці.
+        //
+        // Зсув добирає решту. Заповнена рамка тримається верху світлини, а не
+        // її середини, тож без зсуву у вузьку смугу потрапляє те, що над
+        // героєм: стіна над дроном, небо над автом. Кожне число тут — частка
+        // висоти рамки, на яку світлину піднято, щоб у кадрі став сам герой.
+        func template(named name: String) -> Template? {
+            Template.list.first(where: { $0.name == name })
+        }
+        func image(_ resource: String, offsetY: CGFloat = 0) -> Campaign.Image? {
+            Bundle.main.url(forResource: resource, withExtension: "png")
+                .flatMap { try? Data(contentsOf: $0) }
+                .map {
+                    Campaign.Image(
+                        raw: $0,
+                        offset: CGSize(width: 0, height: offsetY),
+                        // Одиничний вимір робить зсув часткою рамки, тож те саме
+                        // число працює і в мініатюрі списку, і на повному плакаті.
+                        referenceSize: CGSize(width: 1, height: 1)
+                    )
+                }
+        }
 
         return [
             Campaign(
                 id: UUID(uuidString: "00000000-0000-0000-0000-000000000044")!,
-                image: imageData.map { Campaign.Image(raw: $0) },
-                template: template,
-                purpose: "Аптечки для 3 ОШБр",
+                image: image("zbir1", offsetY: -0.23),
+                template: template(named: "7"),
+                purpose: "FPV-дрони для 3 ОШБр",
                 target: 20_000
             ),
             Campaign(
                 id: UUID(uuidString: "00000000-0000-0000-0000-000000000045")!,
-                image: imageData.map { Campaign.Image(raw: $0) },
-                template: template,
+                image: image("zbir2", offsetY: -0.18),
+                template: template(named: "10"),
                 purpose: "Дрони для розвідки",
                 target: 75_000,
                 jar: .init(link: JarAPIClient.seededJar(kopecks: 4_650_000))
             ),
             Campaign(
                 id: UUID(uuidString: "00000000-0000-0000-0000-000000000046")!,
-                image: imageData.map { Campaign.Image(raw: $0) },
-                template: template,
-                purpose: "Генератор для бліндажа",
-                target: 45_000,
-                jar: .init(link: JarAPIClient.seededJar(kopecks: 4_500_000))
+                image: image("zbir3", offsetY: -0.72),
+                template: template(named: "14"),
+                purpose: "Авто для евакуації",
+                target: 280_000,
+                jar: .init(link: JarAPIClient.seededJar(kopecks: 28_000_000))
             ),
         ]
     }
@@ -140,7 +166,7 @@ struct MakeCampaignApp: App {
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000042")!,
             image: .init(raw: imageData),
             template: template,
-            purpose: "Аптечки для 3 ОШБр",
+            purpose: "FPV-дрони для 3 ОШБр",
             target: 20_000,
             jar: .init(
                 link: URL(string: "https://send.monobank.ua/jar/2Kd9x")!,
@@ -148,7 +174,7 @@ struct MakeCampaignApp: App {
             ),
             status: .draft,
             showsQRCode: true,
-            shareCaption: "Аптечки для 3 ОШБр. Підтримайте збір."
+            shareCaption: "FPV-дрони для 3 ОШБр. Підтримайте збір."
         )
         var editorState = CampaignCreationFeature.State(
             campaign: campaign,

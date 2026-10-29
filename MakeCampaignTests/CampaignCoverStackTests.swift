@@ -155,6 +155,30 @@ struct CampaignCoverStackTests {
         #expect(large.rotationDegrees == small.rotationDegrees)
     }
 
+    /// Чотири зразки лишають одну невидиму глибину, і вона потрібна резерву.
+    /// Якби картка при такому каталозі ще й відлітала, повертатись їй було б
+    /// нікуди — вона в'їжджала б у стос згори на очах.
+    @Test("A four-card catalogue retires the front card into the reserve, not upwards")
+    func fourCardsRetireIntoTheReserve() {
+        let retiring = CampaignCoverStackLayout.placement(depth: 3, count: 4, side: 200)
+        let back = CampaignCoverStackLayout.placement(depth: 2, count: 4, side: 200)
+
+        #expect(retiring.opacity == 0)
+        // Не вгору: картка тане там само, де проявиться наступною чергою.
+        #expect(retiring.offset.height > 0)
+        #expect(retiring.offset == back.offset)
+        #expect(retiring.scale < back.scale)
+    }
+
+    @Test("A four-card stack still shows exactly three cards")
+    func fourCardsStillShowThree() {
+        let visible = (0..<4)
+            .map { CampaignCoverStackLayout.placement(depth: $0, count: 4, side: 200) }
+            .filter { $0.opacity > 0 }
+
+        #expect(visible.count == CampaignCoverStackLayout.visibleDepth)
+    }
+
     @Test("A catalogue too small to cycle keeps every card visible")
     func aTooSmallCatalogueKeepsEveryCard() {
         let placements = (0..<3).map {

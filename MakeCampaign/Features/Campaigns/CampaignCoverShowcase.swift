@@ -100,12 +100,12 @@ struct CampaignCoverSample: Identifiable, Equatable, Sendable {
 }
 
 enum CampaignCoverShowcase {
-    /// П'ять зразків: три видно у стосі, один чекає позаду, ще один відлітає.
-    /// Кількість не випадкова — її вимагає `CampaignCoverStackLayout`.
+    /// Чотири зразки: три видно у стосі, один чекає позаду. Кількість не
+    /// випадкова — її вимагає `CampaignCoverStackLayout`.
     ///
-    /// Світлин лише три, тож дві з них стос показує двічі. Порядок розводить
-    /// повтори якнайдалі — у циклі з п'яти карток це відстань два, більшої не
-    /// буває, — а повторам дістаються шаблони різних наборів, щоб та сама
+    /// Світлин лише три, тож одну з них стос показує двічі. Порядок розводить
+    /// повтор якнайдалі — у циклі з чотирьох карток це відстань два, більшої
+    /// не буває, — а обом дістаються шаблони різних наборів, щоб та сама
     /// світлина читалась як інший збір, а не як збій.
     ///
     /// Рамка шаблона вирішує, що від світлини лишиться: `PosterPhoto` заповнює
@@ -131,6 +131,21 @@ enum CampaignCoverShowcase {
             personalTarget: 20_000,
             collected: 14_259.75
         ),
+        // Той самий дрон, що й на чолі списку, — але іншим набором, щоб
+        // повтор світлини читався як інший збір. Назва теж про FPV: світлина
+        // одна на обидва зразки, тож і йдеться в них про те саме.
+        CampaignCoverSample(
+            id: UUID(uuidString: "A0000000-0000-0000-0000-000000000004")!,
+            templateID: "b_angularYellowBlue_trailing",
+            photoResource: "zbir1",
+            purpose: "FPV для штурмовиків",
+            target: 40_000,
+            collected: 28_400,
+            // Дрон висить у нижній третині кадру, а коло бере середину: без
+            // наближення й підйому в проріз потрапляє сама стіна.
+            photoScale: 1.3,
+            photoOffset: CGSize(width: 0, height: -0.22)
+        ),
         // Єдина широка рамка стоса — і єдина альбомна світлина.
         CampaignCoverSample(
             id: UUID(uuidString: "A0000000-0000-0000-0000-000000000003")!,
@@ -139,32 +154,6 @@ enum CampaignCoverShowcase {
             purpose: "На мавік",
             target: 75_000,
             collected: 3_226.7
-        ),
-        CampaignCoverSample(
-            id: UUID(uuidString: "A0000000-0000-0000-0000-000000000004")!,
-            templateID: "b_angularYellowBlue_trailing",
-            photoResource: "zbir1",
-            purpose: "Дрони для розвідки",
-            target: 40_000,
-            collected: 28_400,
-            // Дрон висить у нижній третині кадру, а коло бере середину: без
-            // наближення й підйому в проріз потрапляє сама стіна.
-            photoScale: 1.3,
-            photoOffset: CGSize(width: 0, height: -0.22)
-        ),
-        // Завершений збір: стос показує і те, чим збір закінчується.
-        CampaignCoverSample(
-            id: UUID(uuidString: "A0000000-0000-0000-0000-000000000005")!,
-            templateID: "b_radialMintIndigo_roundedTrailing",
-            photoResource: "zbir3",
-            purpose: "Позашляховик для медиків",
-            target: 90_000,
-            collected: 90_000,
-            isClosedByAuthor: true,
-            // Широка рамка бере з портретного кадру смугу посередині — саме
-            // небо над автівкою. Зсув униз опускає її на машину.
-            photoScale: 1,
-            photoOffset: CGSize(width: 0, height: -0.26)
         )
     ]
 
